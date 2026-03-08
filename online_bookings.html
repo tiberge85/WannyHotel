@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% block title %}WannyHotel - Réservations en ligne{% endblock %}{% block content %}
+<div class="page-header"><h1>🌐 Réservations en ligne</h1><p>Demandes reçues depuis le site de réservation</p></div>
+<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+    {% for t,l in [('en_attente','⏳ En attente'),('confirmee','✅ Confirmées'),('refusee','❌ Refusées'),('all','📋 Toutes')] %}
+    <a href="/online-bookings?tab={{ t }}" class="btn {% if tab==t %}btn-primary{% else %}btn-outline{% endif %} btn-sm">{{ l }}</a>{% endfor %}
+</div>
+<div class="card"><div class="card-body">
+{% if bookings %}<div class="table-wrap"><table>
+<thead><tr><th>Date demande</th><th>Client</th><th>Contact</th><th>Type</th><th>Arrivée</th><th>Départ</th><th>Pers.</th><th>Statut</th><th>Actions</th></tr></thead>
+<tbody>{% for b in bookings %}<tr{% if b.status=='en_attente' %} style="background:#fffde7"{% endif %}>
+<td>{{ b.created_at[:16] }}</td>
+<td><strong>{{ b.guest_first_name }} {{ b.guest_last_name }}</strong></td>
+<td><span style="font-size:11px">{{ b.guest_tel or '' }}<br>{{ b.guest_email or '' }}</span></td>
+<td>{{ b.type_name or '-' }}</td>
+<td>{{ b.checkin_date }}</td><td>{{ b.checkout_date }}</td>
+<td>{{ b.adults }}+{{ b.children }}</td>
+<td>{% if b.status=='en_attente' %}<span class="badge-status menage">⏳ En attente</span>
+{% elif b.status=='confirmee' %}<span class="badge-status libre">✅ Confirmée</span>
+{% elif b.status=='refusee' %}<span class="badge-status maintenance">❌ Refusée</span>{% endif %}</td>
+<td style="display:flex;gap:4px">
+{% if b.status=='en_attente' %}
+<a href="/online-bookings/{{ b.id }}/confirm" class="btn btn-primary btn-sm">✅ Confirmer</a>
+<a href="/online-bookings/{{ b.id }}/reject" class="btn btn-danger btn-sm">❌</a>
+{% endif %}
+{% if b.notes %}<span title="{{ b.notes }}" style="cursor:help">💬</span>{% endif %}
+</td>
+</tr>{% endfor %}</tbody></table></div>
+{% else %}<p style="text-align:center;color:#999;padding:20px">Aucune demande {{ 'en attente' if tab=='en_attente' else '' }}</p>{% endif %}
+</div></div>
+{% endblock %}

@@ -210,3 +210,72 @@ def get_res_detail(res_id):
     conn.close()
     if not res: return None,[],[]
     return dict(res), [dict(c) for c in charges], [dict(p) for p in payments]
+
+
+# ======================== MIGRATION: ADD IMAGES TO ROOMS ========================
+
+def migrate_db():
+    conn = get_db()
+    try: conn.execute("ALTER TABLE rooms ADD COLUMN images TEXT DEFAULT ''")
+    except: pass
+    try: conn.execute("ALTER TABLE room_types ADD COLUMN image TEXT DEFAULT ''")
+    except: pass
+    # Online reservations table
+    conn.executescript('''
+        CREATE TABLE IF NOT EXISTS online_bookings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            guest_first_name TEXT NOT NULL, guest_last_name TEXT NOT NULL,
+            guest_tel TEXT, guest_email TEXT,
+            room_type_id INTEGER, checkin_date TEXT, checkout_date TEXT,
+            adults INTEGER DEFAULT 1, children INTEGER DEFAULT 0,
+            notes TEXT, status TEXT DEFAULT 'en_attente',
+            processed_by INTEGER, reservation_id INTEGER,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (room_type_id) REFERENCES room_types(id)
+        );
+    ''')
+    conn.commit(); conn.close()
+
+def get_available_room_types(checkin, checkout):
+    """Retourne les types de chambres avec dispo pour les dates données."""
+    conn = get_db()
+    types = conn.execute("SELECT * FROM room_types ORDER BY base_price ASC").fetchall()
+    result = []
+    for t in types:
+        # Count total rooms of this type
+        total = conn.execute("SELECT COUNT(*) FROM rooms WHERE room_type_id=?", (t['id'],)).fetchone()[0]
+        # Count rooms occupied during the period
+        occupied = conn.execute("""SELECT COUNT(DISTINCT r.room_id) FROM reservations r
+            JOIN rooms rm ON r.room_id=rm.id
+            WHERE rm.room_type_id=? AND r.status IN ('confirmee','en_cours')
+            AND r.checkin_date < ? AND r.checkout_date > ?""",
+            (t['id'], checkout, checkin)).fetchone()[0]
+        available = total - occupied
+        d = dict(t)
+        d['total_rooms'] = total
+        d['available'] = available
+        if total > 0:
+            result.append(d)
+    conn.close()
+    return result
+
+def get_room_images(room_id):
+    conn = get_db()
+    r = conn.execute("SELECT images FROM rooms WHERE id=?", (room_id,)).fetchone()
+    conn.close()
+    if r and r['images']:
+        return [img.strip() for img in r['images'].split(',') if img.strip()]
+    return []
+
+def get_online_bookings(status=None):
+    conn = get_db()
+    if status:
+        rows = conn.execute("""SELECT ob.*, rt.name as type_name, rt.base_price
+            FROM online_bookings ob LEFT JOIN room_types rt ON ob.room_type_id=rt.id
+            WHERE ob.status=? ORDER BY ob.created_at DESC""", (status,)).fetchall()
+    else:
+        rows = conn.execute("""SELECT ob.*, rt.name as type_name, rt.base_price
+            FROM online_bookings ob LEFT JOIN room_types rt ON ob.room_type_id=rt.id
+            ORDER BY ob.created_at DESC""").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]

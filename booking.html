@@ -1,0 +1,117 @@
+<!DOCTYPE html><html lang="fr"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WannyHotel — Réserver en ligne</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;color:#333}
+.navbar{background:#fff;padding:14px 40px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.navbar img{height:36px}.nav-links a{text-decoration:none;color:#1a3a5c;font-size:13px;font-weight:500;margin-left:20px}
+.btn-nav{background:#e8672a;color:#fff!important;padding:8px 18px;border-radius:8px;font-weight:700}
+.hero{background:linear-gradient(135deg,#0d2137,#1a4a6c);padding:40px;color:#fff;text-align:center}
+.hero h1{font-size:28px;font-weight:800}.hero h1 span{color:#e8672a}.hero p{font-size:14px;opacity:0.7;margin-top:6px}
+.container{max-width:900px;margin:0 auto;padding:24px 16px}
+.search-bar{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 4px 16px rgba(0,0,0,0.08);margin-top:-30px;position:relative;z-index:1}
+.search-row{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+.search-row .fg{flex:1;min-width:140px}.search-row label{font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px}
+.search-row input,.search-row select{width:100%;padding:9px 11px;border:1.5px solid #ddd;border-radius:7px;font-size:13px}
+.btn{display:inline-flex;align-items:center;gap:4px;padding:9px 18px;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none}
+.btn-orange{background:#e8672a;color:#fff}.btn-primary{background:#1a3a5c;color:#fff}.btn-outline{background:#fff;color:#666;border:1.5px solid #ddd}
+.rooms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-top:24px}
+.room-card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,0.06);transition:transform 0.3s}
+.room-card:hover{transform:translateY(-3px)}
+.room-img{height:160px;background:#e0e0e0;background-size:cover;background-position:center;display:flex;align-items:end;padding:10px}
+.room-img .tag{background:rgba(0,0,0,0.6);color:#fff;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.room-info{padding:14px}
+.room-info h3{font-size:16px;color:#1a3a5c;margin-bottom:4px}
+.room-info .price{font-size:20px;font-weight:800;color:#e8672a}.room-info .price small{font-size:12px;font-weight:400;color:#888}
+.room-info .details{font-size:12px;color:#888;margin:6px 0}
+.room-info .avail{font-size:12px;font-weight:600;margin-bottom:8px}
+.room-info .avail.ok{color:#2e7d32}.room-info .avail.no{color:#c53030}
+.book-form{background:#fff;border-radius:12px;padding:20px;margin-top:24px;box-shadow:0 4px 14px rgba(0,0,0,0.06)}
+.book-form h2{font-size:18px;color:#1a3a5c;margin-bottom:14px}
+.form-row{display:flex;gap:10px;margin-bottom:10px}.form-row .fg{flex:1}
+.fg label{font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px}
+.fg input,.fg select,.fg textarea{width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px}
+.flash{padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px;text-align:center}
+.flash.success{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7}
+.footer{background:#0d2137;color:rgba(255,255,255,0.5);padding:20px 40px;text-align:center;font-size:11px;margin-top:40px}
+@media(max-width:768px){.search-row{flex-direction:column}.rooms-grid{grid-template-columns:1fr}.form-row{flex-direction:column}}
+</style></head><body>
+
+<nav class="navbar">
+    <img src="/static/logo_wannygest.png" alt="WannyHotel">
+    <div class="nav-links"><a href="/">Accueil</a><a href="/login" class="btn-nav">Espace Staff</a></div>
+</nav>
+
+<div class="hero"><h1>Réservez votre <span>séjour</span></h1><p>Hôtel · Résidence meublée · Conférences</p></div>
+
+<div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for c,m in messages %}<div class="flash {{ c }}">{{ m }}</div>{% endfor %}{% endif %}{% endwith %}
+    
+    <div class="search-bar">
+        <form method="get" class="search-row">
+            <div class="fg"><label>Arrivée</label><input type="date" name="checkin" value="{{ checkin }}" required></div>
+            <div class="fg"><label>Départ</label><input type="date" name="checkout" value="{{ checkout }}" required></div>
+            <div style="flex:0"><button type="submit" class="btn btn-orange" style="margin-top:16px">🔍 Vérifier</button></div>
+        </form>
+    </div>
+    
+    {% if room_types %}
+    <div class="rooms-grid">
+        {% for rt in room_types %}
+        <div class="room-card">
+            <div class="room-img" style="{% if rt.image %}background-image:url('/uploads/rooms/{{ rt.image }}'){% else %}background:linear-gradient(135deg,#1a3a5c,#2a5a8c){% endif %}">
+                <span class="tag">{{ rt.capacity }} pers. max</span>
+            </div>
+            <div class="room-info">
+                <h3>{{ rt.name }}</h3>
+                <div class="details">{{ rt.amenities or 'WiFi, Climatisation' }}</div>
+                <div class="price">{{ '{:,.0f}'.format(rt.base_price) }} <small>FCFA / nuit</small></div>
+                {% if rt.available > 0 %}
+                <div class="avail ok">✅ {{ rt.available }} chambre(s) disponible(s)</div>
+                {% else %}
+                <div class="avail no">❌ Complet pour ces dates</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="book-form" id="bookForm">
+        <h2>📝 Demande de réservation</h2>
+        <form method="post">
+            <div class="form-row">
+                <div class="fg"><label>Prénom *</label><input type="text" name="first_name" required></div>
+                <div class="fg"><label>Nom *</label><input type="text" name="last_name" required></div>
+            </div>
+            <div class="form-row">
+                <div class="fg"><label>Téléphone *</label><input type="tel" name="tel" required placeholder="+225 07..."></div>
+                <div class="fg"><label>Email</label><input type="email" name="email" placeholder="votre@email.com"></div>
+            </div>
+            <div class="form-row">
+                <div class="fg"><label>Type de chambre *</label>
+                    <select name="room_type_id" required>
+                        <option value="">— Choisir —</option>
+                        {% for rt in room_types %}{% if rt.available > 0 %}
+                        <option value="{{ rt.id }}">{{ rt.name }} — {{ '{:,.0f}'.format(rt.base_price) }} F/nuit ({{ rt.available }} dispo)</option>
+                        {% endif %}{% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="fg"><label>Arrivée *</label><input type="date" name="checkin_date" value="{{ checkin }}" required></div>
+                <div class="fg"><label>Départ *</label><input type="date" name="checkout_date" value="{{ checkout }}" required></div>
+            </div>
+            <div class="form-row">
+                <div class="fg"><label>Adultes</label><input type="number" name="adults" value="1" min="1" max="6"></div>
+                <div class="fg"><label>Enfants</label><input type="number" name="children" value="0" min="0" max="4"></div>
+            </div>
+            <div class="fg" style="margin-bottom:14px"><label>Demandes spéciales</label><textarea name="notes" rows="2" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:6px;font-size:12px" placeholder="Lit bébé, vue piscine..."></textarea></div>
+            <button type="submit" class="btn btn-orange" style="width:100%;padding:14px;font-size:15px;justify-content:center">📩 Envoyer ma demande de réservation</button>
+        </form>
+    </div>
+</div>
+
+<div class="footer">© 2026 WannyHotel — RAMYA TECHNOLOGIE & INNOVATION · Abidjan, Côte d'Ivoire<br>+225 07 47 68 20 27 · yanick.hamien@ramyaci.tech</div>
+</body></html>

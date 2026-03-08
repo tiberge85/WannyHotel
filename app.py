@@ -3,11 +3,15 @@ from datetime import datetime
 from functools import wraps
 import os, json
 from models import *
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__, template_folder='.', static_folder='static', static_url_path='/static')
 app.secret_key = os.environ.get('SECRET_KEY', 'wh-secret-2026-hotel')
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+app.config['ROOMS_IMG'] = os.path.join(app.config['UPLOAD_FOLDER'], 'rooms')
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config['ROOMS_IMG'], exist_ok=True)
 os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static'), exist_ok=True)
 
 # Copy logos to static
@@ -19,6 +23,7 @@ for f in ['logo_wannygest.png','logo_wannygest_clean.png']:
     if os.path.exists(src) and not os.path.exists(dst): shutil.copy2(src, dst)
 
 init_db()
+migrate_db()
 ROLES = {'admin': 'all', 'directeur': 'all', 'receptionniste': ['dashboard','reservations','chambres','guests','housekeeping'],
          'restaurant': ['dashboard','stock','events'], 'comptable': ['dashboard','caisse','rapports']}
 
@@ -90,9 +95,104 @@ def room_types():
 @app.route('/chambres/add', methods=['POST'])
 @login_required
 def room_add():
-    db_insert('rooms', number=request.form['number'], floor=int(request.form.get('floor',0) or 0),
+    rid = db_insert('rooms', number=request.form['number'], floor=int(request.form.get('floor',0) or 0),
         room_type_id=int(request.form['room_type_id']) if request.form.get('room_type_id') else None)
+    # Handle images
+    images = request.files.getlist('images')
+    saved = []
+    for img in images:
+        if img and img.filename:
+            ext = os.path.splitext(img.filename)[1].lower()
+            if ext in ('.jpg', '.jpeg', '.png', '.webp'):
+                fname = f"room_{rid}_{len(saved)+1}{ext}"
+                img.save(os.path.join(app.config['ROOMS_IMG'], fname))
+                saved.append(fname)
+    if saved:
+        db_update('rooms', rid, images=','.join(saved))
     flash("Chambre ajoutée", "success"); return redirect('/chambres')
+
+@app.route('/uploads/rooms/<path:filename>')
+def room_image(filename):
+    return send_from_directory(app.config['ROOMS_IMG'], filename)
+
+
+# ======================== RÉSERVATION EN LIGNE (PUBLIC) ========================
+
+@app.route('/booking', methods=['GET', 'POST'])
+def public_booking():
+    """Page publique de réservation en ligne — pas de login requis."""
+    if request.method == 'POST':
+        db_insert('online_bookings',
+            guest_first_name=request.form['first_name'],
+            guest_last_name=request.form['last_name'],
+            guest_tel=request.form.get('tel', ''),
+            guest_email=request.form.get('email', ''),
+            room_type_id=int(request.form['room_type_id']) if request.form.get('room_type_id') else None,
+            checkin_date=request.form['checkin_date'],
+            checkout_date=request.form['checkout_date'],
+            adults=int(request.form.get('adults', 1) or 1),
+            children=int(request.form.get('children', 0) or 0),
+            notes=request.form.get('notes', ''))
+        flash("Votre demande de réservation a été envoyée ! Nous vous contacterons pour confirmer.", "success")
+        return redirect(url_for('public_booking'))
+    
+    checkin = request.args.get('checkin', (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d'))
+    checkout = request.args.get('checkout', (datetime.now() + timedelta(days=2)).strftime('%Y-%m-%d'))
+    room_types = get_available_room_types(checkin, checkout)
+    return render_template('booking.html', room_types=room_types, checkin=checkin, checkout=checkout)
+
+@app.route('/booking/check')
+def booking_check():
+    """API: vérifier la disponibilité."""
+    checkin = request.args.get('checkin', '')
+    checkout = request.args.get('checkout', '')
+    if checkin and checkout:
+        types = get_available_room_types(checkin, checkout)
+        return jsonify(types)
+    return jsonify([])
+
+@app.route('/online-bookings')
+@login_required
+def online_bookings():
+    """Gestion des réservations en ligne (réception)."""
+    tab = request.args.get('tab', 'en_attente')
+    bookings = get_online_bookings(tab if tab != 'all' else None)
+    return render_template('online_bookings.html', page='reservations', bookings=bookings, tab=tab)
+
+@app.route('/online-bookings/<int:bid>/confirm')
+@login_required
+def online_booking_confirm(bid):
+    """Confirmer une réservation en ligne → créer la vraie réservation."""
+    ob = db_get('online_bookings', bid)
+    if ob and ob['status'] == 'en_attente':
+        # Create guest
+        guest_id = db_insert('guests', first_name=ob['guest_first_name'], last_name=ob['guest_last_name'],
+            tel=ob.get('guest_tel', ''), email=ob.get('guest_email', ''))
+        # Find available room
+        conn = get_db()
+        room = conn.execute("""SELECT r.id FROM rooms r WHERE r.room_type_id=? AND r.status='disponible'
+            AND r.id NOT IN (SELECT room_id FROM reservations WHERE status IN ('confirmee','en_cours')
+            AND checkin_date < ? AND checkout_date > ?)
+            LIMIT 1""", (ob['room_type_id'], ob['checkout_date'], ob['checkin_date'])).fetchone()
+        rt = conn.execute("SELECT base_price FROM room_types WHERE id=?", (ob['room_type_id'],)).fetchone()
+        conn.close()
+        
+        if room and rt:
+            rate = rt['base_price']
+            rid, ref = create_reservation(guest_id, room['id'], ob['checkin_date'], ob['checkout_date'],
+                rate, ob.get('adults', 1), ob.get('children', 0), 'online', ob.get('notes', ''), session['user_id'])
+            db_update('online_bookings', bid, status='confirmee', processed_by=session['user_id'], reservation_id=rid)
+            flash(f"Réservation {ref} confirmée !", "success")
+        else:
+            flash("Aucune chambre disponible pour ces dates", "error")
+    return redirect(url_for('online_bookings'))
+
+@app.route('/online-bookings/<int:bid>/reject')
+@login_required
+def online_booking_reject(bid):
+    db_update('online_bookings', bid, status='refusee')
+    flash("Demande refusée", "info")
+    return redirect(url_for('online_bookings'))
 
 # ======================== RÉSERVATIONS ========================
 @app.route('/reservations')
