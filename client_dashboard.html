@@ -1,0 +1,48 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WannyHotel - Mon espace</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;background:#f0f2f5;color:#333}
+.navbar{background:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.navbar img{height:32px}.nav-right{display:flex;gap:12px;align-items:center;font-size:13px}
+.nav-right a{text-decoration:none;color:#1a3a5c;font-weight:500}.btn-sm{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;display:inline-block}
+.btn-gold{background:#B8860B;color:#fff}.btn-outline{border:1.5px solid #ddd;color:#666}
+.container{max-width:800px;margin:20px auto;padding:0 16px}
+.welcome{background:linear-gradient(135deg,#B8860B,#DAA520);border-radius:14px;padding:24px;color:#fff;margin-bottom:20px}
+.welcome h1{font-size:22px;margin-bottom:4px}.welcome p{opacity:0.8;font-size:13px}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);overflow:hidden;margin-bottom:16px}
+.card-header{padding:14px 18px;border-bottom:1px solid #eee;font-weight:700;color:#1a3a5c;display:flex;align-items:center;justify-content:space-between}
+.card-body{padding:18px}
+.res-card{border:1px solid #eee;border-radius:10px;padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.res-info h3{font-size:14px;color:#1a3a5c;margin-bottom:2px}.res-info p{font-size:12px;color:#888}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600}
+.badge.confirmee{background:#e3f2fd;color:#1565c0}.badge.en_cours{background:#e8f5e9;color:#2e7d32}.badge.terminee{background:#f0f0f0;color:#555}
+.notif-item{padding:10px;border-bottom:1px solid #f0f0f0;font-size:13px;display:flex;gap:10px;align-items:center}
+.notif-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}.notif-dot.confirmation{background:#2e7d32}.notif-dot.facture{background:#B8860B}
+.flash{padding:10px;border-radius:8px;margin-bottom:12px;font-size:13px;text-align:center}.flash.success{background:#e8f5e9;color:#2e7d32}
+@media(max-width:600px){.res-card{flex-direction:column;align-items:flex-start}}
+</style></head><body>
+<nav class="navbar"><img src="/static/logo_wannyhotel.png" alt="WannyHotel">
+<div class="nav-right"><span>👤 {{ guest_name }}</span><a href="/booking" class="btn-sm btn-gold">+ Réserver</a><a href="/client/logout" class="btn-sm btn-outline">Déconnexion</a></div></nav>
+<div class="container">
+{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for c,m in messages %}<div class="flash {{ c }}">{{ m }}</div>{% endfor %}{% endif %}{% endwith %}
+<div class="welcome"><h1>Bienvenue, {{ guest_name }} !</h1><p>Gérez vos réservations et consultez vos factures</p></div>
+
+{% if notifications %}
+<div class="card"><div class="card-header">🔔 Notifications</div><div class="card-body">
+{% for n in notifications[:5] %}
+<div class="notif-item"><div class="notif-dot {{ n.type }}"></div>
+<div style="flex:1">{{ n.message }}<br><span style="font-size:10px;color:#999">{{ n.created_at[:16] }}</span></div>
+<a href="/notification/{{ n.token }}" class="btn-sm btn-outline">Voir</a></div>
+{% endfor %}</div></div>{% endif %}
+
+<div class="card"><div class="card-header">📋 Mes réservations <a href="/booking" class="btn-sm btn-gold">+ Nouvelle</a></div><div class="card-body">
+{% for r in reservations %}
+<div class="res-card">
+<div class="res-info"><h3>{{ r.reference }} — Chambre {{ r.room_number or '?' }}</h3>
+<p>{{ r.checkin_date }} → {{ r.checkout_date }} · {{ r.nights }} nuit(s) · {{ '{:,.0f}'.format(r.total_amount) }} F</p></div>
+<div style="display:flex;gap:6px;align-items:center">
+<span class="badge {{ r.status }}">{{ r.status }}</span>
+<a href="/invoice/{{ r.id }}" class="btn-sm btn-outline" target="_blank">🧾</a>
+{% if r.status in ('confirmee','en_cours') %}<a href="/payment/{{ r.id }}" class="btn-sm btn-gold">💰</a>{% endif %}
+</div></div>
+{% else %}<p style="text-align:center;color:#999;padding:20px">Aucune réservation.<br><a href="/booking" style="color:#B8860B">Réserver maintenant →</a></p>{% endfor %}
+</div></div></div></body></html>

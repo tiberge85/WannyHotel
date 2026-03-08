@@ -344,3 +344,85 @@ def reset_reservations():
         except: pass
     conn.execute("UPDATE rooms SET status='disponible', cleaning_status='propre'")
     conn.commit(); conn.close()
+
+
+# ======================== CLIENT ACCOUNTS ========================
+
+def migrate_db_v3():
+    conn = get_db()
+    conn.executescript('''
+        CREATE TABLE IF NOT EXISTS guest_accounts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            guest_id INTEGER UNIQUE,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            salt TEXT NOT NULL,
+            active INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (guest_id) REFERENCES guests(id)
+        );
+        CREATE TABLE IF NOT EXISTS smtp_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            smtp_host TEXT DEFAULT 'smtp.gmail.com',
+            smtp_port INTEGER DEFAULT 587,
+            smtp_user TEXT,
+            smtp_pass TEXT,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+    ''')
+    conn.commit(); conn.close()
+
+def create_guest_account(email, password, first_name, last_name, tel=''):
+    conn = get_db()
+    salt = secrets.token_hex(16)
+    pw = hashlib.sha256((salt + password).encode()).hexdigest()
+    # Create guest first
+    try:
+        conn.execute("INSERT INTO guests (first_name, last_name, tel, email) VALUES (?,?,?,?)",
+                     (first_name, last_name, tel, email))
+        conn.commit()
+    except: pass
+    guest = conn.execute("SELECT id FROM guests WHERE email=?", (email,)).fetchone()
+    guest_id = guest['id'] if guest else None
+    try:
+        conn.execute("INSERT INTO guest_accounts (guest_id, email, password_hash, salt) VALUES (?,?,?,?)",
+                     (guest_id, email, pw, salt))
+        conn.commit()
+    except: pass
+    conn.close()
+    return guest_id
+
+def authenticate_guest(email, password):
+    conn = get_db()
+    u = conn.execute("SELECT ga.*, g.first_name, g.last_name, g.tel FROM guest_accounts ga LEFT JOIN guests g ON ga.guest_id=g.id WHERE ga.email=? AND ga.active=1", (email,)).fetchone()
+    conn.close()
+    if u and hashlib.sha256((u['salt'] + password).encode()).hexdigest() == u['password_hash']:
+        return dict(u)
+    return None
+
+def get_guest_reservations(guest_id):
+    conn = get_db()
+    rows = conn.execute("""SELECT r.*, rm.number as room_number, rt.name as room_type_name
+        FROM reservations r LEFT JOIN rooms rm ON r.room_id=rm.id LEFT JOIN room_types rt ON rm.room_type_id=rt.id
+        WHERE r.guest_id=? ORDER BY r.created_at DESC""", (guest_id,)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def get_guest_notifications(guest_id):
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM notifications WHERE guest_id=? ORDER BY created_at DESC", (guest_id,)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def save_smtp(host, port, user, pwd):
+    conn = get_db()
+    conn.execute("DELETE FROM smtp_settings")
+    conn.execute("INSERT INTO smtp_settings (smtp_host, smtp_port, smtp_user, smtp_pass) VALUES (?,?,?,?)",
+                 (host, port, user, pwd))
+    conn.commit(); conn.close()
+
+def get_smtp():
+    conn = get_db()
+    s = conn.execute("SELECT * FROM smtp_settings LIMIT 1").fetchone()
+    conn.close()
+    return dict(s) if s else None

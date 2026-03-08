@@ -17,14 +17,39 @@ os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static'), 
 # Copy logos to static
 import shutil
 base = os.path.dirname(os.path.abspath(__file__))
-for f in ['logo_wannygest.png','logo_wannygest_clean.png']:
+for f in ['logo_wannyhotel.png']:
     src = os.path.join(base, f)
     dst = os.path.join(base, 'static', f)
-    if os.path.exists(src) and not os.path.exists(dst): shutil.copy2(src, dst)
+    if os.path.exists(src): shutil.copy2(src, dst)
 
 init_db()
 migrate_db()
 migrate_db_v2()
+migrate_db_v3()
+
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+def send_email_notification(to_email, subject, html_body):
+    """Envoie un email via SMTP configuré. Silencieux si non configuré."""
+    smtp = get_smtp()
+    if not smtp or not smtp.get('smtp_user'): return False
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['From'] = smtp['smtp_user']
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        msg.attach(MIMEText(html_body, 'html', 'utf-8'))
+        server = smtplib.SMTP(smtp['smtp_host'], smtp['smtp_port'])
+        server.starttls()
+        server.login(smtp['smtp_user'], smtp['smtp_pass'])
+        server.send_message(msg)
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"Email error: {e}")
+        return False
 ROLES = {'admin': 'all', 'directeur': 'all', 'receptionniste': ['dashboard','reservations','chambres','guests','housekeeping'],
          'restaurant': ['dashboard','stock','events'], 'comptable': ['dashboard','caisse','rapports']}
 
@@ -238,7 +263,29 @@ def online_booking_confirm(bid):
             # Send notification to guest
             token = create_notification(guest_id, rid, 'confirmation',
                 f"Votre réservation {ref} est confirmée ! Arrivée : {ob['checkin_date']}, Départ : {ob['checkout_date']}.")
-            flash(f"Réservation {ref} confirmée ! Lien client : /notification/{token}", "success")
+            # Send email
+            if ob.get('guest_email'):
+                base_url = request.host_url.rstrip('/')
+                send_email_notification(ob['guest_email'],
+                    f"✅ Réservation {ref} confirmée — WannyHotel",
+                    f"""<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto">
+                    <div style="background:linear-gradient(135deg,#B8860B,#DAA520);padding:20px;text-align:center;border-radius:12px 12px 0 0">
+                    <h1 style="color:#fff;margin:0;font-size:24px">WannyHotel</h1></div>
+                    <div style="padding:24px;background:#fff;border:1px solid #eee">
+                    <h2 style="color:#1a6b5a">✅ Réservation confirmée</h2>
+                    <p>Bonjour <strong>{ob['guest_first_name']} {ob['guest_last_name']}</strong>,</p>
+                    <p>Votre réservation <strong>{ref}</strong> est confirmée.</p>
+                    <table style="width:100%;font-size:14px;margin:16px 0">
+                    <tr><td style="padding:6px 0;color:#888">Arrivée</td><td style="padding:6px 0;font-weight:700">{ob['checkin_date']}</td></tr>
+                    <tr><td style="padding:6px 0;color:#888">Départ</td><td style="padding:6px 0;font-weight:700">{ob['checkout_date']}</td></tr>
+                    </table>
+                    <div style="text-align:center;margin:20px 0">
+                    <a href="{base_url}/notification/{token}" style="background:#B8860B;color:#fff;padding:12px 30px;border-radius:8px;text-decoration:none;font-weight:700">📋 Voir ma réservation</a>
+                    </div>
+                    <a href="{base_url}/payment/{rid}" style="display:block;text-align:center;color:#1a6b5a;margin-top:10px">💰 Payer en ligne</a>
+                    </div>
+                    <div style="padding:12px;text-align:center;font-size:11px;color:#999">© 2026 WannyHotel · +225 07 47 68 20 27</div></div>""")
+            flash(f"Réservation {ref} confirmée ! Notification envoyée.", "success")
         else:
             flash("Aucune chambre disponible pour ces dates", "error")
     return redirect(url_for('online_bookings'))
@@ -465,8 +512,85 @@ def admin_user_add():
     create_user(request.form['username'], request.form['password'], request.form['full_name'], request.form.get('role','receptionniste'))
     flash("Utilisateur créé","success"); return redirect('/admin')
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+# ======================== SMTP SETTINGS ========================
+
+@app.route('/admin/smtp', methods=['GET','POST'])
+@login_required
+def admin_smtp():
+    u = get_user(session['user_id'])
+    if not u or u['role'] not in ('admin','directeur'):
+        flash("Accès non autorisé","error"); return redirect('/dashboard')
+    if request.method == 'POST':
+        save_smtp(request.form['smtp_host'], int(request.form.get('smtp_port',587)),
+                  request.form['smtp_user'], request.form['smtp_pass'])
+        # Test
+        ok = send_email_notification(request.form['smtp_user'], 'Test WannyHotel',
+            '<h2>✅ Configuration email réussie</h2><p>WannyHotel peut maintenant envoyer des notifications.</p>')
+        flash(f"SMTP sauvegardé {'+ test envoyé !' if ok else '(test échoué — vérifiez les identifiants)'}", "success" if ok else "error")
+        return redirect('/admin/smtp')
+    smtp = get_smtp() or {}
+    return render_template('admin_smtp.html', page='admin', smtp=smtp)
+
+
+# ======================== CLIENT PORTAL ========================
+
+@app.route('/client/register', methods=['GET','POST'])
+def client_register():
+    if request.method == 'POST':
+        email = request.form.get('email','').strip()
+        password = request.form.get('password','').strip()
+        if not email or not password or len(password) < 6:
+            flash("Email et mot de passe (6+ car.) requis", "error")
+            return render_template('client_register.html')
+        gid = create_guest_account(email, password, request.form.get('first_name',''),
+            request.form.get('last_name',''), request.form.get('tel',''))
+        if gid:
+            flash("Compte créé ! Connectez-vous pour réserver.", "success")
+            return redirect('/client/login')
+        flash("Email déjà utilisé", "error")
+    return render_template('client_register.html')
+
+@app.route('/client/login', methods=['GET','POST'])
+def client_login():
+    if request.method == 'POST':
+        user = authenticate_guest(request.form['email'], request.form['password'])
+        if user:
+            session['guest_user_id'] = user['id']
+            session['guest_id'] = user['guest_id']
+            session['guest_name'] = f"{user['first_name']} {user['last_name']}"
+            flash(f"Bienvenue {user['first_name']} !", "success")
+            return redirect('/client/dashboard')
+        flash("Email ou mot de passe incorrect", "error")
+    return render_template('client_login.html')
+
+@app.route('/client/logout')
+def client_logout():
+    for k in ['guest_user_id','guest_id','guest_name']: session.pop(k, None)
+    flash("Déconnexion réussie", "success"); return redirect('/booking')
+
+@app.route('/client/dashboard')
+def client_dashboard():
+    if 'guest_id' not in session: return redirect('/client/login')
+    reservations = get_guest_reservations(session['guest_id'])
+    notifications = get_guest_notifications(session['guest_id'])
+    return render_template('client_dashboard.html', reservations=reservations, notifications=notifications,
+                          guest_name=session.get('guest_name',''))
+
+@app.route('/client/book', methods=['POST'])
+def client_book():
+    if 'guest_id' not in session: return redirect('/client/login')
+    db_insert('online_bookings',
+        guest_first_name=session.get('guest_name','').split(' ')[0],
+        guest_last_name=' '.join(session.get('guest_name','').split(' ')[1:]),
+        guest_tel='', guest_email='',
+        room_type_id=int(request.form['room_type_id']) if request.form.get('room_type_id') else None,
+        checkin_date=request.form['checkin_date'],
+        checkout_date=request.form['checkout_date'],
+        adults=int(request.form.get('adults',1) or 1),
+        children=int(request.form.get('children',0) or 0),
+        notes=request.form.get('notes',''))
+    flash("Demande de réservation envoyée ! Vous serez notifié dès la confirmation.", "success")
+    return redirect('/client/dashboard')
 
 
 # ======================== MOBILE MONEY PAYMENTS ========================
@@ -529,6 +653,26 @@ def payment_process():
         if res:
             token = create_notification(res['guest_id'], res_id, 'facture',
                 f"Paiement reçu ({amount:,.0f} F). Votre facture est disponible.")
+            # Send email with invoice link
+            guest = db_get('guests', res['guest_id'])
+            if guest and guest.get('email'):
+                base_url = request.host_url.rstrip('/')
+                send_email_notification(guest['email'],
+                    f"🧾 Facture {res['reference']} — WannyHotel",
+                    f"""<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto">
+                    <div style="background:linear-gradient(135deg,#B8860B,#DAA520);padding:20px;text-align:center;border-radius:12px 12px 0 0">
+                    <h1 style="color:#fff;margin:0">WannyHotel</h1></div>
+                    <div style="padding:24px;background:#fff;border:1px solid #eee">
+                    <h2 style="color:#1a6b5a">🧾 Paiement reçu</h2>
+                    <p>Bonjour <strong>{guest['first_name']} {guest['last_name']}</strong>,</p>
+                    <p>Nous confirmons la réception de votre paiement de <strong>{amount:,.0f} FCFA</strong> via {provider}.</p>
+                    <p>Référence : <strong>{transaction_id}</strong></p>
+                    <div style="text-align:center;margin:20px 0">
+                    <a href="{base_url}/invoice/{res_id}" style="background:#1a6b5a;color:#fff;padding:12px 30px;border-radius:8px;text-decoration:none;font-weight:700">🧾 Voir ma facture</a>
+                    </div>
+                    <a href="{base_url}/invoice/{res_id}/pdf" style="display:block;text-align:center;color:#888;margin-top:8px;font-size:13px">📥 Télécharger le PDF</a>
+                    </div>
+                    <div style="padding:12px;text-align:center;font-size:11px;color:#999">© 2026 WannyHotel</div></div>""")
     
     flash(f"Paiement {amount:,.0f} F enregistré via {provider} — Réf: {transaction_id}", "success")
     
@@ -587,8 +731,8 @@ def invoice_pdf(res_id):
     doc = SimpleDocTemplate(output, pagesize=A4, leftMargin=20*mm, rightMargin=20*mm, topMargin=15*mm, bottomMargin=15*mm)
     
     GOLD = HexColor('#B8860B')
-    TEAL = HexColor('#1a6b5a')
-    s_title = ParagraphStyle('t', fontSize=22, fontName='Helvetica-Bold', textColor=GOLD, alignment=TA_CENTER)
+    TEAL = HexColor('#1a3a5c')
+    s_title = ParagraphStyle('t', fontSize=24, fontName='Helvetica-Bold', textColor=GOLD, alignment=TA_CENTER)
     s_sub = ParagraphStyle('s', fontSize=10, alignment=TA_CENTER, textColor=HexColor('#888'))
     s_n = ParagraphStyle('n', fontSize=10, leading=13)
     s_b = ParagraphStyle('b', fontSize=10, fontName='Helvetica-Bold')
@@ -600,9 +744,26 @@ def invoice_pdf(res_id):
     white = HexColor('#ffffff')
     
     story = []
-    story.append(Paragraph("WannyHotel", s_title))
-    story.append(Paragraph("PMS Hôtelier — RAMYA TECHNOLOGIE & INNOVATION", s_sub))
-    story.append(Spacer(1, 8*mm))
+    
+    # Logo + Title header
+    logo_path = os.path.join(base, 'logo_wannyhotel.png')
+    if os.path.exists(logo_path):
+        from reportlab.platypus import Image as RLImage
+        try:
+            logo_img = RLImage(logo_path, width=50*mm, height=25*mm)
+            logo_img.hAlign = 'CENTER'
+            story.append(logo_img)
+        except: pass
+    else:
+        story.append(Paragraph("WannyHotel", s_title))
+    
+    story.append(Paragraph("PMS Hôtelier", s_sub))
+    story.append(Spacer(1, 4*mm))
+    
+    # Separator line
+    from reportlab.platypus import HRFlowable
+    story.append(HRFlowable(width="100%", thickness=1, color=GOLD))
+    story.append(Spacer(1, 6*mm))
     story.append(Paragraph(f"<b>FACTURE</b> — {res_data['reference']}", ParagraphStyle('ft', fontSize=16, fontName='Helvetica-Bold', textColor=TEAL)))
     story.append(Paragraph(f"Date : {datetime.now().strftime('%d/%m/%Y')}", s_n))
     story.append(Spacer(1, 5*mm))
@@ -650,8 +811,8 @@ def invoice_pdf(res_id):
     story.append(Spacer(1, 15*mm))
     story.append(Paragraph("Merci pour votre confiance — WannyHotel", ParagraphStyle('thx', fontSize=10, alignment=TA_CENTER, textColor=GOLD)))
     story.append(Spacer(1, 5*mm))
-    story.append(Paragraph("RAMYA TECHNOLOGIE & INNOVATION — Abidjan, Côte d'Ivoire", s_f))
-    story.append(Paragraph("+225 07 47 68 20 27 · yanick.hamien@ramyaci.tech", s_f))
+    story.append(Paragraph("WannyHotel — Abidjan, Côte d'Ivoire", s_f))
+    story.append(Paragraph("+225 07 47 68 20 27 · contact@wannyhotel.com", s_f))
     
     doc.build(story)
     return send_file(output, as_attachment=True, download_name=f"Facture_{res_data['reference']}.pdf")
@@ -722,3 +883,8 @@ def admin_reset():
             flash("Programme réinitialisé", "success")
         return redirect('/admin/reset')
     return render_template('admin_reset.html', page='admin')
+
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5001)
+

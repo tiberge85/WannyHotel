@@ -11,7 +11,7 @@
 .footer{margin-top:40px;font-size:11px;opacity:0.3}.flash{background:rgba(255,255,255,0.1);border-radius:8px;padding:10px;margin-bottom:14px;font-size:13px}
 @media(max-width:600px){.features{grid-template-columns:1fr}.brand{font-size:28px}}
 </style></head><body>
-<div class="logo">🏨</div><div class="brand">WannyHotel</div><div class="sub">Système de gestion hôtelière</div>
+<div style="margin-bottom:16px"><img src="/static/logo_wannyhotel.png" alt="WannyHotel" style="height:120px"></div><div class="brand">WannyHotel</div><div class="sub">Gérez votre établissement avec précision</div>
 <div class="desc">WannyHotel est un PMS complet pour gérer votre établissement : réservations, check-in/out, gestion des chambres, ménage, facturation, restaurant, événements et rapports d'occupation.</div>
 <div class="features">
 <div class="feat"><div class="icon">🛏️</div><h3>Hébergement</h3>Réservations, check-in/out, planning chambres</div>
@@ -19,6 +19,6 @@
 <div class="feat"><div class="icon">📊</div><h3>Rapports</h3>Taux d'occupation, RevPAR, CA par période</div>
 </div>
 {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for cat, msg in messages %}<div class="flash">{{ msg }}</div>{% endfor %}{% endif %}{% endwith %}
-<div class="actions"><a href="/booking" class="btn-h" style="background:#1a3a5c;color:#fff;padding:12px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px">📅 Réserver en ligne</a> <a href="/login" class="btn-h btn-gold">🔐 Se connecter</a></div>
-<div class="footer">WannyHotel © 2026 — RAMYA TECHNOLOGIE & INNOVATION<br>+225 07 47 68 20 27 · yanick.hamien@ramyaci.tech</div>
+<div class="actions"><a href="/booking" class="btn-h" style="background:linear-gradient(135deg,#B8860B,#DAA520);color:#fff;padding:12px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px">📅 Réserver en ligne</a> <a href="/client/login" class="btn-h" style="background:rgba(255,255,255,0.15);color:#fff;padding:12px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;border:2px solid rgba(255,255,255,0.3)">👤 Espace Client</a> <a href="/login" class="btn-h" style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);padding:12px 28px;border-radius:10px;text-decoration:none;font-weight:600;font-size:13px">🔐 Staff</a></div>
+<div class="footer">WannyHotel © 2026 — WannyHotel<br>+225 07 47 68 20 27 · contact@wannyhotel.com</div>
 </body></html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>WannyHotel - Créer un compte</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;background:linear-gradient(135deg,#1a3a5c,#B8860B);min-height:100vh;display:flex;align-items:center;justify-content:center}
+.box{background:#fff;border-radius:16px;padding:36px;width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+.box img{height:50px;display:block;margin:0 auto 10px}.box h2{text-align:center;color:#1a3a5c;margin-bottom:16px}
+.fg{margin-bottom:12px}.fg label{font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:3px}
+.fg input{width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:14px}
+.row{display:flex;gap:10px}.row .fg{flex:1}
+.btn{width:100%;padding:12px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}
+.btn-gold{background:linear-gradient(135deg,#B8860B,#DAA520);color:#fff}
+.flash{padding:8px;border-radius:6px;margin-bottom:12px;font-size:12px;text-align:center}
+.flash.error{background:#fde8e8;color:#c53030}.flash.success{background:#e8f5e9;color:#2e7d32}
+.link{text-align:center;margin-top:14px;font-size:12px}a{color:#B8860B}</style></head>
+<body><div class="box"><img src="/static/logo_wannyhotel.png" alt="WannyHotel"><h2>Créer votre compte client</h2>
+{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for c,m in messages %}<div class="flash {{ c }}">{{ m }}</div>{% endfor %}{% endif %}{% endwith %}
+<form method="post"><div class="row"><div class="fg"><label>Prénom</label><input type="text" name="first_name" required></div>
+<div class="fg"><label>Nom</label><input type="text" name="last_name" required></div></div>
+<div class="fg"><label>Téléphone</label><input type="tel" name="tel" placeholder="+225 07..."></div>
+<div class="fg"><label>Email *</label><input type="email" name="email" required placeholder="votre@email.com"></div>
+<div class="fg"><label>Mot de passe * (6 caractères min.)</label><input type="password" name="password" required minlength="6"></div>
+<button type="submit" class="btn btn-gold">Créer mon compte</button></form>
+<div class="link"><a href="/client/login">Déjà un compte ?</a> · <a href="/">Accueil</a></div>
+</div></body></html>
