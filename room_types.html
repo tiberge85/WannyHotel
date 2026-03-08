@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% block title %}WannyHotel - Types de chambres{% endblock %}{% block content %}
+<div class="page-header"><h1>🏷️ Types de chambres</h1></div>
+<div class="card"><div class="card-header"><h3>Types</h3><button class="btn btn-gold btn-sm" onclick="document.getElementById('addM').classList.add('active')">+ Type</button></div><div class="card-body">
+{% if types %}<div class="table-wrap"><table><thead><tr><th>Nom</th><th>Tarif/nuit</th><th>Capacité</th><th>Équipements</th></tr></thead>
+<tbody>{% for t in types %}<tr><td><strong>{{ t.name }}</strong></td><td>{{ '{:,.0f}'.format(t.base_price) }} F</td><td>{{ t.capacity }} pers.</td><td style="font-size:11px">{{ t.amenities or '-' }}</td></tr>{% endfor %}</tbody></table></div>
+{% else %}<p style="text-align:center;color:#999;padding:20px">Créez votre premier type</p>{% endif %}</div></div>
+<div class="modal-bg" id="addM"><div class="modal"><h3>Nouveau type</h3><form method="post">
+<div class="form-group"><label>Nom *</label><input type="text" name="name" required placeholder="Standard, Suite, VIP..."></div>
+<div class="form-row"><div class="form-group"><label>Tarif/nuit (F)</label><input type="number" name="base_price" step="1000" value="25000"></div>
+<div class="form-group"><label>Capacité</label><input type="number" name="capacity" value="2"></div></div>
+<div class="form-group"><label>Description</label><input type="text" name="description"></div>
+<div class="form-group"><label>Équipements</label><input type="text" name="amenities" placeholder="Wifi, TV, Clim, Minibar..."></div>
+<div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-gold">Créer</button></div></form></div></div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% block title %}WannyHotel - Facturation{% endblock %}{% block content %}
+<div class="page-header"><h1>🧾 Facturation</h1></div>
+<div class="stats-grid">
+<div class="stat-card"><div class="stat-icon orange">📝</div><div class="stat-info"><div class="stat-num">{{ stats.get('ouverte',0) }}</div><div class="stat-label">Ouvertes</div></div></div>
+<div class="stat-card"><div class="stat-icon green">✅</div><div class="stat-info"><div class="stat-num">{{ stats.get('payee',0) }}</div><div class="stat-label">Payées</div></div></div>
+<div class="stat-card"><div class="stat-icon teal">💵</div><div class="stat-info"><div class="stat-num">{{ '{:,.0f}'.format(total_revenue) }}</div><div class="stat-label">Total encaissé (F)</div></div></div>
+</div>
+<div class="card"><div class="card-body">
+{% if invoices %}<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>Client</th><th>Total</th><th>Payé</th><th>Reste</th><th>Statut</th><th>Paiement</th></tr></thead>
+<tbody>{% for i in invoices %}<tr>
+<td>{{ i.id }}</td><td><strong>{{ i.guest_name or '-' }}</strong></td>
+<td>{{ '{:,.0f}'.format(i.total) }} F</td><td>{{ '{:,.0f}'.format(i.paid) }} F</td>
+<td>{{ '{:,.0f}'.format(i.total - i.paid) }} F</td>
+<td><span class="badge-status {% if i.status=='payee' %}libre{% elif i.status=='partielle' %}menage{% else %}occupee{% endif %}">{{ i.status }}</span></td>
+<td>{% if i.status!='payee' %}<form method="post" action="/facturation/{{ i.id }}/pay" style="display:flex;gap:4px">
+<input type="number" name="amount" value="{{ i.total - i.paid }}" step="500" style="width:90px;padding:3px;border:1px solid #ddd;border-radius:4px;font-size:11px">
+<select name="payment_method" style="padding:3px;border:1px solid #ddd;border-radius:4px;font-size:10px"><option>Espèce</option><option>Carte</option><option>Virement</option><option>Mobile Money</option></select>
+<button type="submit" class="btn btn-primary btn-sm">💵</button></form>{% else %}✅{% endif %}</td>
+</tr>{% endfor %}</tbody></table></div>
+{% else %}<p style="text-align:center;color:#999;padding:20px">Aucune facture</p>{% endif %}</div></div>
+{% endblock %}

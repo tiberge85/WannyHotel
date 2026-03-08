@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WannyHotel — Système de gestion hôtelière</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#1a1a2e;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px}
+.logo{font-size:48px;margin-bottom:10px}.brand{font-size:38px;font-weight:900;color:#d4a574;margin-bottom:4px}.sub{font-size:16px;opacity:0.5;margin-bottom:30px}
+.desc{max-width:550px;font-size:14px;line-height:1.7;opacity:0.7;margin-bottom:36px}
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:700px;margin-bottom:36px}
+.feat{background:rgba(255,255,255,0.06);border-radius:12px;padding:20px 14px;font-size:12px}.feat .icon{font-size:28px;margin-bottom:8px}.feat h3{font-size:13px;color:#d4a574;margin-bottom:4px}
+.actions{display:flex;gap:14px}.btn-h{padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;transition:all 0.3s}
+.btn-gold{background:#d4a574;color:#1a1a2e}.btn-gold:hover{background:#c49564}.btn-out{border:2px solid rgba(255,255,255,0.2);color:#fff}.btn-out:hover{background:rgba(255,255,255,0.1)}
+.footer{margin-top:40px;font-size:11px;opacity:0.3}.flash{background:rgba(255,255,255,0.1);border-radius:8px;padding:10px;margin-bottom:14px;font-size:13px}
+@media(max-width:600px){.features{grid-template-columns:1fr}.brand{font-size:28px}}
+</style></head><body>
+<div class="logo">🏨</div><div class="brand">WannyHotel</div><div class="sub">Système de gestion hôtelière</div>
+<div class="desc">WannyHotel est un PMS complet pour gérer votre établissement : réservations, check-in/out, gestion des chambres, ménage, facturation, restaurant, événements et rapports d'occupation.</div>
+<div class="features">
+<div class="feat"><div class="icon">🛏️</div><h3>Hébergement</h3>Réservations, check-in/out, planning chambres</div>
+<div class="feat"><div class="icon">🍽️</div><h3>Restaurant</h3>Stock cuisine/bar, gestion des consommations</div>
+<div class="feat"><div class="icon">📊</div><h3>Rapports</h3>Taux d'occupation, RevPAR, CA par période</div>
+</div>
+{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for cat, msg in messages %}<div class="flash">{{ msg }}</div>{% endfor %}{% endif %}{% endwith %}
+<div class="actions"><a href="/login" class="btn-h btn-gold">🔐 Se connecter</a></div>
+<div class="footer">WannyHotel © 2026 — RAMYA TECHNOLOGIE & INNOVATION<br>+225 07 47 68 20 27 · yanick.hamien@ramyaci.tech</div>
+</body></html>

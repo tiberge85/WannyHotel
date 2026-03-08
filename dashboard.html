@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% block title %}WannyHotel - Tableau de bord{% endblock %}{% block content %}
+<div class="page-header"><h1>📊 Tableau de bord</h1><p>{{ now }} — Vue d'ensemble de l'hôtel</p></div>
+<div class="stats-grid">
+<div class="stat-card"><div class="stat-icon gold">🏨</div><div><div class="stat-num">{{ stats.occupancy_rate }}%</div><div class="stat-label">Taux d'occupation</div></div></div>
+<div class="stat-card"><div class="stat-icon green">🟢</div><div><div class="stat-num">{{ stats.available }}</div><div class="stat-label">Disponibles</div></div></div>
+<div class="stat-card"><div class="stat-icon red">🔴</div><div><div class="stat-num">{{ stats.occupied }}</div><div class="stat-label">Occupées</div></div></div>
+<div class="stat-card"><div class="stat-icon blue">📥</div><div><div class="stat-num">{{ stats.checkins_today }}</div><div class="stat-label">Arrivées aujourd'hui</div></div></div>
+<div class="stat-card"><div class="stat-icon blue">📤</div><div><div class="stat-num">{{ stats.checkouts_today }}</div><div class="stat-label">Départs aujourd'hui</div></div></div>
+<div class="stat-card"><div class="stat-icon gold">💰</div><div><div class="stat-num">{{ '{:,.0f}'.format(stats.revenue_today) }}</div><div class="stat-label">CA aujourd'hui (F)</div></div></div>
+<div class="stat-card"><div class="stat-icon green">💵</div><div><div class="stat-num">{{ '{:,.0f}'.format(stats.revenue_month) }}</div><div class="stat-label">CA du mois (F)</div></div></div>
+<div class="stat-card"><div class="stat-icon teal">🧹</div><div><div class="stat-num">{{ stats.dirty_rooms }}</div><div class="stat-label">À nettoyer</div></div></div>
+</div>
+<div class="card"><div class="card-header"><h3>Dernières réservations</h3><a href="/reservations/new" class="btn btn-gold btn-sm">+ Nouvelle</a></div><div class="card-body">
+{% if recent %}<div class="table-wrap"><table>
+<thead><tr><th>Réf</th><th>Client</th><th>Chambre</th><th>Arrivée</th><th>Départ</th><th>Montant</th><th>Statut</th></tr></thead>
+<tbody>{% for r in recent %}<tr>
+<td><a href="/reservations/{{ r.id }}" style="color:#d4a574;font-weight:600">{{ r.reference }}</a></td>
+<td>{{ r.guest_name }}</td><td>{{ r.room_number or '-' }}</td><td>{{ r.checkin_date }}</td><td>{{ r.checkout_date }}</td>
+<td>{{ '{:,.0f}'.format(r.total_amount) }} F</td>
+<td>{% if r.status=='confirmee' %}<span class="badge-s gold">Confirmée</span>{% elif r.status=='en_cours' %}<span class="badge-s blue">En cours</span>{% elif r.status=='terminee' %}<span class="badge-s green">Terminée</span>{% else %}<span class="badge-s">{{ r.status }}</span>{% endif %}</td>
+</tr>{% endfor %}</tbody></table></div>{% else %}<p style="text-align:center;color:#999;padding:20px">Aucune réservation</p>{% endif %}
+</div></div>{% endblock %}

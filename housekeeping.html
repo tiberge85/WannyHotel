@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% block title %}WannyHotel - Ménage{% endblock %}{% block content %}
+<div class="page-header"><h1>🧹 Gouvernante — Ménage</h1></div>
+{% if dirty %}<div class="card" style="border-left:4px solid #e65100"><div class="card-header"><h3>⚠️ Chambres à nettoyer ({{ dirty|length }})</h3></div><div class="card-body">
+<div style="display:flex;gap:8px;flex-wrap:wrap">{% for r in dirty %}<div class="room-card dirty" style="width:80px"><div class="room-num">{{ r.number }}</div>🧹</div>{% endfor %}</div></div></div>{% endif %}
+<div class="card"><div class="card-header"><h3>Tâches</h3><button class="btn btn-gold btn-sm" onclick="document.getElementById('addM').classList.add('active')">+ Tâche</button></div><div class="card-body">
+{% if tasks %}<div class="table-wrap"><table><thead><tr><th>Chambre</th><th>Tâche</th><th>Assigné</th><th>Priorité</th><th>Statut</th><th>Actions</th></tr></thead>
+<tbody>{% for t in tasks %}<tr><td><strong>{{ t.room_id }}</strong></td><td>{{ t.task }}</td><td>{{ t.assigned_to or '-' }}</td><td>{{ t.priority }}</td>
+<td><span class="badge-s {% if t.status=='termine' %}green{% else %}orange{% endif %}">{{ t.status }}</span></td>
+<td>{% if t.status!='termine' %}<a href="/housekeeping/{{ t.id }}/done" class="btn btn-gold btn-sm">✅ Fait</a>{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+{% else %}<p style="text-align:center;color:#999;padding:20px">Toutes les chambres sont propres</p>{% endif %}</div></div>
+<div class="modal-bg" id="addM"><div class="modal"><h3>🧹 Nouvelle tâche</h3><form method="post" action="/housekeeping/add">
+<div class="form-group"><label>Chambre</label><select name="room_id">{% for r in rooms %}<option value="{{ r.id }}">{{ r.number }}</option>{% endfor %}</select></div>
+<div class="form-row"><div class="form-group"><label>Tâche</label><select name="task"><option>nettoyage</option><option>changement_draps</option><option>inspection</option><option>reparation</option></select></div>
+<div class="form-group"><label>Assigné à</label><input type="text" name="assigned_to"></div></div>
+<div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-gold">Créer</button></div></form></div></div>{% endblock %}

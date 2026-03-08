@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% block title %}WannyHotel - Stock{% endblock %}{% block content %}
+<div class="page-header"><h1>📦 Stock Restaurant & Bar</h1></div>
+<div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+<div class="stat-card"><div class="stat-icon gold">📦</div><div><div class="stat-num">{{ items|length }}</div><div class="stat-label">Articles</div></div></div>
+<div class="stat-card"><div class="stat-icon red">⚠️</div><div><div class="stat-num">{{ low_stock|length }}</div><div class="stat-label">Stock bas</div></div></div>
+<div class="stat-card"><div class="stat-icon green">💵</div><div><div class="stat-num">{{ '{:,.0f}'.format(total_value) }}</div><div class="stat-label">Valeur (F)</div></div></div>
+</div>
+<div class="card"><div class="card-header"><h3>Articles</h3><button class="btn btn-gold btn-sm" onclick="document.getElementById('addM').classList.add('active')">+ Article</button></div><div class="card-body">
+{% if items %}<div class="table-wrap"><table><thead><tr><th>Article</th><th>Catégorie</th><th>Qté</th><th>Unité</th><th>P.U.</th><th>Mouvement</th></tr></thead>
+<tbody>{% for i in items %}<tr{% if i.quantity <= i.min_stock %} style="background:#fde8e8"{% endif %}>
+<td><strong>{{ i.name }}</strong>{% if i.quantity<=i.min_stock %} ⚠️{% endif %}</td><td>{{ i.category }}</td><td>{{ i.quantity }}</td><td>{{ i.unit }}</td><td>{{ '{:,.0f}'.format(i.unit_price) }}</td>
+<td><form method="post" action="/stock/movement" style="display:flex;gap:3px"><input type="hidden" name="item_id" value="{{ i.id }}"><input type="hidden" name="notes" value="">
+<input type="number" name="quantity" value="1" min="1" style="width:50px;padding:3px;border:1px solid #ddd;border-radius:4px">
+<select name="movement_type" style="padding:3px;border:1px solid #ddd;border-radius:4px;font-size:11px"><option value="entree">+</option><option value="sortie">-</option></select>
+<button type="submit" class="btn btn-gold btn-sm">OK</button></form></td></tr>{% endfor %}</tbody></table></div>
+{% else %}<p style="text-align:center;color:#999;padding:20px">Aucun article</p>{% endif %}</div></div>
+<div class="modal-bg" id="addM"><div class="modal"><h3>📦 Nouvel article</h3><form method="post" action="/stock/add">
+<div class="form-group"><label>Nom *</label><input type="text" name="name" required></div>
+<div class="form-row"><div class="form-group"><label>Catégorie</label><select name="category"><option>restaurant</option><option>bar</option><option>cuisine</option><option>minibar</option><option>entretien</option><option>linge</option></select></div><div class="form-group"><label>Unité</label><input type="text" name="unit" placeholder="kg, L, bouteille..."></div></div>
+<div class="form-row"><div class="form-group"><label>Qté initiale</label><input type="number" name="quantity" value="0" step="0.1"></div><div class="form-group"><label>Stock min</label><input type="number" name="min_stock" value="0" step="0.1"></div><div class="form-group"><label>Prix unit.</label><input type="number" name="unit_price" step="100" value="0"></div></div>
+<div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-gold">Ajouter</button></div></form></div></div>{% endblock %}

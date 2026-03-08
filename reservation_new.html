@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% block title %}WannyHotel - Nouvelle réservation{% endblock %}{% block content %}
+<div class="page-header"><h1>📋 Nouvelle réservation</h1></div>
+<div class="card"><div class="card-body"><form method="post">
+<h3 style="font-size:14px;color:#d4a574;margin-bottom:10px">👤 Client</h3>
+<div class="form-group"><label>Client existant</label><select name="guest_id" id="gsel" onchange="document.getElementById('newg').style.display=this.value?'none':'block'">
+<option value="">— Nouveau client —</option>{% for g in guests %}<option value="{{ g.id }}">{{ g.first_name }} {{ g.last_name }} {% if g.tel %}({{ g.tel }}){% endif %}</option>{% endfor %}</select></div>
+<div id="newg">
+<div class="form-row"><div class="form-group"><label>Prénom *</label><input type="text" name="first_name"></div><div class="form-group"><label>Nom *</label><input type="text" name="last_name"></div></div>
+<div class="form-row"><div class="form-group"><label>Tél</label><input type="text" name="tel"></div><div class="form-group"><label>Email</label><input type="email" name="email"></div></div>
+<div class="form-row"><div class="form-group"><label>Nationalité</label><input type="text" name="nationality"></div><div class="form-group"><label>Pièce d'identité</label><input type="text" name="id_type" placeholder="Passeport, CNI..."></div><div class="form-group"><label>N° pièce</label><input type="text" name="id_number"></div></div>
+<div class="form-group"><label>Société</label><input type="text" name="company"></div></div>
+<h3 style="font-size:14px;color:#d4a574;margin:16px 0 10px">🛏️ Séjour</h3>
+<div class="form-group"><label>Chambre *</label><select name="room_id" required>{% for r in rooms %}<option value="{{ r.id }}">{{ r.number }} — {{ r.type_name or 'Standard' }} ({{ '{:,.0f}'.format(r.base_price or 0) }} F/nuit)</option>{% endfor %}</select></div>
+<div class="form-row"><div class="form-group"><label>Arrivée *</label><input type="date" name="checkin_date" value="{{ now }}" required></div>
+<div class="form-group"><label>Départ *</label><input type="date" name="checkout_date" required></div></div>
+<div class="form-row"><div class="form-group"><label>Tarif/nuit (F)</label><input type="number" name="rate" step="1000" value="25000"></div>
+<div class="form-group"><label>Adultes</label><input type="number" name="adults" value="1" min="1"></div>
+<div class="form-group"><label>Enfants</label><input type="number" name="children" value="0" min="0"></div></div>
+<div class="form-row"><div class="form-group"><label>Source</label><select name="source"><option>direct</option><option>booking</option><option>agence</option><option>telephone</option><option>entreprise</option></select></div></div>
+<div class="form-group"><label>Notes</label><textarea name="notes" rows="2" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:7px"></textarea></div>
+<div style="display:flex;gap:10px;margin-top:14px"><a href="/reservations" class="btn btn-outline">Annuler</a><button type="submit" class="btn btn-gold" style="flex:1">📋 Créer la réservation</button></div>
+</form></div></div>{% endblock %}

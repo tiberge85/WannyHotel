@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+uploads/
+files/
+data/
+*.pdf
+*_clean.png
+_chart_donut.png
+.env
+venv/

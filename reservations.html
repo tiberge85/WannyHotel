@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% block title %}WannyHotel - Réservations{% endblock %}{% block content %}
+<div class="page-header"><h1>📋 Réservations</h1></div>
+<div style="display:flex;gap:8px;margin-bottom:14px">
+<a href="/reservations?tab=active" class="btn {% if tab=='active' %}btn-primary{% else %}btn-outline{% endif %}">En cours</a>
+<a href="/reservations?tab=all" class="btn {% if tab=='all' %}btn-primary{% else %}btn-outline{% endif %}">Toutes</a>
+<a href="/reservations/new" class="btn btn-gold" style="margin-left:auto">+ Nouvelle réservation</a>
+</div>
+<div class="card"><div class="card-body">
+{% if reservations %}<div class="table-wrap"><table>
+<thead><tr><th>Réf</th><th>Client</th><th>Chambre</th><th>Arrivée</th><th>Départ</th><th>Nuits</th><th>Total</th><th>Statut</th><th>Actions</th></tr></thead>
+<tbody>{% for r in reservations %}<tr>
+<td><a href="/reservations/{{ r.id }}" style="color:#d4a574;font-weight:600">{{ r.reference }}</a></td>
+<td><strong>{{ r.guest_name }}</strong></td><td>{{ r.room_number }}</td><td>{{ r.checkin_date }}</td><td>{{ r.checkout_date }}</td>
+<td>{{ r.nights }}</td><td>{{ '{:,.0f}'.format(r.total_amount) }} F</td>
+<td>{% if r.status=='confirmee' %}<span class="badge-s gold">Confirmée</span>{% elif r.status=='en_cours' %}<span class="badge-s blue">En séjour</span>{% elif r.status=='terminee' %}<span class="badge-s green">Terminée</span>{% else %}<span class="badge-s">{{ r.status }}</span>{% endif %}</td>
+<td>{% if r.status=='confirmee' %}<a href="/reservations/{{ r.id }}/checkin" class="btn btn-gold btn-sm">Check-in</a>{% elif r.status=='en_cours' %}<a href="/reservations/{{ r.id }}/checkout" class="btn btn-primary btn-sm">Check-out</a>{% endif %}</td>
+</tr>{% endfor %}</tbody></table></div>{% else %}<p style="text-align:center;color:#999;padding:20px">Aucune réservation</p>{% endif %}</div></div>{% endblock %}

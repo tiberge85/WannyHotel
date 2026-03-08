@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block title %}WannyHotel - Ménage{% endblock %}{% block content %}
+<div class="page-header"><h1>🧹 Ménage</h1></div>
+<div class="card"><div class="card-body">
+{% if tasks %}<div class="table-wrap"><table>
+<thead><tr><th>Chambre</th><th>Priorité</th><th>Assigné</th><th>Statut</th><th>Actions</th></tr></thead>
+<tbody>{% for t in tasks %}<tr{% if t.priority=='urgente' %} style="background:#fde8e8"{% endif %}>
+<td><strong>{{ t.room_number }}</strong></td><td>{{ t.priority }}</td><td>{{ t.assigned_to or '-' }}</td>
+<td><span class="badge-status {% if t.status=='termine' %}libre{% else %}menage{% endif %}">{{ t.status }}</span></td>
+<td>{% if t.status!='termine' %}<a href="/menage/{{ t.id }}/done" class="btn btn-primary btn-sm">✅ Fait</a>{% endif %}</td>
+</tr>{% endfor %}</tbody></table></div>
+{% else %}<p style="text-align:center;color:#999;padding:20px">Aucune tâche de ménage</p>{% endif %}</div></div>
+{% endblock %}

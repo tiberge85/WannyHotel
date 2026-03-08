@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% block title %}WannyHotel - Événements{% endblock %}{% block content %}
+<div class="page-header"><h1>🎉 Salles & Événements</h1></div>
+<div class="card"><div class="card-header"><h3>Événements</h3><button class="btn btn-gold btn-sm" onclick="document.getElementById('addM').classList.add('active')">+ Événement</button></div><div class="card-body">
+{% if events %}<div class="table-wrap"><table><thead><tr><th>Date</th><th>Événement</th><th>Client</th><th>Salle</th><th>Invités</th><th>Tarif</th><th>Statut</th></tr></thead>
+<tbody>{% for e in events %}<tr><td>{{ e.event_date }}</td><td><strong>{{ e.name }}</strong></td><td>{{ e.client_name or '-' }}</td><td>{{ e.room_name or '-' }}</td><td>{{ e.guests_count }}</td><td>{{ '{:,.0f}'.format(e.rate) }} F</td><td><span class="badge-s {% if e.status=='confirme' %}green{% else %}orange{% endif %}">{{ e.status }}</span></td></tr>{% endfor %}</tbody></table></div>
+{% else %}<p style="text-align:center;color:#999;padding:20px">Aucun événement</p>{% endif %}</div></div>
+<div class="modal-bg" id="addM"><div class="modal"><h3>🎉 Nouvel événement</h3><form method="post" action="/events/add">
+<div class="form-group"><label>Nom *</label><input type="text" name="name" required placeholder="Mariage, Séminaire..."></div>
+<div class="form-row"><div class="form-group"><label>Client</label><input type="text" name="client_name"></div><div class="form-group"><label>Salle</label><input type="text" name="room_name" placeholder="Grande salle, Terrasse..."></div></div>
+<div class="form-row"><div class="form-group"><label>Date *</label><input type="date" name="event_date" required></div><div class="form-group"><label>Début</label><input type="time" name="start_time"></div><div class="form-group"><label>Fin</label><input type="time" name="end_time"></div></div>
+<div class="form-row"><div class="form-group"><label>Nb invités</label><input type="number" name="guests_count" value="0"></div><div class="form-group"><label>Tarif (F)</label><input type="number" name="rate" step="5000" value="0"></div></div>
+<div class="form-group"><label>Notes</label><textarea name="notes" rows="2" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:7px"></textarea></div>
+<div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-gold">Créer</button></div></form></div></div>{% endblock %}

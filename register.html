@@ -1,0 +1,15 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>WannyHotel - Inscription</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;background:linear-gradient(135deg,#0d2137,#1a4a6c);min-height:100vh;display:flex;align-items:center;justify-content:center}
+.box{background:#fff;border-radius:16px;padding:36px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}h2{text-align:center;color:#1a3a5c;margin-bottom:16px}
+.form-group{margin-bottom:12px}.form-group label{font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:3px}
+.form-group input{width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:14px}
+.btn{width:100%;padding:12px;background:#e8672a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}
+.link{text-align:center;margin-top:12px;font-size:12px}a{color:#1a3a5c}
+.flash{padding:8px;border-radius:6px;margin-bottom:12px;font-size:12px;text-align:center}.flash.error{background:#fde8e8;color:#c53030}</style></head>
+<body><div class="box"><h2>Créer un compte</h2>
+{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for c,m in messages %}<div class="flash {{ c }}">{{ m }}</div>{% endfor %}{% endif %}{% endwith %}
+<form method="post"><div class="form-group"><label>Nom complet</label><input type="text" name="full_name" required></div>
+<div class="form-group"><label>Identifiant</label><input type="text" name="username" required></div>
+<div class="form-group"><label>Mot de passe</label><input type="password" name="password" required minlength="6"></div>
+<button type="submit" class="btn">Créer le compte</button></form>
+<div class="link"><a href="/login">Déjà un compte ?</a></div></div></body></html>
