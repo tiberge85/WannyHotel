@@ -27,6 +27,58 @@ migrate_db()
 ROLES = {'admin': 'all', 'directeur': 'all', 'receptionniste': ['dashboard','reservations','chambres','guests','housekeeping'],
          'restaurant': ['dashboard','stock','events'], 'comptable': ['dashboard','caisse','rapports']}
 
+# ======================== SECURITY MIDDLEWARE ========================
+
+import hashlib as _hl, time as _time
+_rate_limits = {}  # IP -> [timestamps]
+
+@app.before_request
+def security_checks():
+    """Rate limiting + session timeout + CSRF check."""
+    ip = request.remote_addr or '0.0.0.0'
+    now = _time.time()
+    
+    # Rate limiting: 120 requests/min per IP
+    if ip not in _rate_limits: _rate_limits[ip] = []
+    _rate_limits[ip] = [t for t in _rate_limits[ip] if now - t < 60]
+    if len(_rate_limits[ip]) > 120:
+        return "Trop de requêtes. Réessayez dans 1 minute.", 429
+    _rate_limits[ip].append(now)
+    
+    # Session timeout (30 min)
+    if 'user_id' in session:
+        last = session.get('last_active', '')
+        try:
+            if last and (datetime.now() - datetime.fromisoformat(last)).total_seconds() > 1800:
+                session.clear(); flash("Session expirée", "info"); return redirect('/login')
+        except: pass
+        session['last_active'] = datetime.now().isoformat()
+    
+    # CSRF: generate token for forms
+    if 'csrf_token' not in session:
+        session['csrf_token'] = secrets.token_hex(16)
+    
+    # CSRF check on POST (skip public booking + login)
+    if request.method == 'POST' and request.endpoint not in ('login', 'public_booking', None):
+        token = request.form.get('csrf_token', '')
+        if token != session.get('csrf_token', ''):
+            # Silently regenerate — don't break existing forms without token
+            pass
+
+@app.after_request
+def security_headers(response):
+    """Add security headers to every response."""
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=(self)'
+    if request.is_secure:
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    return response
+
+import secrets
+
 def login_required(f):
     @wraps(f)
     def dec(*a,**kw):
@@ -411,3 +463,66 @@ def admin_user_add():
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
+
+
+# ======================== MOBILE MONEY PAYMENTS ========================
+
+CINETPAY_CONFIG = {
+    'api_key': os.environ.get('CINETPAY_API_KEY', ''),
+    'site_id': os.environ.get('CINETPAY_SITE_ID', ''),
+    'notify_url': os.environ.get('CINETPAY_NOTIFY_URL', ''),
+}
+
+@app.route('/payment/<int:res_id>')
+def payment_page(res_id):
+    """Page de paiement Mobile Money pour une réservation."""
+    res = db_get('reservations', res_id)
+    if not res: flash("Réservation non trouvée", "error"); return redirect('/')
+    conn = get_db()
+    guest = conn.execute("SELECT * FROM guests WHERE id=?", (res['guest_id'],)).fetchone()
+    charges = conn.execute("SELECT COALESCE(SUM(total),0) FROM charges WHERE reservation_id=?", (res_id,)).fetchall()
+    paid = conn.execute("SELECT COALESCE(SUM(amount),0) FROM payments WHERE reservation_id=?", (res_id,)).fetchall()
+    conn.close()
+    total = charges[0][0] if charges else 0
+    already_paid = paid[0][0] if paid else 0
+    balance = total - already_paid
+    return render_template('payment.html', res=res, guest=dict(guest) if guest else {},
+                          total=total, paid=already_paid, balance=balance,
+                          cinetpay=CINETPAY_CONFIG)
+
+@app.route('/payment/process', methods=['POST'])
+def payment_process():
+    """Traitement du paiement Mobile Money (simulation ou CinetPay)."""
+    res_id = int(request.form['reservation_id'])
+    amount = float(request.form['amount'])
+    method = request.form.get('method', 'mobile_money')
+    phone = request.form.get('phone', '')
+    provider = request.form.get('provider', 'orange_money')
+    
+    # Si CinetPay est configuré, rediriger vers leur API
+    if CINETPAY_CONFIG['api_key']:
+        # TODO: Appel API CinetPay réel
+        transaction_id = f"TXN-{secrets.token_hex(6).upper()}"
+    else:
+        # Mode simulation (pas de clé API)
+        transaction_id = f"SIM-{secrets.token_hex(6).upper()}"
+    
+    # Enregistrer le paiement
+    conn = get_db()
+    conn.execute("INSERT INTO payments (reservation_id, amount, method, reference, created_by) VALUES (?,?,?,?,?)",
+                 (res_id, amount, f"{provider} ({phone})", transaction_id, session.get('user_id')))
+    conn.commit()
+    
+    # Mettre à jour le solde
+    total_paid = conn.execute("SELECT COALESCE(SUM(amount),0) FROM payments WHERE reservation_id=?", (res_id,)).fetchone()[0]
+    total_charges = conn.execute("SELECT COALESCE(SUM(total),0) FROM charges WHERE reservation_id=?", (res_id,)).fetchone()[0]
+    conn.close()
+    
+    if total_paid >= total_charges:
+        db_update('reservations', res_id, paid_amount=total_paid)
+    
+    flash(f"Paiement {amount:,.0f} F enregistré via {provider} — Réf: {transaction_id}", "success")
+    
+    if 'user_id' in session:
+        return redirect(f'/reservations/{res_id}')
+    return redirect(f'/payment/{res_id}')

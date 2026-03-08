@@ -1,0 +1,82 @@
+<!DOCTYPE html><html lang="fr"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WannyHotel — Paiement</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;min-height:100vh}
+.header{background:linear-gradient(135deg,#0d2137,#1a4a6c);padding:20px 30px;color:#fff;display:flex;align-items:center;gap:14px}
+.header img{height:32px}.header h1{font-size:18px;font-weight:700}
+.container{max-width:520px;margin:24px auto;padding:0 16px}
+.card{background:#fff;border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,0.08);overflow:hidden;margin-bottom:16px}
+.card-header{padding:16px 20px;border-bottom:1px solid #eee;font-weight:700;color:#1a3a5c;font-size:15px}
+.card-body{padding:20px}
+.summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.summary-item{text-align:center;padding:12px;background:#f8faf9;border-radius:8px}
+.summary-item .label{font-size:11px;color:#888}.summary-item .value{font-size:22px;font-weight:800;color:#1a3a5c}
+.summary-item .value.orange{color:#e8672a}
+.providers{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px}
+.provider{border:2px solid #e0e0e0;border-radius:10px;padding:14px 8px;text-align:center;cursor:pointer;transition:all 0.2s}
+.provider:hover,.provider.selected{border-color:#e8672a;background:#fff8f4}
+.provider .name{font-size:12px;font-weight:700;margin-top:6px;color:#333}
+.provider .icon{font-size:28px}
+.form-group{margin-bottom:12px}.form-group label{font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:3px}
+.form-group input,.form-group select{width:100%;padding:11px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px}
+.form-group input:focus{outline:none;border-color:#e8672a}
+.btn{width:100%;padding:14px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.btn-pay{background:linear-gradient(135deg,#e8672a,#d45a20);color:#fff;box-shadow:0 4px 16px rgba(232,103,42,0.3)}
+.btn-pay:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(232,103,42,0.4)}
+.flash{padding:12px;border-radius:8px;margin-bottom:14px;font-size:13px;text-align:center}
+.flash.success{background:#e8f5e9;color:#2e7d32}.flash.error{background:#fde8e8;color:#c53030}
+.secure{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:14px;font-size:11px;color:#888}
+.footer{text-align:center;padding:16px;font-size:11px;color:#999}
+</style></head><body>
+<div class="header"><img src="/static/logo_wannygest_clean.png" alt="WannyHotel"><h1>Paiement sécurisé</h1></div>
+<div class="container">
+{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for c,m in messages %}<div class="flash {{ c }}">{{ m }}</div>{% endfor %}{% endif %}{% endwith %}
+
+<div class="card"><div class="card-header">📋 Résumé de la réservation</div><div class="card-body">
+<p style="font-size:14px;margin-bottom:12px"><strong>{{ guest.first_name }} {{ guest.last_name }}</strong> — Réf. {{ res.reference }}</p>
+<div class="summary">
+<div class="summary-item"><div class="label">Total</div><div class="value">{{ '{:,.0f}'.format(total) }} F</div></div>
+<div class="summary-item"><div class="label">Déjà payé</div><div class="value" style="color:#2e7d32">{{ '{:,.0f}'.format(paid) }} F</div></div>
+<div class="summary-item"><div class="label">Reste à payer</div><div class="value orange">{{ '{:,.0f}'.format(balance) }} F</div></div>
+<div class="summary-item"><div class="label">Nuits</div><div class="value">{{ res.nights }}</div></div>
+</div></div></div>
+
+{% if balance > 0 %}
+<div class="card"><div class="card-header">💳 Mode de paiement</div><div class="card-body">
+<form method="post" action="/payment/process" id="payForm">
+<input type="hidden" name="reservation_id" value="{{ res.id }}">
+<input type="hidden" name="provider" id="providerField" value="orange_money">
+
+<div class="providers">
+<div class="provider selected" onclick="selectProvider('orange_money',this)"><div class="icon">🟠</div><div class="name">Orange Money</div></div>
+<div class="provider" onclick="selectProvider('mtn_momo',this)"><div class="icon">🟡</div><div class="name">MTN MoMo</div></div>
+<div class="provider" onclick="selectProvider('wave',this)"><div class="icon">🔵</div><div class="name">Wave</div></div>
+</div>
+
+<div class="form-group"><label>Numéro de téléphone</label><input type="tel" name="phone" required placeholder="+225 07 XX XX XX XX" pattern="[\+0-9\s]{8,}"></div>
+<div class="form-group"><label>Montant à payer (FCFA)</label><input type="number" name="amount" value="{{ balance|int }}" min="1000" max="{{ balance|int }}" step="500" required></div>
+<input type="hidden" name="method" value="mobile_money">
+
+<button type="submit" class="btn btn-pay">💰 Payer maintenant</button>
+
+<div class="secure">🔒 Transaction sécurisée — Vos données sont protégées</div>
+</form></div></div>
+{% else %}
+<div class="card"><div class="card-body" style="text-align:center;padding:30px">
+<div style="font-size:48px;margin-bottom:10px">✅</div>
+<h2 style="color:#2e7d32;margin-bottom:6px">Paiement complet</h2>
+<p style="color:#888">Merci ! Votre séjour est entièrement réglé.</p>
+</div></div>
+{% endif %}
+</div>
+<div class="footer">© 2026 WannyHotel — RAMYA TECHNOLOGIE & INNOVATION<br>+225 07 47 68 20 27 · yanick.hamien@ramyaci.tech</div>
+<script>
+function selectProvider(provider, el) {
+    document.getElementById('providerField').value = provider;
+    document.querySelectorAll('.provider').forEach(p => p.classList.remove('selected'));
+    el.classList.add('selected');
+}
+</script>
+</body></html>
