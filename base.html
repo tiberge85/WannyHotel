@@ -95,6 +95,7 @@
             {% if current_user.role in ('admin','directeur') %}
             <div class="sep"></div>
             <a href="/admin" class="{% if page=='admin' %}active{% endif %}">⚙️ Administration</a>
+            <a href="/admin/reset" class="{% if page=='reset' %}active{% endif %}">🔄 Réinitialiser</a>
             {% endif %}
         </div>
         <div class="sidebar-footer"><a href="/logout">🚪 Déconnexion</a></div>

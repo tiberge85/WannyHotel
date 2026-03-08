@@ -24,6 +24,7 @@ for f in ['logo_wannygest.png','logo_wannygest_clean.png']:
 
 init_db()
 migrate_db()
+migrate_db_v2()
 ROLES = {'admin': 'all', 'directeur': 'all', 'receptionniste': ['dashboard','reservations','chambres','guests','housekeeping'],
          'restaurant': ['dashboard','stock','events'], 'comptable': ['dashboard','caisse','rapports']}
 
@@ -234,7 +235,10 @@ def online_booking_confirm(bid):
             rid, ref = create_reservation(guest_id, room['id'], ob['checkin_date'], ob['checkout_date'],
                 rate, ob.get('adults', 1), ob.get('children', 0), 'online', ob.get('notes', ''), session['user_id'])
             db_update('online_bookings', bid, status='confirmee', processed_by=session['user_id'], reservation_id=rid)
-            flash(f"Réservation {ref} confirmée !", "success")
+            # Send notification to guest
+            token = create_notification(guest_id, rid, 'confirmation',
+                f"Votre réservation {ref} est confirmée ! Arrivée : {ob['checkin_date']}, Départ : {ob['checkout_date']}.")
+            flash(f"Réservation {ref} confirmée ! Lien client : /notification/{token}", "success")
         else:
             flash("Aucune chambre disponible pour ces dates", "error")
     return redirect(url_for('online_bookings'))
@@ -520,9 +524,201 @@ def payment_process():
     
     if total_paid >= total_charges:
         db_update('reservations', res_id, paid_amount=total_paid)
+        # Notify guest: payment complete, invoice ready
+        res = db_get('reservations', res_id)
+        if res:
+            token = create_notification(res['guest_id'], res_id, 'facture',
+                f"Paiement reçu ({amount:,.0f} F). Votre facture est disponible.")
     
     flash(f"Paiement {amount:,.0f} F enregistré via {provider} — Réf: {transaction_id}", "success")
     
     if 'user_id' in session:
         return redirect(f'/reservations/{res_id}')
     return redirect(f'/payment/{res_id}')
+
+
+# ======================== NOTIFICATIONS (PUBLIC) ========================
+
+@app.route('/notification/<token>')
+def notification_page(token):
+    """Page publique de notification pour le client."""
+    notif = get_notification_by_token(token)
+    if not notif:
+        return "<h1>Notification non trouvée</h1><a href='/'>Accueil</a>", 404
+    res_data, charges, payments = get_invoice_data(notif['reservation_id'])
+    total_charges = sum(c['total'] for c in charges)
+    total_paid = sum(p['amount'] for p in payments)
+    return render_template('notification.html', notif=notif, res=res_data,
+                          charges=charges, payments=payments,
+                          total_charges=total_charges, total_paid=total_paid,
+                          balance=total_charges - total_paid)
+
+
+# ======================== FACTURE PDF ========================
+
+@app.route('/invoice/<int:res_id>')
+def invoice_view(res_id):
+    """Vue facture digitale (accessible avec ou sans login)."""
+    res_data, charges, payments = get_invoice_data(res_id)
+    if not res_data:
+        flash("Réservation non trouvée", "error"); return redirect('/')
+    total_charges = sum(c['total'] for c in charges)
+    total_paid = sum(p['amount'] for p in payments)
+    return render_template('invoice.html', res=res_data, charges=charges, payments=payments,
+                          total=total_charges, paid=total_paid, balance=total_charges - total_paid)
+
+@app.route('/invoice/<int:res_id>/pdf')
+def invoice_pdf(res_id):
+    """Génère le PDF de la facture."""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    from reportlab.lib.colors import HexColor
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
+    
+    res_data, charges, payments = get_invoice_data(res_id)
+    if not res_data: return "Not found", 404
+    
+    total_charges = sum(c['total'] for c in charges)
+    total_paid = sum(p['amount'] for p in payments)
+    
+    output = os.path.join(app.config['UPLOAD_FOLDER'], f'facture_{res_data["reference"]}.pdf')
+    doc = SimpleDocTemplate(output, pagesize=A4, leftMargin=20*mm, rightMargin=20*mm, topMargin=15*mm, bottomMargin=15*mm)
+    
+    GOLD = HexColor('#B8860B')
+    TEAL = HexColor('#1a6b5a')
+    s_title = ParagraphStyle('t', fontSize=22, fontName='Helvetica-Bold', textColor=GOLD, alignment=TA_CENTER)
+    s_sub = ParagraphStyle('s', fontSize=10, alignment=TA_CENTER, textColor=HexColor('#888'))
+    s_n = ParagraphStyle('n', fontSize=10, leading=13)
+    s_b = ParagraphStyle('b', fontSize=10, fontName='Helvetica-Bold')
+    s_r = ParagraphStyle('r', fontSize=10, alignment=TA_RIGHT)
+    s_h = ParagraphStyle('h', fontSize=9, fontName='Helvetica-Bold', textColor=HexColor('#fff'))
+    s_c = ParagraphStyle('c', fontSize=9)
+    s_cr = ParagraphStyle('cr', fontSize=9, alignment=TA_RIGHT)
+    s_f = ParagraphStyle('f', fontSize=7, alignment=TA_CENTER, textColor=TEAL)
+    white = HexColor('#ffffff')
+    
+    story = []
+    story.append(Paragraph("WannyHotel", s_title))
+    story.append(Paragraph("PMS Hôtelier — RAMYA TECHNOLOGIE & INNOVATION", s_sub))
+    story.append(Spacer(1, 8*mm))
+    story.append(Paragraph(f"<b>FACTURE</b> — {res_data['reference']}", ParagraphStyle('ft', fontSize=16, fontName='Helvetica-Bold', textColor=TEAL)))
+    story.append(Paragraph(f"Date : {datetime.now().strftime('%d/%m/%Y')}", s_n))
+    story.append(Spacer(1, 5*mm))
+    
+    # Client info
+    story.append(Paragraph(f"<b>Client :</b> {res_data.get('first_name','')} {res_data.get('last_name','')}", s_b))
+    if res_data.get('tel'): story.append(Paragraph(f"Tél : {res_data['tel']}", s_n))
+    if res_data.get('email'): story.append(Paragraph(f"Email : {res_data['email']}", s_n))
+    if res_data.get('company'): story.append(Paragraph(f"Société : {res_data['company']}", s_n))
+    story.append(Spacer(1, 3*mm))
+    story.append(Paragraph(f"Chambre : {res_data.get('room_number','-')} ({res_data.get('room_type_name','')})", s_n))
+    story.append(Paragraph(f"Séjour : {res_data['checkin_date']} → {res_data['checkout_date']} ({res_data['nights']} nuit(s))", s_n))
+    story.append(Spacer(1, 6*mm))
+    
+    # Charges table
+    ch_data = [[Paragraph(h, s_h) for h in ['Description', 'Qté', 'Prix unit.', 'Total']]]
+    for c in charges:
+        ch_data.append([Paragraph(c['description'] or c['category'], s_c), Paragraph(str(c['quantity']), s_c),
+            Paragraph(f"{c['unit_price']:,.0f}", s_cr), Paragraph(f"{c['total']:,.0f}", s_cr)])
+    
+    cw = [80*mm, 20*mm, 30*mm, 30*mm]
+    t = Table(ch_data, colWidths=cw)
+    t.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),TEAL), ('GRID',(0,0),(-1,-1),0.5,HexColor('#ccc')),
+        ('VALIGN',(0,0),(-1,-1),'MIDDLE'), ('TOPPADDING',(0,0),(-1,-1),4), ('BOTTOMPADDING',(0,0),(-1,-1),4)]))
+    story.append(t)
+    story.append(Spacer(1, 4*mm))
+    
+    # Totals
+    tot_data = [
+        ['', '', Paragraph('<b>Total</b>', s_cr), Paragraph(f"<b>{total_charges:,.0f} FCFA</b>", s_cr)],
+        ['', '', Paragraph('Payé', s_cr), Paragraph(f"{total_paid:,.0f} FCFA", s_cr)],
+        ['', '', Paragraph('<b>Solde</b>', s_cr), Paragraph(f"<b>{total_charges-total_paid:,.0f} FCFA</b>", s_cr)],
+    ]
+    tt = Table(tot_data, colWidths=cw)
+    tt.setStyle(TableStyle([('LINEABOVE',(2,0),(3,0),1,HexColor('#ccc'))]))
+    story.append(tt)
+    story.append(Spacer(1, 6*mm))
+    
+    # Payments
+    if payments:
+        story.append(Paragraph("<b>Paiements reçus</b>", s_b))
+        for pay in payments:
+            story.append(Paragraph(f"• {pay['created_at'][:16]} — {pay['amount']:,.0f} F via {pay['method']} (Réf: {pay.get('reference','-')})", s_n))
+    
+    story.append(Spacer(1, 15*mm))
+    story.append(Paragraph("Merci pour votre confiance — WannyHotel", ParagraphStyle('thx', fontSize=10, alignment=TA_CENTER, textColor=GOLD)))
+    story.append(Spacer(1, 5*mm))
+    story.append(Paragraph("RAMYA TECHNOLOGIE & INNOVATION — Abidjan, Côte d'Ivoire", s_f))
+    story.append(Paragraph("+225 07 47 68 20 27 · yanick.hamien@ramyaci.tech", s_f))
+    
+    doc.build(story)
+    return send_file(output, as_attachment=True, download_name=f"Facture_{res_data['reference']}.pdf")
+
+
+# ======================== ÉDITION ========================
+
+@app.route('/reservations/<int:rid>/edit', methods=['GET','POST'])
+@login_required
+def reservation_edit(rid):
+    res = db_get('reservations', rid)
+    if not res: flash("Non trouvé","error"); return redirect('/reservations')
+    if request.method == 'POST':
+        db_update('reservations', rid,
+            checkin_date=request.form.get('checkin_date', res['checkin_date']),
+            checkout_date=request.form.get('checkout_date', res['checkout_date']),
+            rate_per_night=float(request.form.get('rate', res['rate_per_night']) or 0),
+            adults=int(request.form.get('adults', res['adults']) or 1),
+            children=int(request.form.get('children', res['children']) or 0),
+            notes=request.form.get('notes', ''))
+        flash("Réservation modifiée", "success"); return redirect(f'/reservations/{rid}')
+    rooms = db_all('rooms', order='number ASC')
+    return render_template('reservation_edit.html', page='reservations', res=res, rooms=rooms)
+
+@app.route('/guests/<int:gid>/edit', methods=['GET','POST'])
+@login_required
+def guest_edit(gid):
+    g = db_get('guests', gid)
+    if not g: flash("Non trouvé","error"); return redirect('/guests')
+    if request.method == 'POST':
+        db_update('guests', gid, first_name=request.form['first_name'], last_name=request.form['last_name'],
+            tel=request.form.get('tel',''), email=request.form.get('email',''),
+            nationality=request.form.get('nationality',''), company=request.form.get('company',''),
+            id_type=request.form.get('id_type',''), id_number=request.form.get('id_number',''),
+            vip=1 if request.form.get('vip') else 0)
+        flash("Client modifié", "success"); return redirect('/guests')
+    return render_template('guest_edit.html', page='clients', guest=g)
+
+@app.route('/rooms/<int:rid>/edit', methods=['POST'])
+@login_required
+def room_edit(rid):
+    db_update('rooms', rid, floor=int(request.form.get('floor',0) or 0),
+        room_type_id=int(request.form['room_type_id']) if request.form.get('room_type_id') else None,
+        notes=request.form.get('notes',''))
+    flash("Chambre modifiée", "success"); return redirect('/chambres')
+
+
+# ======================== RÉINITIALISATION ========================
+
+@app.route('/admin/reset', methods=['GET','POST'])
+@login_required
+def admin_reset():
+    u = get_user(session['user_id'])
+    if not u or u['role'] not in ('admin','directeur'):
+        flash("Accès non autorisé","error"); return redirect('/dashboard')
+    if request.method == 'POST':
+        action = request.form.get('action','')
+        confirm = request.form.get('confirm','')
+        if confirm != 'CONFIRMER':
+            flash("Tapez CONFIRMER pour valider", "error"); return redirect('/admin/reset')
+        if action == 'reset_reservations':
+            reset_reservations()
+            log_activity(session['user_id'], u['full_name'], 'RESET', 'Réservations réinitialisées', request.remote_addr)
+            flash("Réservations réinitialisées", "success")
+        elif action == 'reset_all':
+            reset_all_data()
+            log_activity(session['user_id'], u['full_name'], 'RESET', 'TOUTES les données réinitialisées', request.remote_addr)
+            flash("Programme réinitialisé", "success")
+        return redirect('/admin/reset')
+    return render_template('admin_reset.html', page='admin')

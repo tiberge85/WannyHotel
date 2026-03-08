@@ -9,6 +9,10 @@
 <div style="display:flex;gap:8px;margin-bottom:14px">
 {% if res.status=='confirmee' %}<a href="/reservations/{{ res.id }}/checkin" class="btn btn-gold">📥 Check-in</a>{% endif %}
 {% if res.status=='en_cours' %}<a href="/reservations/{{ res.id }}/checkout" class="btn btn-primary">📤 Check-out</a>{% endif %}
+<a href="/reservations/{{ res.id }}/edit" class="btn btn-outline btn-sm">✏️ Modifier</a>
+<a href="/invoice/{{ res.id }}" class="btn btn-outline btn-sm" target="_blank">🧾 Facture</a>
+<a href="/invoice/{{ res.id }}/pdf" class="btn btn-outline btn-sm">📥 PDF</a>
+<a href="/payment/{{ res.id }}" class="btn btn-outline btn-sm" target="_blank">💰 Paiement</a>
 <button class="btn btn-outline" onclick="document.getElementById('chargeM').classList.add('active')">+ Charge</button>
 <button class="btn btn-outline" onclick="document.getElementById('payM').classList.add('active')">💳 Paiement</button>
 </div>

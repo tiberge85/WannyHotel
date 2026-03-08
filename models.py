@@ -77,6 +77,9 @@ def init_db():
     try: conn.execute("INSERT INTO users (username,password_hash,salt,full_name,role) VALUES (?,?,?,?,?)",
                       ('admin',pw,salt,'Administrateur','admin'))
     except: pass
+    for name, price, cap in [('Standard', 25000, 2), ('Supérieure', 40000, 2), ('Suite', 75000, 3), ('Suite VIP', 120000, 4), ('Appartement meublé', 50000, 4)]:
+        try: conn.execute("INSERT INTO room_types (name, base_price, capacity) VALUES (?,?,?)", (name, price, cap))
+        except: pass
     conn.commit(); conn.close()
 
 def authenticate(username, password):
@@ -279,3 +282,65 @@ def get_online_bookings(status=None):
             ORDER BY ob.created_at DESC""").fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+# ======================== NOTIFICATIONS ========================
+
+def create_notification(guest_id, reservation_id, notif_type, message):
+    conn = get_db()
+    token = secrets.token_hex(12)
+    conn.execute("""INSERT INTO notifications (guest_id, reservation_id, type, message, token)
+        VALUES (?,?,?,?,?)""", (guest_id, reservation_id, notif_type, message, token))
+    conn.commit(); conn.close()
+    return token
+
+def get_notification_by_token(token):
+    conn = get_db()
+    n = conn.execute("SELECT * FROM notifications WHERE token=?", (token,)).fetchone()
+    conn.close()
+    return dict(n) if n else None
+
+def migrate_db_v2():
+    conn = get_db()
+    try: conn.execute("""CREATE TABLE IF NOT EXISTS notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, guest_id INTEGER, reservation_id INTEGER,
+        type TEXT, message TEXT, token TEXT UNIQUE, read INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP)""")
+    except: pass
+    conn.commit(); conn.close()
+
+
+# ======================== INVOICE PDF ========================
+
+def get_invoice_data(res_id):
+    conn = get_db()
+    res = conn.execute("""SELECT r.*, g.first_name, g.last_name, g.tel, g.email, g.nationality, g.company,
+        rm.number as room_number, rt.name as room_type_name
+        FROM reservations r LEFT JOIN guests g ON r.guest_id=g.id
+        LEFT JOIN rooms rm ON r.room_id=rm.id LEFT JOIN room_types rt ON rm.room_type_id=rt.id
+        WHERE r.id=?""", (res_id,)).fetchone()
+    charges = conn.execute("SELECT * FROM charges WHERE reservation_id=?", (res_id,)).fetchall()
+    payments = conn.execute("SELECT * FROM payments WHERE reservation_id=?", (res_id,)).fetchall()
+    conn.close()
+    if not res: return None, [], []
+    return dict(res), [dict(c) for c in charges], [dict(p) for p in payments]
+
+
+# ======================== RESET ========================
+
+def reset_all_data():
+    conn = get_db()
+    for table in ['notifications','payments','charges','reservations','housekeeping',
+                  'stock_movements','stock_items','events','conf_bookings','conference_rooms',
+                  'online_bookings','guests','rooms','staff','activity_logs','login_attempts']:
+        try: conn.execute(f"DELETE FROM {table}")
+        except: pass
+    conn.commit(); conn.close()
+
+def reset_reservations():
+    conn = get_db()
+    for t in ['notifications','payments','charges','reservations','online_bookings','housekeeping']:
+        try: conn.execute(f"DELETE FROM {t}")
+        except: pass
+    conn.execute("UPDATE rooms SET status='disponible', cleaning_status='propre'")
+    conn.commit(); conn.close()

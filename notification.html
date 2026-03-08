@@ -1,0 +1,56 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WannyHotel — Notification</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;background:#f0f2f5;min-height:100vh}
+.header{background:linear-gradient(135deg,#0d2137,#1a4a6c);padding:20px;color:#fff;text-align:center}.header img{height:36px}
+.container{max-width:560px;margin:20px auto;padding:0 16px}
+.card{background:#fff;border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,0.08);overflow:hidden;margin-bottom:16px}
+.card-header{padding:14px 18px;border-bottom:1px solid #eee;font-weight:700;color:#1a3a5c;font-size:15px}
+.card-body{padding:18px}
+.notif-msg{background:#e8f5e9;border:1px solid #a5d6a7;border-radius:10px;padding:16px;font-size:14px;color:#2e7d32;margin-bottom:16px;text-align:center}
+.notif-msg.facture{background:#fff8e1;border-color:#ffe082;color:#f57f17}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px}.info-item{padding:8px;background:#f8faf9;border-radius:6px}
+.info-item .label{font-size:10px;color:#888;text-transform:uppercase}.info-item .val{font-weight:700;color:#1a3a5c}
+.btn{display:inline-block;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;text-align:center}
+.btn-gold{background:linear-gradient(135deg,#B8860B,#DAA520);color:#fff}.btn-teal{background:#1a6b5a;color:#fff}.btn-outline{border:1.5px solid #ddd;color:#666}
+.actions{display:flex;gap:8px;margin-top:14px;justify-content:center;flex-wrap:wrap}
+table{width:100%;font-size:12px;border-collapse:collapse}th{background:#1a6b5a;color:#fff;padding:6px 8px;text-align:left}td{padding:6px 8px;border-bottom:1px solid #eee}
+.footer{text-align:center;padding:16px;font-size:10px;color:#999}
+</style></head><body>
+<div class="header"><img src="/static/logo_wannygest.png" alt="WannyHotel"></div>
+<div class="container">
+<div class="notif-msg {% if notif.type == 'facture' %}facture{% endif %}">
+{% if notif.type == 'confirmation' %}✅ {{ notif.message }}{% elif notif.type == 'facture' %}🧾 {{ notif.message }}{% else %}📢 {{ notif.message }}{% endif %}
+</div>
+
+{% if res %}
+<div class="card"><div class="card-header">📋 Votre réservation — {{ res.reference }}</div><div class="card-body">
+<div class="info-grid">
+<div class="info-item"><div class="label">Client</div><div class="val">{{ res.first_name }} {{ res.last_name }}</div></div>
+<div class="info-item"><div class="label">Chambre</div><div class="val">{{ res.room_number or '-' }} ({{ res.room_type_name or '' }})</div></div>
+<div class="info-item"><div class="label">Arrivée</div><div class="val">{{ res.checkin_date }}</div></div>
+<div class="info-item"><div class="label">Départ</div><div class="val">{{ res.checkout_date }}</div></div>
+<div class="info-item"><div class="label">Nuits</div><div class="val">{{ res.nights }}</div></div>
+<div class="info-item"><div class="label">Statut</div><div class="val">{{ res.status }}</div></div>
+</div></div></div>
+
+{% if charges %}
+<div class="card"><div class="card-header">🧾 Détail facture</div><div class="card-body">
+<table><thead><tr><th>Description</th><th>Qté</th><th>Prix unit.</th><th>Total</th></tr></thead>
+<tbody>{% for c in charges %}<tr><td>{{ c.description or c.category }}</td><td>{{ c.quantity }}</td><td style="text-align:right">{{ '{:,.0f}'.format(c.unit_price) }}</td><td style="text-align:right">{{ '{:,.0f}'.format(c.total) }}</td></tr>{% endfor %}</tbody>
+</table>
+<div style="display:flex;justify-content:flex-end;gap:20px;margin-top:10px;font-size:13px">
+<div><strong>Total : {{ '{:,.0f}'.format(total_charges) }} F</strong></div>
+<div style="color:#2e7d32">Payé : {{ '{:,.0f}'.format(total_paid) }} F</div>
+<div style="color:#e8672a"><strong>Solde : {{ '{:,.0f}'.format(balance) }} F</strong></div>
+</div></div></div>
+{% endif %}
+
+<div class="actions">
+{% if balance > 0 %}<a href="/payment/{{ res.id }}" class="btn btn-gold">💰 Payer en ligne</a>{% endif %}
+<a href="/invoice/{{ res.id }}" class="btn btn-teal">🧾 Voir la facture</a>
+<a href="/invoice/{{ res.id }}/pdf" class="btn btn-outline">📥 Télécharger PDF</a>
+</div>
+{% endif %}
+</div>
+<div class="footer">© 2026 WannyHotel — RAMYA TECHNOLOGIE & INNOVATION · +225 07 47 68 20 27</div>
+</body></html>

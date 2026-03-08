@@ -1,8 +1,8 @@
 {% extends "base.html" %}{% block title %}WannyHotel - Clients{% endblock %}{% block content %}
 <div class="page-header"><h1>👤 Fichier clients</h1></div>
 <div class="card"><div class="card-header"><h3>Clients ({{ guests|length }})</h3><button class="btn btn-gold btn-sm" onclick="document.getElementById('addM').classList.add('active')">+ Client</button></div><div class="card-body">
-{% if guests %}<div class="table-wrap"><table><thead><tr><th>Nom</th><th>Nationalité</th><th>Tél</th><th>Email</th><th>Société</th><th>Séjours</th></tr></thead>
-<tbody>{% for g in guests %}<tr><td><strong>{{ g.first_name }} {{ g.last_name }}</strong>{% if g.vip %} ⭐{% endif %}</td><td>{{ g.nationality or '-' }}</td><td>{{ g.tel or '-' }}</td><td>{{ g.email or '-' }}</td><td>{{ g.company or '-' }}</td><td>{{ g.total_stays }}</td></tr>{% endfor %}</tbody></table></div>
+{% if guests %}<div class="table-wrap"><table><thead><tr><th>Nom</th><th>Nationalité</th><th>Tél</th><th>Email</th><th>Société</th><th>Séjours</th><th></th></tr></thead>
+<tbody>{% for g in guests %}<tr><td><strong>{{ g.first_name }} {{ g.last_name }}</strong>{% if g.vip %} ⭐{% endif %}</td><td>{{ g.nationality or '-' }}</td><td>{{ g.tel or '-' }}</td><td>{{ g.email or '-' }}</td><td>{{ g.company or '-' }}</td><td>{{ g.total_stays }}</td><td><a href="/guests/{{ g.id }}/edit" class="btn btn-outline btn-sm">✏️</a></td></tr>{% endfor %}</tbody></table></div>
 {% else %}<p style="text-align:center;color:#999;padding:20px">Aucun client</p>{% endif %}</div></div>
 <div class="modal-bg" id="addM"><div class="modal"><h3>👤 Nouveau client</h3><form method="post" action="/guests/add">
 <div class="form-row"><div class="form-group"><label>Prénom *</label><input type="text" name="first_name" required></div><div class="form-group"><label>Nom *</label><input type="text" name="last_name" required></div></div>

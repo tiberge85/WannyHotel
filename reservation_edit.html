@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block title %}WannyHotel - Modifier réservation{% endblock %}{% block content %}
+<div class="page-header"><h1>✏️ Modifier réservation {{ res.reference }}</h1></div>
+<div class="card" style="max-width:600px"><div class="card-body"><form method="post">
+<div class="form-row"><div class="form-group"><label>Arrivée</label><input type="date" name="checkin_date" value="{{ res.checkin_date }}"></div>
+<div class="form-group"><label>Départ</label><input type="date" name="checkout_date" value="{{ res.checkout_date }}"></div></div>
+<div class="form-row"><div class="form-group"><label>Tarif/nuit</label><input type="number" name="rate" value="{{ res.rate_per_night }}" step="1000"></div>
+<div class="form-group"><label>Adultes</label><input type="number" name="adults" value="{{ res.adults }}" min="1"></div>
+<div class="form-group"><label>Enfants</label><input type="number" name="children" value="{{ res.children }}" min="0"></div></div>
+<div class="form-group"><label>Notes</label><textarea name="notes" rows="2" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:6px;font-size:12px">{{ res.notes or '' }}</textarea></div>
+<div style="display:flex;gap:8px"><a href="/reservations/{{ res.id }}" class="btn btn-outline">Annuler</a><button type="submit" class="btn btn-primary" style="flex:1">💾 Sauvegarder</button></div>
+</form></div></div>
+{% endblock %}

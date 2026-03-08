@@ -1,0 +1,63 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Facture {{ res.reference }} — WannyHotel</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;background:#f0f2f5}
+.invoice{max-width:700px;margin:20px auto;background:#fff;border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,0.1);overflow:hidden}
+.inv-header{background:linear-gradient(135deg,#B8860B,#DAA520);padding:24px;color:#fff;display:flex;justify-content:space-between;align-items:center}
+.inv-header h1{font-size:22px}.inv-header img{height:40px}
+.inv-body{padding:24px}
+.inv-meta{display:flex;justify-content:space-between;margin-bottom:18px;font-size:13px}
+.inv-meta .left{}.inv-meta .right{text-align:right}
+.client-box{background:#f8faf9;border-radius:8px;padding:14px;margin-bottom:16px;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px}
+th{background:#1a6b5a;color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid #eee}
+.totals{text-align:right;font-size:14px;margin-bottom:16px}.totals div{margin-bottom:4px}
+.totals .big{font-size:18px;color:#B8860B;font-weight:800}
+.payments{font-size:12px;color:#555;margin-bottom:16px}
+.inv-footer{border-top:2px solid #eee;padding-top:14px;text-align:center;font-size:11px;color:#888}
+.print-bar{max-width:700px;margin:10px auto;display:flex;gap:8px;justify-content:center}
+.btn{padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;display:inline-block;cursor:pointer;border:none}
+.btn-gold{background:#B8860B;color:#fff}.btn-teal{background:#1a6b5a;color:#fff}.btn-outline{background:#fff;border:1.5px solid #ddd;color:#666}
+@media print{.print-bar{display:none}body{background:#fff}.invoice{box-shadow:none;margin:0;border-radius:0}}
+</style></head><body>
+<div class="print-bar">
+<button class="btn btn-gold" onclick="window.print()">🖨️ Imprimer</button>
+<a href="/invoice/{{ res.id }}/pdf" class="btn btn-teal">📥 Télécharger PDF</a>
+<a href="/" class="btn btn-outline">Accueil</a>
+</div>
+<div class="invoice">
+<div class="inv-header"><div><h1>FACTURE</h1><div style="font-size:12px;opacity:0.8">{{ res.reference }}</div></div><img src="/static/logo_wannygest.png" alt="WannyHotel"></div>
+<div class="inv-body">
+<div class="inv-meta">
+<div class="left"><strong>WannyHotel</strong><br>RAMYA TECHNOLOGIE & INNOVATION<br>Abidjan, Côte d'Ivoire<br>+225 07 47 68 20 27</div>
+<div class="right"><strong>Date :</strong> {{ now }}<br><strong>Réf :</strong> {{ res.reference }}</div>
+</div>
+<div class="client-box">
+<strong>Client :</strong> {{ res.first_name }} {{ res.last_name }}<br>
+{% if res.tel %}Tél : {{ res.tel }}<br>{% endif %}
+{% if res.email %}Email : {{ res.email }}<br>{% endif %}
+{% if res.company %}Société : {{ res.company }}<br>{% endif %}
+{% if res.nationality %}Nationalité : {{ res.nationality }}{% endif %}
+</div>
+<div style="font-size:13px;margin-bottom:12px">
+<strong>Chambre :</strong> {{ res.room_number or '-' }} ({{ res.room_type_name or '' }}) · 
+<strong>Séjour :</strong> {{ res.checkin_date }} → {{ res.checkout_date }} ({{ res.nights }} nuit(s))
+</div>
+<table><thead><tr><th>Description</th><th>Qté</th><th style="text-align:right">Prix unit.</th><th style="text-align:right">Total</th></tr></thead>
+<tbody>{% for c in charges %}<tr><td>{{ c.description or c.category }}</td><td>{{ c.quantity }}</td><td style="text-align:right">{{ '{:,.0f}'.format(c.unit_price) }}</td><td style="text-align:right">{{ '{:,.0f}'.format(c.total) }}</td></tr>{% endfor %}</tbody>
+</table>
+<div class="totals">
+<div><strong>Total :</strong> {{ '{:,.0f}'.format(total) }} FCFA</div>
+<div style="color:#2e7d32">Payé : {{ '{:,.0f}'.format(paid) }} FCFA</div>
+<div class="big">Solde : {{ '{:,.0f}'.format(balance) }} FCFA</div>
+</div>
+{% if payments %}
+<div class="payments"><strong>Paiements reçus :</strong><br>
+{% for p in payments %}• {{ p.created_at[:16] }} — {{ '{:,.0f}'.format(p.amount) }} F via {{ p.method }} (Réf: {{ p.reference or '-' }})<br>{% endfor %}
+</div>{% endif %}
+<div class="inv-footer">
+Merci pour votre confiance !<br>
+RAMYA TECHNOLOGIE & INNOVATION — Abidjan, Côte d'Ivoire<br>
++225 07 47 68 20 27 · 05 66 75 06 69 · yanick.hamien@ramyaci.tech
+</div>
+</div></div></body></html>
