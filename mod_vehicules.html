@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}WannyGest - Véhicules{% endblock %}
+{% block content %}
+<div class="page-header"><h1>🚗 Parc véhicules</h1></div>
+<div class="card"><div class="card-header"><h3>Véhicules ({{ items|length }})</h3><button class="btn btn-orange btn-sm" onclick="document.getElementById('addM').classList.add('active')">+ Véhicule</button></div><div class="card-body">
+{% if items %}<div class="table-wrap"><table>
+<thead><tr><th>Immat.</th><th>Marque</th><th>Modèle</th><th>Affectation</th><th>Km</th><th>Assurance</th><th>Visite</th><th>Statut</th></tr></thead>
+<tbody>{% for v in items %}<tr><td><strong>{{ v.immatriculation }}</strong></td><td>{{ v.marque }}</td><td>{{ v.modele }}</td><td>{{ v.affectation or '-' }}</td><td>{{ '{:,}'.format(v.km) }}</td><td>{{ v.assurance_exp or '-' }}</td><td>{{ v.visite_exp or '-' }}</td><td><span class="badge-status {% if v.status=='disponible' %}sent{% else %}pending{% endif %}">{{ v.status }}</span></td></tr>{% endfor %}</tbody></table></div>
+{% else %}<p style="text-align:center;color:#999;padding:30px">Aucun véhicule</p>{% endif %}
+</div></div>
+<div class="modal-bg" id="addM"><div class="modal"><h3>🚗 Nouveau véhicule</h3><form method="post">
+<div class="form-row"><div class="form-group"><label>Immatriculation *</label><input type="text" name="immatriculation" required></div><div class="form-group"><label>Marque</label><input type="text" name="marque"></div><div class="form-group"><label>Modèle</label><input type="text" name="modele"></div></div>
+<div class="form-row"><div class="form-group"><label>Affectation</label><input type="text" name="affectation"></div><div class="form-group"><label>Kilométrage</label><input type="number" name="km" value="0"></div></div>
+<div class="form-row"><div class="form-group"><label>Exp. assurance</label><input type="date" name="assurance_exp"></div><div class="form-group"><label>Exp. visite tech.</label><input type="date" name="visite_exp"></div></div>
+<div class="form-group"><label>Statut</label><select name="status"><option>disponible</option><option>en_mission</option><option>en_panne</option><option>au_garage</option></select></div>
+<div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-primary">Ajouter</button></div></form></div></div>
+{% endblock %}

@@ -1,4 +1,12 @@
-const CACHE = 'wannyhotel-v1';
-const URLS = ['/', '/dashboard', '/static/logo_wannygest.png'];
-self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(URLS))));
-self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));
+const CACHE_NAME = 'ramya-v1';
+const urlsToCache = ['/static/logo_ramya_ROIND.png'];
+
+self.addEventListener('install', event => {
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)));
+});
+
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    fetch(event.request).catch(() => caches.match(event.request))
+  );
+});

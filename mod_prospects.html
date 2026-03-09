@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}WannyGest - Prospects{% endblock %}
+{% block content %}
+<div class="page-header"><h1>🎯 Pipeline commercial</h1></div>
+<div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon blue">🆕</div><div class="stat-info"><div class="stat-num">{{ stats.get('nouveau',0) }}</div><div class="stat-label">Nouveaux</div></div></div>
+    <div class="stat-card"><div class="stat-icon orange">📞</div><div class="stat-info"><div class="stat-num">{{ stats.get('qualifie',0) }}</div><div class="stat-label">Qualifiés</div></div></div>
+    <div class="stat-card"><div class="stat-icon green">🏆</div><div class="stat-info"><div class="stat-num">{{ stats.get('gagne',0) }}</div><div class="stat-label">Gagnés</div></div></div>
+    <div class="stat-card"><div class="stat-icon teal">💵</div><div class="stat-info"><div class="stat-num">{{ '{:,.0f}'.format(stats.get('valeur',0)) }}</div><div class="stat-label">CA gagné (F)</div></div></div>
+</div>
+<div class="card"><div class="card-header"><h3>Prospects</h3><button class="btn btn-orange btn-sm" onclick="document.getElementById('addM').classList.add('active')">+ Nouveau</button></div><div class="card-body">
+{% if prospects %}<div class="table-wrap"><table>
+<thead><tr><th>Entreprise</th><th>Contact</th><th>Source</th><th>Valeur</th><th>Statut</th><th>Actions</th></tr></thead>
+<tbody>{% for p in prospects %}<tr>
+<td><strong>{{ p.company }}</strong></td><td>{{ p.contact_name or '-' }}<br><span style="font-size:11px;color:#888">{{ p.tel or '' }}</span></td>
+<td>{{ p.source or '-' }}</td><td>{{ '{:,.0f}'.format(p.estimated_value) }} F</td>
+<td><span class="badge-status {% if p.status=='gagne' %}sent{% elif p.status=='perdu' %}{% else %}pending{% endif %}">{{ p.status }}</span></td>
+<td style="display:flex;gap:3px;flex-wrap:wrap">{% for s in ['contacte','qualifie','proposition','gagne'] %}<a href="/prospects/{{ p.id }}/status/{{ s }}" class="btn btn-outline btn-sm" style="font-size:10px">{{ s[:5] }}</a>{% endfor %}</td>
+</tr>{% endfor %}</tbody></table></div>{% else %}<p style="text-align:center;color:#999;padding:30px">Aucun prospect</p>{% endif %}
+</div></div>
+<div class="modal-bg" id="addM"><div class="modal"><h3>🎯 Nouveau prospect</h3><form method="post" action="/prospects/add">
+<div class="form-group"><label>Entreprise *</label><input type="text" name="company" required></div>
+<div class="form-row"><div class="form-group"><label>Contact</label><input type="text" name="contact_name"></div><div class="form-group"><label>Tél</label><input type="text" name="tel"></div></div>
+<div class="form-row"><div class="form-group"><label>Email</label><input type="email" name="email"></div><div class="form-group"><label>Source</label><select name="source"><option>Site web</option><option>Recommandation</option><option>Salon</option><option>Appel</option><option>Autre</option></select></div></div>
+<div class="form-group"><label>Valeur estimée (F)</label><input type="number" name="estimated_value" step="1000" value="0"></div>
+<div class="form-group"><label>Notes</label><textarea name="notes" rows="2" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:7px"></textarea></div>
+<input type="hidden" name="assigned_to" value="">
+<div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-primary">Ajouter</button></div></form></div></div>
+{% endblock %}

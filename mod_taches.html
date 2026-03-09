@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}WannyGest - Tâches{% endblock %}
+{% block content %}
+<div class="page-header"><h1>✅ Mes tâches</h1></div>
+<div style="margin-bottom:14px"><button class="btn btn-orange btn-sm" onclick="document.getElementById('addM').classList.add('active')">+ Nouvelle tâche</button></div>
+<div class="card"><div class="card-body">
+{% if tasks %}<div class="table-wrap"><table>
+<thead><tr><th>Tâche</th><th>Priorité</th><th>Échéance</th><th>Statut</th><th>Actions</th></tr></thead>
+<tbody>{% for t in tasks %}<tr>
+<td><strong>{{ t.title }}</strong><br><span style="font-size:11px;color:#888">{{ t.description[:60] if t.description else '' }}</span></td>
+<td>{{ t.priority }}</td><td>{{ t.due_date or '-' }}</td>
+<td><span class="badge-status {% if t.status=='termine' %}sent{% elif t.status=='en_cours' %}pending{% else %}{% endif %}">{{ t.status }}</span></td>
+<td>{% for s in ['en_cours','termine'] %}<a href="/taches/{{ t.id }}/status/{{ s }}" class="btn btn-outline btn-sm">{{ '🔄' if s=='en_cours' else '✅' }}</a>{% endfor %}</td>
+</tr>{% endfor %}</tbody></table></div>{% else %}<p style="text-align:center;color:#999;padding:30px">Aucune tâche</p>{% endif %}
+</div></div>
+<div class="modal-bg" id="addM"><div class="modal"><h3>✅ Nouvelle tâche</h3><form method="post" action="/taches/add">
+<div class="form-group"><label>Titre *</label><input type="text" name="title" required></div>
+<div class="form-row"><div class="form-group"><label>Priorité</label><select name="priority"><option>basse</option><option selected>moyenne</option><option>haute</option><option>urgente</option></select></div>
+<div class="form-group"><label>Échéance</label><input type="date" name="due_date"></div></div>
+<div class="form-group"><label>Assigné à</label><select name="assigned_to"><option value="">Moi-même</option>{% for u in users %}<option value="{{ u.id }}">{{ u.full_name }}</option>{% endfor %}</select></div>
+<div class="form-group"><label>Description</label><textarea name="description" rows="2" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:7px"></textarea></div>
+<input type="hidden" name="project_id" value="">
+<div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-primary">Créer</button></div></form></div></div>
+{% endblock %}

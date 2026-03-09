@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}WannyGest - Projets{% endblock %}
+{% block content %}
+<div class="page-header"><h1>📁 Gestion de projets</h1></div>
+<div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon blue">🆕</div><div class="stat-info"><div class="stat-num">{{ stats.get('non_commence',0) }}</div><div class="stat-label">Non commencés</div></div></div>
+    <div class="stat-card"><div class="stat-icon orange">🔄</div><div class="stat-info"><div class="stat-num">{{ stats.get('en_cours',0) }}</div><div class="stat-label">En cours</div></div></div>
+    <div class="stat-card"><div class="stat-icon green">✅</div><div class="stat-info"><div class="stat-num">{{ stats.get('termine',0) }}</div><div class="stat-label">Terminés</div></div></div>
+</div>
+<div class="card"><div class="card-header"><h3>Projets</h3><button class="btn btn-orange btn-sm" onclick="document.getElementById('addM').classList.add('active')">+ Nouveau</button></div><div class="card-body">
+{% if projects %}<div class="table-wrap"><table>
+<thead><tr><th>Nom</th><th>Priorité</th><th>Début</th><th>Fin</th><th>Budget</th><th>Statut</th><th>Actions</th></tr></thead>
+<tbody>{% for p in projects %}<tr>
+<td><strong>{{ p.name }}</strong></td><td>{{ p.priority }}</td><td>{{ p.start_date or '-' }}</td><td>{{ p.end_date or '-' }}</td>
+<td>{{ '{:,.0f}'.format(p.budget) }} F</td>
+<td><span class="badge-status {% if p.status=='termine' %}sent{% elif p.status=='en_cours' %}pending{% else %}{% endif %}">{{ p.status }}</span></td>
+<td>{% for s in ['en_cours','termine'] %}<a href="/projets/{{ p.id }}/status/{{ s }}" class="btn btn-outline btn-sm">{{ s[:6] }}</a>{% endfor %}</td>
+</tr>{% endfor %}</tbody></table></div>{% else %}<p style="text-align:center;color:#999;padding:30px">Aucun projet</p>{% endif %}
+</div></div>
+<div class="modal-bg" id="addM"><div class="modal"><h3>📁 Nouveau projet</h3><form method="post" action="/projets/add">
+<div class="form-group"><label>Nom *</label><input type="text" name="name" required></div>
+<div class="form-row"><div class="form-group"><label>Priorité</label><select name="priority"><option>basse</option><option selected>moyenne</option><option>haute</option><option>urgente</option></select></div>
+<div class="form-group"><label>Budget (F)</label><input type="number" name="budget" step="1000" value="0"></div></div>
+<div class="form-row"><div class="form-group"><label>Début</label><input type="date" name="start_date"></div><div class="form-group"><label>Fin</label><input type="date" name="end_date"></div></div>
+<div class="form-group"><label>Description</label><textarea name="description" rows="2" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:7px"></textarea></div>
+<input type="hidden" name="client_id" value=""><input type="hidden" name="manager_id" value="">
+<div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-primary">Créer</button></div></form></div></div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}RAMYA - Contrats{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>📑 Gestion des contrats</h1>
+    <p>Suivi des contrats clients</p>
+</div>
+<div class="card">
+    <div class="card-header">
+        <h3>Contrats ({{ contracts|length }})</h3>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('addModal').classList.add('active')">+ Nouveau contrat</button>
+    </div>
+    <div class="card-body">
+        {% if contracts %}
+        <div class="table-wrap"><table>
+            <thead><tr><th>Client</th><th>Référence</th><th>Début</th><th>Fin</th><th>Tarif/mois</th><th>Statut</th><th>Actions</th></tr></thead>
+            <tbody>
+            {% for c in contracts %}
+            <tr>
+                <td><strong>{{ c.client_name }}</strong></td>
+                <td>{{ c.reference or '-' }}</td>
+                <td>{{ c.start_date or '-' }}</td>
+                <td>{{ c.end_date or '-' }}</td>
+                <td>{{ '{:,.0f}'.format(c.monthly_rate) }} FCFA</td>
+                <td>{% if c.status == 'actif' %}<span class="badge-status sent">Actif</span>{% elif c.status == 'expire' %}<span class="badge-status pending">Expiré</span>{% else %}<span class="badge-status" style="background:#f0f0f0;color:#666">{{ c.status }}</span>{% endif %}</td>
+                <td style="display:flex;gap:6px">
+                    <a href="/contrats/edit/{{ c.id }}" class="btn btn-outline btn-sm">✏️</a>
+                    <a href="/contrats/delete/{{ c.id }}" class="btn btn-danger btn-sm" onclick="return confirm('Supprimer ?')">🗑️</a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table></div>
+        {% else %}
+        <p style="text-align:center;color:#999;padding:30px">Aucun contrat</p>
+        {% endif %}
+    </div>
+</div>
+<!-- Modal ajout -->
+<div class="modal-bg" id="addModal"><div class="modal">
+    <h3>➕ Nouveau contrat</h3>
+    <form method="post" action="/contrats/add">
+        <div class="form-group"><label>Client *</label>
+            <select name="client_id" required>
+                <option value="">-- Choisir --</option>
+                {% for c in clients %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+            </select></div>
+        <div class="form-row">
+            <div class="form-group"><label>Référence</label><input type="text" name="reference" placeholder="Ex: CTR-2026-001"></div>
+            <div class="form-group"><label>Tarif mensuel (FCFA)</label><input type="number" name="monthly_rate" step="1000" placeholder="0"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>Date début</label><input type="date" name="start_date"></div>
+            <div class="form-group"><label>Date fin</label><input type="date" name="end_date"></div>
+        </div>
+        <div class="form-group"><label>Description</label><textarea name="description" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:14px"></textarea></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+            <button type="button" class="btn btn-outline" onclick="document.getElementById('addModal').classList.remove('active')">Annuler</button>
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+    </form>
+</div></div>
+{% endblock %}

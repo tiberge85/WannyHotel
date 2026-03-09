@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}WannyGest - Todos{% endblock %}
+{% block content %}
+<div class="page-header"><h1>📝 Ma liste de tâches</h1></div>
+<form method="post" action="/todos/add" style="display:flex;gap:8px;margin-bottom:18px">
+    <input type="text" name="title" required placeholder="Ajouter une tâche..." style="flex:1;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px">
+    <input type="date" name="due_date" style="padding:10px;border:1.5px solid #ddd;border-radius:8px">
+    <button type="submit" class="btn btn-orange">+ Ajouter</button>
+</form>
+<div class="card"><div class="card-body">
+{% for t in todos %}
+<div style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid #f0f0f0;{% if t.done %}opacity:0.5{% endif %}">
+    <a href="/todos/{{ t.id }}/toggle" style="font-size:20px;text-decoration:none">{% if t.done %}✅{% else %}⬜{% endif %}</a>
+    <div style="flex:1;{% if t.done %}text-decoration:line-through{% endif %}"><strong>{{ t.title }}</strong>{% if t.due_date %}<span style="font-size:11px;color:#888;margin-left:8px">📅 {{ t.due_date }}</span>{% endif %}</div>
+    <a href="/todos/{{ t.id }}/delete" style="color:#ccc;text-decoration:none;font-size:18px">×</a>
+</div>
+{% else %}<p style="text-align:center;color:#999;padding:20px">Rien à faire — ajoutez une tâche ci-dessus</p>{% endfor %}
+</div></div>
+{% endblock %}

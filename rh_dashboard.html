@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}WannyGest - Gestion RH{% endblock %}
+{% block content %}
+<div class="page-header"><h1>👥 Gestion des Ressources Humaines</h1></div>
+<div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon teal">👤</div><div class="stat-info"><div class="stat-num">{{ emp_stats.total }}</div><div class="stat-label">Employés actifs</div></div></div>
+    <div class="stat-card"><div class="stat-icon blue">📄</div><div class="stat-info"><div class="stat-num">{{ emp_stats.cdi }}</div><div class="stat-label">CDI</div></div></div>
+    <div class="stat-card"><div class="stat-icon orange">📋</div><div class="stat-info"><div class="stat-num">{{ emp_stats.cdd }}</div><div class="stat-label">CDD</div></div></div>
+    <div class="stat-card"><div class="stat-icon red">🏖️</div><div class="stat-info"><div class="stat-num">{{ emp_stats.pending_leaves }}</div><div class="stat-label">Congés en attente</div></div></div>
+</div>
+<div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+    <a href="/rh/personnel" class="stat-card" style="text-decoration:none;border-left:4px solid #1a4a6c"><div class="stat-icon teal">👤</div><div class="stat-info"><div style="font-size:16px;font-weight:700;color:#1a4a6c">Personnel</div><div class="stat-label">Gérer les employés, contrats, assurances</div></div></a>
+    <a href="/rh/conges" class="stat-card" style="text-decoration:none;border-left:4px solid #e8672a"><div class="stat-icon orange">🏖️</div><div class="stat-info"><div style="font-size:16px;font-weight:700;color:#1a4a6c">Congés</div><div class="stat-label">Demandes, approbations, soldes</div></div></a>
+    <a href="/rh/paie" class="stat-card" style="text-decoration:none;border-left:4px solid #2e7d32"><div class="stat-icon green">💵</div><div class="stat-info"><div style="font-size:16px;font-weight:700;color:#1a4a6c">Paie</div><div class="stat-label">Bulletins, salaires, déductions</div></div></a>
+</div>
+{% endblock %}

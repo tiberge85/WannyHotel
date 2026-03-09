@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}WannyGest - Nouveau devis{% endblock %}
+{% block content %}
+<div class="page-header"><h1>📝 Nouveau devis / proforma</h1></div>
+<div class="card"><div class="card-body">
+<form method="post" id="devisForm">
+    <div class="form-row">
+        <div class="form-group"><label>Type de document</label>
+            <select name="doc_type"><option value="devis">Devis</option><option value="proforma">Proforma</option></select></div>
+        <div class="form-group"><label>Contact commercial</label><input type="text" name="contact_commercial" placeholder="Nom du commercial"></div>
+    </div>
+    <div class="form-group"><label>Client enregistré</label>
+        <select name="client_id" onchange="var o=this.options[this.selectedIndex];if(o.value){document.getElementById('cn').value=o.dataset.name||''}">
+            <option value="">— Saisir manuellement —</option>
+            {% for c in clients %}<option value="{{ c.id }}" data-name="{{ c.name }}">{{ c.name }}</option>{% endfor %}
+        </select></div>
+    <div class="form-row">
+        <div class="form-group"><label>Nom du client *</label><input type="text" name="client_name" id="cn" required></div>
+        <div class="form-group"><label>Code client</label><input type="text" name="client_code" placeholder="Ex: C 420"></div>
+    </div>
+    <div class="form-group"><label>Objet *</label><input type="text" name="objet" required placeholder="Ex: FOURNITURE ET INSTALLATION DE VIDEO-SURVEILLANCE"></div>
+    
+    <h3 style="color:#1a3a5c;margin:16px 0 10px;font-size:15px">📦 Articles</h3>
+    <div id="items">
+        <div class="item-row" style="display:flex;gap:6px;margin-bottom:8px;align-items:end;flex-wrap:wrap">
+            <div style="flex:3"><label style="font-size:11px">Désignation</label><input type="text" name="item_1_designation" required placeholder="Ex: CAMERA FIXE ANALOGIQUE"></div>
+            <div style="flex:2"><label style="font-size:11px">Détail</label><input type="text" name="item_1_detail" placeholder="HYBRID LIGHT"></div>
+            <div style="flex:0 0 60px"><label style="font-size:11px">Qté</label><input type="number" name="item_1_qty" value="1" min="1"></div>
+            <div style="flex:0 0 100px"><label style="font-size:11px">Prix unit.</label><input type="number" name="item_1_prix" step="500" value="0"></div>
+            <div style="flex:0 0 80px"><label style="font-size:11px">Remise</label><input type="number" name="item_1_remise" value="0"></div>
+        </div>
+    </div>
+    <button type="button" class="btn btn-outline btn-sm" onclick="addItem()" style="margin-bottom:14px">+ Ajouter une ligne</button>
+    
+    <div class="form-row">
+        <div class="form-group"><label>Main d'œuvre (FCFA)</label><input type="number" name="main_oeuvre" step="1000" value="0"></div>
+        <div class="form-group"><label>Petites fournitures</label><input type="number" name="petites_fournitures" step="1000" value="0"></div>
+        <div class="form-group"><label>Remise globale</label><input type="number" name="remise" step="1000" value="0"></div>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea name="notes" rows="2" style="width:100%;padding:8px 11px;border:1.5px solid #ddd;border-radius:7px;font-size:13px" placeholder="Conditions, délais..."></textarea></div>
+    
+    <div style="display:flex;gap:10px;margin-top:16px">
+        <a href="/devis" class="btn btn-outline">Annuler</a>
+        <button type="submit" class="btn btn-orange" style="flex:1">📝 Créer le devis</button>
+    </div>
+</form></div></div>
+<script>
+let itemCount = 1;
+function addItem() {
+    itemCount++;
+    const html = `<div class="item-row" style="display:flex;gap:6px;margin-bottom:8px;align-items:end;flex-wrap:wrap">
+        <div style="flex:3"><input type="text" name="item_${itemCount}_designation" required placeholder="Désignation"></div>
+        <div style="flex:2"><input type="text" name="item_${itemCount}_detail" placeholder="Détail"></div>
+        <div style="flex:0 0 60px"><input type="number" name="item_${itemCount}_qty" value="1" min="1"></div>
+        <div style="flex:0 0 100px"><input type="number" name="item_${itemCount}_prix" step="500" value="0"></div>
+        <div style="flex:0 0 80px"><input type="number" name="item_${itemCount}_remise" value="0"></div>
+        <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;color:#c53030;cursor:pointer;font-size:18px;padding:4px">×</button>
+    </div>`;
+    document.getElementById('items').insertAdjacentHTML('beforeend', html);
+}
+</script>
+{% endblock %}

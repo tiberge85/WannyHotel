@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}WannyGest - Personnel{% endblock %}
+{% block content %}
+<div class="page-header"><h1>👤 Gestion du personnel</h1></div>
+<div class="card"><div class="card-header"><h3>Employés ({{ employees|length }})</h3><a href="/rh/personnel/add" class="btn btn-primary btn-sm">+ Ajouter</a></div><div class="card-body">
+{% if employees %}<div class="table-wrap"><table>
+<thead><tr><th>Matricule</th><th>Nom</th><th>Poste</th><th>Département</th><th>Contrat</th><th>Salaire</th><th>Assurance</th><th>Actions</th></tr></thead>
+<tbody>{% for e in employees %}<tr>
+<td>{{ e.matricule or '-' }}</td>
+<td><strong>{{ e.first_name }} {{ e.last_name }}</strong><br><span style="font-size:11px;color:#888">{{ e.email or '' }}</span></td>
+<td>{{ e.position or '-' }}</td><td>{{ e.department or '-' }}</td>
+<td><span class="badge-status {% if e.contract_type=='CDI' %}sent{% else %}pending{% endif %}">{{ e.contract_type }}</span></td>
+<td>{{ '{:,.0f}'.format(e.salary) }} F</td><td>{{ e.insurance or '-' }}</td>
+<td><a href="/rh/personnel/edit/{{ e.id }}" class="btn btn-outline btn-sm">✏️</a></td>
+</tr>{% endfor %}</tbody></table></div>
+{% else %}<p style="text-align:center;color:#999;padding:30px">Aucun employé. <a href="/rh/personnel/add" style="color:#1a4a6c">Ajouter le premier →</a></p>{% endif %}
+</div></div>
+{% endblock %}

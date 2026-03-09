@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}WannyGest - Nouvelle visite{% endblock %}
+{% block content %}
+<div class="page-header"><h1>🔍 Nouveau rapport de visite</h1><p>Fiche de visite technique terrain</p></div>
+<div class="card" style="max-width:700px"><div class="card-body">
+    <form method="post">
+        <div class="form-group"><label>Client enregistré</label>
+            <select name="client_id" id="clientSel" onchange="var o=this.options[this.selectedIndex];document.getElementById('cn').value=o.text||''">
+                <option value="">— Sélectionner ou saisir —</option>
+                {% for c in clients %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+            </select></div>
+        <div class="form-group"><label>Nom du client *</label><input type="text" name="client_name" id="cn" required placeholder="Nom du client"></div>
+        <div class="form-row">
+            <div class="form-group"><label>Nom du site *</label><input type="text" name="site_name" required placeholder="Ex: Siège Abidjan"></div>
+            <div class="form-group"><label>Date de visite</label><input type="date" name="visit_date" value="{{ now }}"></div>
+        </div>
+        <div class="form-group"><label>Adresse du site *</label><input type="text" name="site_address" required placeholder="Adresse complète"></div>
+        <div class="form-group"><label>Localisation GPS (optionnel)</label><input type="text" name="site_location" placeholder="Ex: 5.3599,-4.0083 ou lien Google Maps">
+            <div class="hint"><button type="button" class="btn btn-outline btn-sm" style="margin-top:4px" onclick="navigator.geolocation&&navigator.geolocation.getCurrentPosition(p=>{document.querySelector('[name=site_location]').value=p.coords.latitude.toFixed(6)+','+p.coords.longitude.toFixed(6)})">📍 Ma position actuelle</button></div></div>
+        <div class="form-row">
+            <div class="form-group"><label>Personne de contact</label><input type="text" name="contact_name" placeholder="Nom du contact sur site"></div>
+            <div class="form-group"><label>Tél contact</label><input type="text" name="contact_tel" placeholder="Numéro"></div>
+        </div>
+        <div class="form-group"><label>Besoins identifiés *</label>
+            <textarea name="needs" rows="4" required style="width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px" placeholder="Décrivez les besoins du client : vidéosurveillance, réseau, contrôle d'accès, etc."></textarea></div>
+        <div class="form-group"><label>Équipements recommandés</label>
+            <textarea name="equipment" rows="3" style="width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px" placeholder="Liste des équipements : caméras, NVR, switches, câblage..."></textarea></div>
+        <div class="form-group"><label>Observations</label>
+            <textarea name="observations" rows="3" style="width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px" placeholder="Remarques, contraintes du site, accès..."></textarea></div>
+        <div style="display:flex;gap:10px;margin-top:16px">
+            <a href="/visites" class="btn btn-outline">Annuler</a>
+            <button type="submit" class="btn btn-orange" style="flex:1">✅ Valider le rapport de visite</button>
+        </div>
+    </form>
+</div></div>
+{% endblock %}

@@ -1,6 +1,11 @@
 services:
   - type: web
-    name: wannyhotel
+    name: rapport-pointage-ramya
     runtime: python
+    pythonVersion: "3.11.11"
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --timeout 120
+    plan: free
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true

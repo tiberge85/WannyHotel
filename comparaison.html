@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}RAMYA - Comparaison{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>📈 Comparaison mensuelle</h1>
+    <p>Évolution des traitements par client et par mois</p>
+</div>
+
+{% if stats %}
+{% for client, client_months in stats.items() %}
+<div class="card">
+    <div class="card-header"><h3>🏢 {{ client }}</h3></div>
+    <div class="card-body">
+        <div class="table-wrap"><table>
+            <thead><tr><th>Mois</th><th>Rapports</th><th>Employés</th><th>Envoyés</th><th>En attente</th><th>Progression</th></tr></thead>
+            <tbody>
+            {% for month in months %}
+            {% if month in client_months %}
+            {% set m = client_months[month] %}
+            <tr>
+                <td><strong>{{ month }}</strong></td>
+                <td>{{ m.count }}</td>
+                <td>{{ m.employees }}</td>
+                <td><span class="badge-status sent">{{ m.sent }}</span></td>
+                <td>{% if m.pending > 0 %}<span class="badge-status pending">{{ m.pending }}</span>{% else %}0{% endif %}</td>
+                <td>
+                    <div style="background:#e0e0e0;border-radius:4px;height:20px;width:120px;overflow:hidden">
+                        {% set pct = (m.sent * 100 / m.count) if m.count > 0 else 0 %}
+                        <div style="background:#1a7a6d;height:100%;width:{{ pct }}%;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700">
+                            {% if pct > 15 %}{{ pct|int }}%{% endif %}
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+            </tbody>
+        </table></div>
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="card"><div class="card-body">
+    <p style="text-align:center;color:#999;padding:30px">Aucune donnée de comparaison. Effectuez des traitements pour voir les statistiques.</p>
+</div></div>
+{% endif %}
+{% endblock %}

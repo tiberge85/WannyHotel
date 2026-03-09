@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}WannyGest - Comptabilité{% endblock %}
+{% block content %}
+<div class="page-header"><h1>💰 Comptabilité</h1><p>Suivi des factures clients</p></div>
+<div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon orange">📤</div><div class="stat-info"><div class="stat-num">{{ inv_stats.a_envoyer }}</div><div class="stat-label">À envoyer</div></div></div>
+    <div class="stat-card"><div class="stat-icon blue">📧</div><div class="stat-info"><div class="stat-num">{{ inv_stats.envoyee }}</div><div class="stat-label">Envoyées</div></div></div>
+    <div class="stat-card"><div class="stat-icon orange">⏳</div><div class="stat-info"><div class="stat-num">{{ inv_stats.en_attente_paiement }}</div><div class="stat-label">Attente paiement</div></div></div>
+    <div class="stat-card"><div class="stat-icon green">✅</div><div class="stat-info"><div class="stat-num">{{ inv_stats.payee }}</div><div class="stat-label">Payées</div></div></div>
+</div>
+<div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+    {% for t, label in [('a_envoyer','📤 À envoyer'),('envoyee','📧 Envoyées'),('en_attente_paiement','⏳ Attente'),('payee','✅ Payées'),('all','📋 Toutes')] %}
+    <a href="/comptabilite?tab={{ t }}" class="btn {% if tab == t %}btn-primary{% else %}btn-outline{% endif %}">{{ label }}</a>
+    {% endfor %}
+</div>
+<div class="card"><div class="card-header"><h3>Factures</h3></div><div class="card-body">
+    {% if invoices %}
+    <div class="table-wrap"><table>
+        <thead><tr><th>Date</th><th>Client</th><th>Réf</th><th>Montant</th><th>Statut</th><th>Actions</th></tr></thead>
+        <tbody>{% for inv in invoices %}<tr>
+            <td>{{ inv.created_at[:10] }}</td>
+            <td><strong>{{ inv.client_name }}</strong></td>
+            <td>{{ inv.reference or '-' }}</td>
+            <td>{{ '{:,.0f}'.format(inv.amount) }} FCFA</td>
+            <td>{% if inv.status == 'a_envoyer' %}<span class="badge-status pending">📤 À envoyer</span>
+                {% elif inv.status == 'envoyee' %}<span class="badge-status" style="background:#e3f2fd;color:#1565c0">📧 Envoyée</span>
+                {% elif inv.status == 'en_attente_paiement' %}<span class="badge-status pending">⏳ Attente paiement</span>
+                {% elif inv.status == 'payee' %}<span class="badge-status sent">✅ Payée</span>{% endif %}</td>
+            <td style="display:flex;gap:4px;flex-wrap:wrap">
+                {% if inv.status == 'a_envoyer' %}<a href="/comptabilite/status/{{ inv.id }}/envoyee" class="btn btn-primary btn-sm">📧 Envoyée</a>{% endif %}
+                {% if inv.status == 'envoyee' %}<a href="/comptabilite/status/{{ inv.id }}/en_attente_paiement" class="btn btn-sm" style="background:#f57f17;color:#fff">⏳ Attente</a>{% endif %}
+                {% if inv.status == 'en_attente_paiement' %}<a href="/comptabilite/status/{{ inv.id }}/payee" class="btn btn-sm" style="background:#2e7d32;color:#fff">✅ Payée</a>{% endif %}
+            </td>
+        </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<p style="text-align:center;color:#999;padding:30px">Aucune facture dans cette catégorie</p>{% endif %}
+</div></div>
+{% endblock %}

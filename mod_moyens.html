@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}WannyGest - Moyens Généraux{% endblock %}
+{% block content %}
+<div class="page-header"><h1>🏠 Moyens Généraux</h1><p>Gestion des ressources matérielles</p></div>
+<div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon teal">🚗</div><div class="stat-info"><div class="stat-num">{{ vehicules|length }}</div><div class="stat-label">Véhicules</div></div></div>
+    <div class="stat-card"><div class="stat-icon orange">📦</div><div class="stat-info"><div class="stat-num">{{ fournitures|length }}</div><div class="stat-label">Fournitures</div></div></div>
+    <div class="stat-card"><div class="stat-icon blue">🔧</div><div class="stat-info"><div class="stat-num">{{ maintenance|length }}</div><div class="stat-label">Maintenances</div></div></div>
+</div>
+<div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+    <a href="/moyens-generaux/vehicules" class="stat-card" style="text-decoration:none;border-left:4px solid #1a4a6c"><div class="stat-icon teal">🚗</div><div class="stat-info"><div style="font-size:16px;font-weight:700;color:#1a3a5c">Parc véhicules</div><div class="stat-label">Suivi véhicules, assurances, visites</div></div></a>
+    <a href="/moyens-generaux/fournitures" class="stat-card" style="text-decoration:none;border-left:4px solid #e8672a"><div class="stat-icon orange">📦</div><div class="stat-info"><div style="font-size:16px;font-weight:700;color:#1a3a5c">Fournitures</div><div class="stat-label">Fournitures de bureau, consommables</div></div></a>
+    <a href="/moyens-generaux/maintenance" class="stat-card" style="text-decoration:none;border-left:4px solid #2e7d32"><div class="stat-icon green">🔧</div><div class="stat-info"><div style="font-size:16px;font-weight:700;color:#1a3a5c">Maintenance</div><div class="stat-label">Demandes d'intervention et suivi</div></div></a>
+</div>
+{% endblock %}

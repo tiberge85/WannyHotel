@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}RAMYA - Alertes{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>🚨 Alertes automatiques</h1>
+    <p>Retards excessifs et absences répétées détectés dans les rapports</p>
+</div>
+
+{% set high_alerts = alerts|selectattr('severity', 'equalto', 'high')|list %}
+{% set medium_alerts = alerts|selectattr('severity', 'equalto', 'medium')|list %}
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon red">🔴</div>
+        <div class="stat-info">
+            <div class="stat-num">{{ high_alerts|length }}</div>
+            <div class="stat-label">Alertes critiques</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon orange">🟠</div>
+        <div class="stat-info">
+            <div class="stat-num">{{ medium_alerts|length }}</div>
+            <div class="stat-label">Alertes modérées</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon teal">📊</div>
+        <div class="stat-info">
+            <div class="stat-num">{{ alerts|length }}</div>
+            <div class="stat-label">Total alertes</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h3>Détail des alertes</h3></div>
+    <div class="card-body">
+        {% if alerts %}
+        <div class="table-wrap"><table>
+            <thead><tr><th>Sévérité</th><th>Type</th><th>Employé</th><th>Client</th><th>Détail</th><th>Période</th><th>Rapport</th></tr></thead>
+            <tbody>
+            {% for a in alerts %}
+            <tr>
+                <td>{% if a.severity == 'high' %}<span class="badge-status" style="background:#fde8e8;color:#c53030">🔴 Critique</span>{% else %}<span class="badge-status pending">🟠 Modéré</span>{% endif %}</td>
+                <td>{% if a.type == 'retard' %}⏰ Retards{% else %}❌ Absences{% endif %}</td>
+                <td><strong>{{ a.employee }}</strong></td>
+                <td>{{ a.client }}</td>
+                <td>{{ a.detail }}</td>
+                <td style="font-size:12px">{{ a.period }}</td>
+                <td><a href="/job/{{ a.job_id }}" class="btn btn-outline btn-sm">Voir</a></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table></div>
+        {% else %}
+        <p style="text-align:center;color:#2e7d32;padding:30px;font-size:16px">✅ Aucune alerte — Tous les employés sont dans les normes</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card"><div class="card-body" style="font-size:13px;color:#888">
+    <strong>Critères d'alerte :</strong> Retard critique = 10+ jours, modéré = 5-9 jours. Absence critique = 5+ jours, modérée = 3-4 jours. Basé sur les données des derniers rapports traités.
+</div></div>
+{% endblock %}

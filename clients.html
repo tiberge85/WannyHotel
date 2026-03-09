@@ -1,15 +1,79 @@
-{% extends "base.html" %}{% block title %}WannyHotel - Clients{% endblock %}{% block content %}
-<div class="page-header"><h1>👤 Fichier clients</h1></div>
-<div class="card"><div class="card-header"><h3>Clients ({{ guests|length }})</h3><button class="btn btn-orange btn-sm" onclick="document.getElementById('addC').classList.add('active')">+ Client</button></div><div class="card-body">
-{% if guests %}<div class="table-wrap"><table>
-<thead><tr><th>Nom</th><th>Tél</th><th>Email</th><th>Nationalité</th><th>Société</th><th>Séjours</th><th>VIP</th></tr></thead>
-<tbody>{% for g in guests %}<tr><td><strong>{{ g.first_name }} {{ g.last_name }}</strong></td><td>{{ g.tel or '-' }}</td><td>{{ g.email or '-' }}</td><td>{{ g.nationality or '-' }}</td><td>{{ g.company or '-' }}</td><td>{{ g.total_stays }}</td><td>{% if g.vip %}⭐{% endif %}</td></tr>{% endfor %}</tbody></table></div>
-{% else %}<p style="text-align:center;color:#999;padding:20px">Aucun client</p>{% endif %}</div></div>
-<div class="modal-bg" id="addC"><div class="modal"><h3>👤 Nouveau client</h3><form method="post" action="/clients/add">
-<div class="form-row"><div class="form-group"><label>Prénom *</label><input type="text" name="first_name" required></div><div class="form-group"><label>Nom *</label><input type="text" name="last_name" required></div></div>
-<div class="form-row"><div class="form-group"><label>Tél</label><input type="text" name="tel"></div><div class="form-group"><label>Email</label><input type="email" name="email"></div></div>
-<div class="form-row"><div class="form-group"><label>Pièce d'identité</label><select name="id_type"><option>CNI</option><option>Passeport</option><option>Permis</option></select></div><div class="form-group"><label>N°</label><input type="text" name="id_number"></div></div>
-<div class="form-row"><div class="form-group"><label>Nationalité</label><input type="text" name="nationality" value="Ivoirienne"></div><div class="form-group"><label>Société</label><input type="text" name="company"></div></div>
-<div class="form-group"><label><input type="checkbox" name="vip" value="1"> Client VIP</label></div>
-<div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-primary">Ajouter</button></div></form></div></div>
+{% extends "base.html" %}
+{% block title %}RAMYA - Clients{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>🏢 Base de données clients</h1>
+    <p>Gérez les informations de vos clients</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Clients enregistrés ({{ clients|length }})</h3>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('addModal').classList.add('active')">+ Ajouter un client</button>
+    </div>
+    <div class="card-body">
+        {% if clients %}
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Nom</th><th>Contact</th><th>Tél</th><th>Email</th><th>Actions</th></tr></thead>
+                <tbody>
+                {% for c in clients %}
+                <tr>
+                    <td><strong>{{ c.name }}</strong></td>
+                    <td>{{ c.contact_name or '-' }}</td>
+                    <td>{{ c.tel or '-' }}</td>
+                    <td>{{ c.email or '-' }}</td>
+                    <td style="display:flex;gap:6px">
+                        <a href="/clients/edit/{{ c.id }}" class="btn btn-outline btn-sm">✏️</a>
+                        <a href="/clients/delete/{{ c.id }}" class="btn btn-danger btn-sm" onclick="return confirm('Supprimer ce client ?')">🗑️</a>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="text-align:center;color:#999;padding:30px">Aucun client enregistré</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal ajout -->
+<div class="modal-bg" id="addModal">
+    <div class="modal">
+        <h3>➕ Ajouter un client</h3>
+        <form method="post" action="/clients/add">
+            <div class="form-group">
+                <label>Nom de l'entreprise *</label>
+                <input type="text" name="name" required placeholder="Ex: MAKENA SPA">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Personne de contact</label>
+                    <input type="text" name="contact_name" placeholder="Ex: M. KOUASSI">
+                </div>
+                <div class="form-group">
+                    <label>Téléphone</label>
+                    <input type="text" name="tel" placeholder="Ex: 0768135568">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="email" placeholder="Ex: rh@makena.ci">
+            </div>
+            <div class="form-group">
+                <label>Adresse</label>
+                <input type="text" name="address" placeholder="Ex: Abidjan, Cocody">
+            </div>
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea name="notes" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:14px" placeholder="Informations complémentaires"></textarea>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+                <button type="button" class="btn btn-outline" onclick="document.getElementById('addModal').classList.remove('active')">Annuler</button>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}

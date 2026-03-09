@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}WannyGest - Visite #{{ visit.id }}{% endblock %}
+{% block content %}
+<div class="page-header"><h1>🔍 Rapport de visite #{{ visit.id }}</h1><p>{{ visit.client_name }} — {{ visit.site_name }}</p></div>
+<div class="card"><div class="card-header"><h3>Informations</h3></div><div class="card-body">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:14px">
+        <div><strong>Client :</strong> {{ visit.client_name }}</div>
+        <div><strong>Site :</strong> {{ visit.site_name }}</div>
+        <div><strong>Adresse :</strong> {{ visit.site_address or '-' }}</div>
+        <div><strong>Localisation :</strong> {% if visit.site_location %}<a href="https://maps.google.com/?q={{ visit.site_location }}" target="_blank" style="color:#1a7a6d">📍 Voir sur Maps</a>{% else %}-{% endif %}</div>
+        <div><strong>Contact :</strong> {{ visit.contact_name or '-' }} {% if visit.contact_tel %}({{ visit.contact_tel }}){% endif %}</div>
+        <div><strong>Date visite :</strong> {{ visit.visit_date or visit.created_at[:10] }}</div>
+        <div><strong>Technicien :</strong> {{ visit.created_by_name or '-' }}</div>
+        <div><strong>Statut :</strong> {% if visit.status=='en_attente' %}<span class="badge-status pending">⏳ En attente proforma</span>{% else %}<span class="badge-status sent">✅ Proforma envoyé</span>{% endif %}</div>
+    </div>
+</div></div>
+<div class="card"><div class="card-header"><h3>📋 Besoins identifiés</h3></div><div class="card-body"><p style="white-space:pre-wrap">{{ visit.needs or 'Non renseigné' }}</p></div></div>
+{% if visit.equipment %}<div class="card"><div class="card-header"><h3>🔧 Équipements recommandés</h3></div><div class="card-body"><p style="white-space:pre-wrap">{{ visit.equipment }}</p></div></div>{% endif %}
+{% if visit.observations %}<div class="card"><div class="card-header"><h3>📝 Observations</h3></div><div class="card-body"><p style="white-space:pre-wrap">{{ visit.observations }}</p></div></div>{% endif %}
+{% if visit.proforma_ref %}<div class="card"><div class="card-header"><h3>💼 Proforma</h3></div><div class="card-body">
+    <div><strong>Réf :</strong> {{ visit.proforma_ref }}</div>
+    <div><strong>Montant :</strong> {{ '{:,.0f}'.format(visit.proforma_amount or 0) }} FCFA</div>
+    <div><strong>Envoyé le :</strong> {{ visit.proforma_sent_at[:16] if visit.proforma_sent_at else '-' }}</div>
+</div></div>{% endif %}
+<div style="margin-top:14px"><a href="/visites" class="btn btn-outline">← Retour</a></div>
+{% endblock %}

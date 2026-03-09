@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}RAMYA - Fichiers à envoyer{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>📁 Fichiers prêts à envoyer</h1>
+    <p>Session RH — Gestion des envois aux clients</p>
+</div>
+
+<!-- Tabs -->
+<div style="display:flex;gap:8px;margin-bottom:20px">
+    <a href="/fichiers?tab=pending" class="btn {% if tab == 'pending' %}btn-primary{% else %}btn-outline{% endif %}">
+        ⏳ En attente ({{ pending|length }})
+    </a>
+    <a href="/fichiers?tab=sent" class="btn {% if tab == 'sent' %}btn-primary{% else %}btn-outline{% endif %}">
+        ✅ Envoyés ({{ sent|length }})
+    </a>
+</div>
+
+{% if tab == 'pending' %}
+<div class="card">
+    <div class="card-header"><h3>⏳ Fichiers en attente d'envoi</h3></div>
+    <div class="card-body">
+        {% if pending %}
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Date</th><th>Client</th><th>Employés</th><th>Traité par</th><th>Actions</th></tr></thead>
+                <tbody>
+                {% for job in pending %}
+                <tr>
+                    <td>{{ job.created_at[:16] }}</td>
+                    <td><a href="/job/{{ job.job_id }}" style="color:#1a7a6d;font-weight:600;text-decoration:none">{{ job.client_name }}</a></td>
+                    <td>{{ job.employee_count }}</td>
+                    <td>{{ job.user_name }}</td>
+                    <td style="display:flex;gap:6px;flex-wrap:wrap">
+                        {% if job.filename_pdf %}
+                        <a href="/fichiers/download/{{ job.job_id }}/pdf" class="btn btn-primary btn-sm">📥 PDF</a>
+                        {% endif %}
+                        {% if job.filename_xlsx %}
+                        <a href="/fichiers/download/{{ job.job_id }}/xlsx" class="btn btn-outline btn-sm">📥 Excel</a>
+                        {% endif %}
+                        {% if 'envoyer' in permissions %}
+                        <a href="/fichiers/marquer/{{ job.job_id }}" class="btn btn-orange btn-sm" onclick="return confirm('Marquer comme envoyé ?')">✅ Envoyé</a>
+                        <a href="/fichiers/email/{{ job.job_id }}" class="btn btn-sm" style="background:#42a5f5;color:#fff">📧 Email</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="text-align:center;color:#999;padding:30px">Aucun fichier en attente</p>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="card-header"><h3>✅ Fichiers envoyés</h3></div>
+    <div class="card-body">
+        {% if sent %}
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Date traitement</th><th>Client</th><th>Employés</th><th>Envoyé le</th><th>Envoyé par</th><th>Actions</th></tr></thead>
+                <tbody>
+                {% for job in sent %}
+                <tr>
+                    <td>{{ job.created_at[:16] }}</td>
+                    <td><a href="/job/{{ job.job_id }}" style="color:#1a7a6d;font-weight:600;text-decoration:none">{{ job.client_name }}</a></td>
+                    <td>{{ job.employee_count }}</td>
+                    <td>{{ job.sent_at[:16] if job.sent_at else '-' }}</td>
+                    <td>{{ job.sent_by_name or '-' }}</td>
+                    <td>
+                        {% if job.filename_pdf %}
+                        <a href="/fichiers/download/{{ job.job_id }}/pdf" class="btn btn-outline btn-sm">📥 PDF</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="text-align:center;color:#999;padding:30px">Aucun fichier envoyé</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

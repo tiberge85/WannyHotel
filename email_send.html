@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}RAMYA - Envoyer par email{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>📧 Envoyer le rapport par email</h1>
+    <p>{{ job.client_name }} — {{ job.period }}</p>
+</div>
+
+<div class="card" style="max-width:600px">
+    <div class="card-body">
+        <form method="post">
+            <div class="form-group">
+                <label>Email du destinataire *</label>
+                <input type="email" name="to_email" required value="{{ default_email }}" placeholder="rh@client.ci">
+            </div>
+            <div class="form-group">
+                <label>Objet *</label>
+                <input type="text" name="subject" required value="Rapport de pointage — {{ job.client_name }} — {{ job.period }}">
+            </div>
+            <div class="form-group">
+                <label>Message</label>
+                <textarea name="body" rows="5" style="width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px">Bonjour,
+
+Veuillez trouver ci-joint le rapport de pointage pour la période {{ job.period }}.
+
+Cordialement,
+RAMYA TECHNOLOGIE & INNOVATION</textarea>
+            </div>
+            
+            <div style="background:#f8faf9;border-radius:10px;padding:16px;margin:16px 0">
+                <h4 style="color:#1a7a6d;margin-bottom:10px;font-size:14px">⚙️ Configuration SMTP</h4>
+                <div class="hint" style="margin-bottom:10px">Paramètres de votre serveur email (Gmail, Outlook, etc.)</div>
+                <div class="form-row">
+                    <div class="form-group"><label>Serveur SMTP *</label><input type="text" name="smtp_host" required placeholder="smtp.gmail.com" value="{{ smtp.smtp_host }}"></div>
+                    <div class="form-group"><label>Port *</label><input type="number" name="smtp_port" required value="{{ smtp.smtp_port }}"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Email expéditeur *</label><input type="email" name="smtp_user" required value="{{ smtp.smtp_user }}" placeholder="votre.email@gmail.com"></div>
+                    <div class="form-group"><label>Mot de passe app *</label><input type="password" name="smtp_pass" required value="{{ smtp.smtp_pass }}" placeholder="Mot de passe d'application"></div>
+                </div>
+                <div class="hint">Pour Gmail : utilisez un <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:#1a7a6d">mot de passe d'application</a>, pas votre mot de passe habituel.</div>
+            </div>
+            
+            <div style="background:#e8f5f2;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px">
+                📎 Pièce jointe : <strong>{{ job.filename_pdf }}</strong>
+            </div>
+            
+            <div style="display:flex;gap:10px">
+                <a href="/fichiers" class="btn btn-outline">Annuler</a>
+                <button type="submit" class="btn btn-orange" style="flex:1">📧 Envoyer l'email</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

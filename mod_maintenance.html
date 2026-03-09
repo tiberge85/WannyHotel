@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}WannyGest - Maintenance{% endblock %}
+{% block content %}
+<div class="page-header"><h1>🔧 Demandes de maintenance</h1></div>
+<div class="card"><div class="card-header"><h3>Interventions</h3><button class="btn btn-orange btn-sm" onclick="document.getElementById('addM').classList.add('active')">+ Demande</button></div><div class="card-body">
+{% if items %}<div class="table-wrap"><table>
+<thead><tr><th>Date</th><th>Équipement</th><th>Description</th><th>Priorité</th><th>Statut</th><th>Actions</th></tr></thead>
+<tbody>{% for m in items %}<tr>
+<td>{{ m.date_requested or m.created_at[:10] }}</td><td><strong>{{ m.equipment }}</strong></td><td style="font-size:12px">{{ m.description or '-' }}</td><td>{{ m.priority }}</td>
+<td><span class="badge-status {% if m.status=='termine' %}sent{% elif m.status=='en_cours' %}pending{% else %}{% endif %}">{{ m.status }}</span></td>
+<td>{% if m.status!='termine' %}<a href="/moyens-generaux/maintenance/{{ m.id }}/status/en_cours" class="btn btn-outline btn-sm">🔄</a><a href="/moyens-generaux/maintenance/{{ m.id }}/status/termine" class="btn btn-sm" style="background:#2e7d32;color:#fff">✅</a>{% endif %}</td>
+</tr>{% endfor %}</tbody></table></div>
+{% else %}<p style="text-align:center;color:#999;padding:30px">Aucune demande</p>{% endif %}
+</div></div>
+<div class="modal-bg" id="addM"><div class="modal"><h3>🔧 Nouvelle demande</h3><form method="post">
+<div class="form-group"><label>Équipement *</label><input type="text" name="equipment" required placeholder="Climatisation bureau 2, Imprimante..."></div>
+<div class="form-row"><div class="form-group"><label>Priorité</label><select name="priority"><option>basse</option><option selected>normale</option><option>haute</option><option>urgente</option></select></div><div class="form-group"><label>Date</label><input type="date" name="date_requested"></div></div>
+<div class="form-group"><label>Description</label><textarea name="description" rows="2" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:7px"></textarea></div>
+<div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-primary">Créer</button></div></form></div></div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}RAMYA - Modifier contrat{% endblock %}
+{% block content %}
+<div class="page-header"><h1>✏️ Modifier le contrat</h1></div>
+<div class="card" style="max-width:550px"><div class="card-body">
+    <form method="post">
+        <div class="form-group"><label>Client</label>
+            <select name="client_id" required>{% for c in clients %}<option value="{{ c.id }}" {% if c.id == contract.client_id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+        <div class="form-row">
+            <div class="form-group"><label>Référence</label><input type="text" name="reference" value="{{ contract.reference or '' }}"></div>
+            <div class="form-group"><label>Tarif mensuel (FCFA)</label><input type="number" name="monthly_rate" step="1000" value="{{ contract.monthly_rate or 0 }}"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>Début</label><input type="date" name="start_date" value="{{ contract.start_date or '' }}"></div>
+            <div class="form-group"><label>Fin</label><input type="date" name="end_date" value="{{ contract.end_date or '' }}"></div>
+        </div>
+        <div class="form-group"><label>Statut</label>
+            <select name="status">
+                {% for s in ['actif','expire','suspendu','termine'] %}<option value="{{ s }}" {% if contract.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+            </select></div>
+        <div class="form-group"><label>Description</label><textarea name="description" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:14px">{{ contract.description or '' }}</textarea></div>
+        <div style="display:flex;gap:10px"><a href="/contrats" class="btn btn-outline">Annuler</a><button type="submit" class="btn btn-primary">💾 Sauvegarder</button></div>
+    </form>
+</div></div>
+{% endblock %}

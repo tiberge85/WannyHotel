@@ -1,12 +1,156 @@
-{% extends "base.html" %}{% block title %}WannyHotel - Admin{% endblock %}{% block content %}
-<div class="page-header"><h1>⚙️ Administration</h1></div>
-<div class="card"><div class="card-header"><h3>Utilisateurs</h3><button class="btn btn-gold btn-sm" onclick="document.getElementById('addM').classList.add('active')">+ Utilisateur</button></div><div class="card-body">
-<div class="table-wrap"><table><thead><tr><th>Nom</th><th>Identifiant</th><th>Rôle</th></tr></thead>
-<tbody>{% for u in users %}<tr><td><strong>{{ u.full_name }}</strong></td><td>{{ u.username }}</td><td><span class="badge-s gold">{{ u.role }}</span></td></tr>{% endfor %}</tbody></table></div></div></div>
-<div class="card"><div class="card-header"><h3>Dernières activités</h3></div><div class="card-body">
-<div class="table-wrap"><table><thead><tr><th>Date</th><th>Utilisateur</th><th>Action</th><th>Détail</th></tr></thead>
-<tbody>{% for l in logs %}<tr><td style="font-size:11px">{{ l.created_at[:16] }}</td><td>{{ l.user_name }}</td><td>{{ l.action }}</td><td style="font-size:11px">{{ l.detail }}</td></tr>{% endfor %}</tbody></table></div></div></div>
-<div class="modal-bg" id="addM"><div class="modal"><h3>Nouvel utilisateur</h3><form method="post" action="/admin/user/add">
-<div class="form-row"><div class="form-group"><label>Identifiant *</label><input type="text" name="username" required></div><div class="form-group"><label>Mot de passe *</label><input type="password" name="password" required></div></div>
-<div class="form-row"><div class="form-group"><label>Nom complet *</label><input type="text" name="full_name" required></div><div class="form-group"><label>Rôle</label><select name="role"><option>receptionniste</option><option>restaurant</option><option>comptable</option><option>directeur</option><option>admin</option></select></div></div>
-<div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-gold">Créer</button></div></form></div></div>{% endblock %}
+{% extends "base.html" %}
+{% block title %}RAMYA - Administration{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>👥 Administration</h1>
+    <p>Gestion des utilisateurs et des accès</p>
+</div>
+
+<!-- Users -->
+<div class="card">
+    <div class="card-header">
+        <h3>Utilisateurs ({{ users|length }})</h3>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('addUserModal').classList.add('active')">+ Créer un utilisateur</button>
+    </div>
+    <div class="card-body">
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Nom</th><th>Identifiant</th><th>Email</th><th>Rôle</th><th>Dernière connexion</th><th>Statut</th><th>Actions</th></tr></thead>
+                <tbody>
+                {% for u in users %}
+                <tr>
+                    <td><strong>{{ u.full_name }}</strong></td>
+                    <td>{{ u.username }}</td>
+                    <td>{{ u.email }}</td>
+                    <td><span class="badge-status {{ u.role }}">{{ u.role }}</span></td>
+                    <td>{{ u.last_login[:16] if u.last_login else 'Jamais' }}</td>
+                    <td>{% if u.is_active %}<span style="color:#2e7d32">●</span> Actif{% else %}<span style="color:#c53030">●</span> Inactif{% endif %}</td>
+                    <td style="display:flex;gap:6px">
+                        <a href="/admin/edit/{{ u.id }}" class="btn btn-outline btn-sm">✏️</a>
+                        {% if u.role != 'admin' %}
+                        {% if u.is_active %}
+                        <a href="/admin/toggle/{{ u.id }}" class="btn btn-danger btn-sm" onclick="return confirm('Désactiver cet utilisateur ?')">🔒</a>
+                        {% else %}
+                        <a href="/admin/toggle/{{ u.id }}" class="btn btn-primary btn-sm">🔓</a>
+                        {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Permissions -->
+<div class="card">
+    <div class="card-header"><h3>🔑 Permissions par rôle</h3></div>
+    <div class="card-body">
+        <form method="post" action="/admin/permissions">
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Permission</th><th>Admin</th><th>RH</th><th>Technicien</th></tr></thead>
+                    <tbody>
+                    {% for perm in all_permissions %}
+                    <tr>
+                        <td><strong>{{ perm }}</strong></td>
+                        {% for role in ['admin', 'rh', 'technicien'] %}
+                        <td><input type="checkbox" name="{{ role }}_{{ perm }}" {% if perm in role_perms[role] %}checked{% endif %} {% if role == 'admin' %}disabled checked{% endif %}></td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:14px;text-align:right">
+                <button type="submit" class="btn btn-primary">💾 Sauvegarder les permissions</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal création utilisateur -->
+<div class="modal-bg" id="addUserModal">
+    <div class="modal">
+        <h3>➕ Créer un utilisateur</h3>
+        <form method="post" action="/admin/add">
+            <div class="form-group">
+                <label>Nom complet *</label>
+                <input type="text" name="full_name" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Identifiant *</label>
+                    <input type="text" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label>Email *</label>
+                    <input type="email" name="email" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Mot de passe *</label>
+                    <input type="password" name="password" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label>Rôle</label>
+                    <select name="role">
+                        <option value="technicien">Technicien</option>
+                        <option value="commercial">Commercial</option>
+                        <option value="comptable">Comptable</option>
+                        <option value="rh">RH</option>
+                        <option value="moyens_generaux">Moyens Généraux</option>
+                        <option value="informatique">Informatique</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+                <button type="button" class="btn btn-outline" onclick="document.getElementById('addUserModal').classList.remove('active')">Annuler</button>
+                <button type="submit" class="btn btn-primary">Créer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Réinitialisation -->
+<div class="card" style="border:2px solid #feb2b2">
+    <div class="card-header" style="background:#fde8e8">
+        <h3 style="color:#c53030">⚠️ Zone de réinitialisation</h3>
+    </div>
+    <div class="card-body">
+        <p style="color:#666;font-size:14px;margin-bottom:16px">
+            Ces actions sont <strong>irréversibles</strong>. Utilisez-les avec précaution.
+        </p>
+        
+        <div style="display:flex;flex-wrap:wrap;gap:12px">
+            <!-- Réinitialiser les rapports -->
+            <form method="post" action="/admin/reset" style="margin:0" onsubmit="return confirm('⚠️ ATTENTION !\n\nCeci va supprimer TOUS les rapports traités et les fichiers associés.\n\nÊtes-vous sûr ?')">
+                <input type="hidden" name="target" value="jobs">
+                <button type="submit" class="btn btn-danger">🗑️ Supprimer tous les rapports ({{ stats.total_jobs }})</button>
+            </form>
+            
+            <!-- Réinitialiser les clients -->
+            <form method="post" action="/admin/reset" style="margin:0" onsubmit="return confirm('⚠️ ATTENTION !\n\nCeci va supprimer TOUS les clients enregistrés.\n\nÊtes-vous sûr ?')">
+                <input type="hidden" name="target" value="clients">
+                <button type="submit" class="btn btn-danger">🗑️ Supprimer tous les clients ({{ stats.total_clients }})</button>
+            </form>
+            
+            <!-- Réinitialiser les utilisateurs (sauf admin) -->
+            <form method="post" action="/admin/reset" style="margin:0" onsubmit="return confirm('⚠️ ATTENTION !\n\nCeci va supprimer TOUS les utilisateurs sauf le compte admin.\n\nÊtes-vous sûr ?')">
+                <input type="hidden" name="target" value="users">
+                <button type="submit" class="btn btn-danger">🗑️ Supprimer les utilisateurs (sauf admin)</button>
+            </form>
+        </div>
+        
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid #feb2b2">
+            <form method="post" action="/admin/reset" style="margin:0" onsubmit="return confirm('🚨 RÉINITIALISATION COMPLÈTE !\n\nCeci va supprimer :\n- Tous les rapports\n- Tous les clients\n- Tous les utilisateurs (sauf admin)\n- Tous les fichiers\n\nCette action est IRRÉVERSIBLE.\n\nTapez OK pour confirmer.') && prompt('Tapez REINITIALISER pour confirmer') === 'REINITIALISER'">
+                <input type="hidden" name="target" value="all">
+                <button type="submit" class="btn" style="background:#c53030;color:#fff;padding:12px 24px;font-size:14px">🚨 Réinitialisation complète du programme</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

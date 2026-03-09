@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}WannyGest - Tickets{% endblock %}
+{% block content %}
+<div class="page-header"><h1>🎫 Support technique</h1></div>
+<div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon red">🔴</div><div class="stat-info"><div class="stat-num">{{ stats.get('ouvert',0) }}</div><div class="stat-label">Ouverts</div></div></div>
+    <div class="stat-card"><div class="stat-icon orange">🔄</div><div class="stat-info"><div class="stat-num">{{ stats.get('en_cours',0) }}</div><div class="stat-label">En cours</div></div></div>
+    <div class="stat-card"><div class="stat-icon green">✅</div><div class="stat-info"><div class="stat-num">{{ stats.get('resolu',0) }}</div><div class="stat-label">Résolus</div></div></div>
+</div>
+<div class="card"><div class="card-header"><h3>Tickets</h3><button class="btn btn-orange btn-sm" onclick="document.getElementById('addM').classList.add('active')">+ Ticket</button></div><div class="card-body">
+{% if tickets %}<div class="table-wrap"><table>
+<thead><tr><th>Sujet</th><th>Client</th><th>Priorité</th><th>Statut</th><th>Actions</th></tr></thead>
+<tbody>{% for t in tickets %}<tr>
+<td><strong>{{ t.subject }}</strong></td><td>-</td><td>{{ t.priority }}</td>
+<td><span class="badge-status {% if t.status=='resolu' %}sent{% elif t.status=='ouvert' %}{% else %}pending{% endif %}">{{ t.status }}</span></td>
+<td>{% for s in ['en_cours','resolu','ferme'] %}<a href="/tickets/{{ t.id }}/status/{{ s }}" class="btn btn-outline btn-sm" style="font-size:10px">{{ s[:5] }}</a>{% endfor %}</td>
+</tr>{% endfor %}</tbody></table></div>{% else %}<p style="text-align:center;color:#999;padding:30px">Aucun ticket</p>{% endif %}
+</div></div>
+<div class="modal-bg" id="addM"><div class="modal"><h3>🎫 Nouveau ticket</h3><form method="post" action="/tickets/add">
+<div class="form-group"><label>Sujet *</label><input type="text" name="subject" required></div>
+<div class="form-row"><div class="form-group"><label>Priorité</label><select name="priority"><option>basse</option><option selected>normale</option><option>haute</option><option>urgente</option></select></div>
+<div class="form-group"><label>Assigné à</label><select name="assigned_to"><option value="">Non assigné</option>{% for u in users %}<option value="{{ u.id }}">{{ u.full_name }}</option>{% endfor %}</select></div></div>
+<div class="form-group"><label>Client</label><select name="client_id"><option value="">Aucun</option>{% for c in clients %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+<div class="form-group"><label>Description</label><textarea name="description" rows="3" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:7px"></textarea></div>
+<div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-primary">Créer</button></div></form></div></div>
+{% endblock %}

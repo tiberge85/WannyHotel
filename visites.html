@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}WannyGest - Visites{% endblock %}
+{% block content %}
+<div class="page-header"><h1>🔍 Rapports de visite technique</h1><p>Fiches terrain et demandes de proforma</p></div>
+<div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon orange">⏳</div><div class="stat-info"><div class="stat-num">{{ v_stats.en_attente }}</div><div class="stat-label">En attente proforma</div></div></div>
+    <div class="stat-card"><div class="stat-icon green">✅</div><div class="stat-info"><div class="stat-num">{{ v_stats.proforma_envoye }}</div><div class="stat-label">Proforma envoyé</div></div></div>
+    <div class="stat-card"><div class="stat-icon teal">📋</div><div class="stat-info"><div class="stat-num">{{ v_stats.total }}</div><div class="stat-label">Total visites</div></div></div>
+</div>
+<div style="display:flex;gap:8px;margin-bottom:20px">
+    <a href="/visites?tab=en_attente" class="btn {% if tab=='en_attente' %}btn-primary{% else %}btn-outline{% endif %}">⏳ En attente ({{ v_stats.en_attente }})</a>
+    <a href="/visites?tab=proforma_envoye" class="btn {% if tab=='proforma_envoye' %}btn-primary{% else %}btn-outline{% endif %}">✅ Proforma envoyé</a>
+    <a href="/visites?tab=all" class="btn {% if tab=='all' %}btn-primary{% else %}btn-outline{% endif %}">📋 Toutes</a>
+    <a href="/visites/new" class="btn btn-orange">+ Nouvelle visite</a>
+</div>
+<div class="card"><div class="card-body">
+    {% if visits %}
+    <div class="table-wrap"><table>
+        <thead><tr><th>Date</th><th>Client</th><th>Site</th><th>Technicien</th><th>Statut</th><th>Proforma</th><th>Actions</th></tr></thead>
+        <tbody>{% for v in visits %}<tr>
+            <td>{{ v.visit_date or v.created_at[:10] }}</td>
+            <td><strong>{{ v.client_name }}</strong></td>
+            <td>{{ v.site_name or '-' }}</td>
+            <td>{{ v.created_by_name or '-' }}</td>
+            <td>{% if v.status=='en_attente' %}<span class="badge-status pending">⏳ En attente</span>{% else %}<span class="badge-status sent">✅ Envoyé</span>{% endif %}</td>
+            <td>{% if v.proforma_ref %}{{ v.proforma_ref }} — {{ '{:,.0f}'.format(v.proforma_amount or 0) }} FCFA{% else %}-{% endif %}</td>
+            <td style="display:flex;gap:4px">
+                <a href="/visites/{{ v.id }}" class="btn btn-outline btn-sm">👁️</a>
+                {% if v.status=='en_attente' and 'proforma' in permissions %}
+                <button class="btn btn-primary btn-sm" onclick="document.getElementById('proforma_{{ v.id }}').classList.add('active')">📝 Proforma</button>
+                {% endif %}
+            </td>
+        </tr>
+        <!-- Modal proforma -->
+        <div class="modal-bg" id="proforma_{{ v.id }}"><div class="modal">
+            <h3>📝 Envoyer proforma — {{ v.client_name }}</h3>
+            <p style="font-size:13px;color:#666;margin-bottom:14px">Besoins: {{ v.needs[:100] if v.needs else 'Non renseigné' }}...</p>
+            <form method="post" action="/visites/proforma/{{ v.id }}">
+                <div class="form-row">
+                    <div class="form-group"><label>Réf. Proforma</label><input type="text" name="proforma_ref" required placeholder="PRO-2026-001"></div>
+                    <div class="form-group"><label>Montant (FCFA)</label><input type="number" name="proforma_amount" step="1000" required placeholder="0"></div>
+                </div>
+                <div style="display:flex;gap:10px;justify-content:flex-end">
+                    <button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button>
+                    <button type="submit" class="btn btn-primary">✅ Valider</button>
+                </div>
+            </form>
+        </div></div>
+        {% endfor %}</tbody>
+    </table></div>
+    {% else %}<p style="text-align:center;color:#999;padding:30px">Aucun rapport de visite</p>{% endif %}
+</div></div>
+{% endblock %}

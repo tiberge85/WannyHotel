@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}WannyGest - Paie{% endblock %}
+{% block content %}
+<div class="page-header"><h1>💵 Gestion de la paie</h1></div>
+<div style="display:flex;gap:8px;margin-bottom:20px;align-items:center">
+    <form method="get" style="display:flex;gap:8px;align-items:center">
+        <input type="month" name="period" value="{{ period }}" style="padding:8px 12px;border:1.5px solid #ddd;border-radius:8px">
+        <button type="submit" class="btn btn-outline btn-sm">Filtrer</button>
+    </form>
+    <a href="/rh/paie" class="btn btn-outline btn-sm">Tous</a>
+    <button class="btn btn-orange btn-sm" style="margin-left:auto" onclick="document.getElementById('addPay').classList.add('active')">+ Bulletin de paie</button>
+</div>
+<div class="card"><div class="card-body">
+{% if payslips %}<div class="table-wrap"><table>
+<thead><tr><th>Période</th><th>Employé</th><th>Matricule</th><th>Base</th><th>Bonus</th><th>Déductions</th><th>Net</th><th>Statut</th></tr></thead>
+<tbody>{% for p in payslips %}<tr>
+<td>{{ p.period }}</td><td><strong>{{ p.employee_name }}</strong></td><td>{{ p.matricule or '-' }}</td>
+<td>{{ '{:,.0f}'.format(p.base_salary) }}</td><td style="color:#2e7d32">+{{ '{:,.0f}'.format(p.bonus + p.commission + p.overtime_amount) }}</td>
+<td style="color:#c53030">-{{ '{:,.0f}'.format(p.deductions + p.insurance_amount + p.tax_amount) }}</td>
+<td><strong>{{ '{:,.0f}'.format(p.net_salary) }} F</strong></td>
+<td><span class="badge-status {% if p.status=='valide' %}sent{% else %}pending{% endif %}">{{ p.status }}</span></td>
+</tr>{% endfor %}</tbody></table></div>
+{% else %}<p style="text-align:center;color:#999;padding:30px">Aucun bulletin</p>{% endif %}
+</div></div>
+<div class="modal-bg" id="addPay"><div class="modal"><h3>💵 Nouveau bulletin de paie</h3>
+<form method="post" action="/rh/paie/add">
+    <div class="form-row"><div class="form-group"><label>Employé</label><select name="employee_id" required>{% for e in employees %}<option value="{{ e.id }}">{{ e.first_name }} {{ e.last_name }} ({{ '{:,.0f}'.format(e.salary) }} F)</option>{% endfor %}</select></div><div class="form-group"><label>Période</label><input type="month" name="period" required></div></div>
+    <div class="form-row"><div class="form-group"><label>Salaire de base</label><input type="number" name="base_salary" step="1000" value="0"></div><div class="form-group"><label>Heures sup</label><input type="number" name="overtime_amount" step="500" value="0"></div></div>
+    <div class="form-row"><div class="form-group"><label>Bonus / KPI</label><input type="number" name="bonus" step="1000" value="0"></div><div class="form-group"><label>Commissions</label><input type="number" name="commission" step="1000" value="0"></div></div>
+    <div class="form-row"><div class="form-group"><label>Déductions</label><input type="number" name="deductions" step="500" value="0"></div><div class="form-group"><label>Assurance</label><input type="number" name="insurance_amount" step="500" value="0"></div></div>
+    <div class="form-group"><label>Impôts sur le revenu</label><input type="number" name="tax_amount" step="500" value="0"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-primary">Créer le bulletin</button></div>
+</form></div></div>
+{% endblock %}

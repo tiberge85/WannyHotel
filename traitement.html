@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% block title %}RAMYA - Traitement{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>⚙️ Traitement des rapports</h1>
+    <p>Fusionnez les fichiers et générez le rapport PDF</p>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form id="reportForm" action="/traitement/generate" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="merge_id" id="mergeId" value="">
+            
+            <!-- Step 1: Enregistrement -->
+            <div class="step">
+                <div class="step-label">
+                    <span class="step-num">1</span>
+                    <span class="step-title">Fichier Enregistrement des arrivées et départs</span>
+                    <span class="step-optional">optionnel</span>
+                </div>
+                <div class="upload-zone small-zone" id="dropZoneEnr" onclick="document.getElementById('enrFile').click()">
+                    <input type="file" id="enrFile" accept=".xlsx,.xls">
+                    <div class="upload-text"><strong>Cliquez</strong> ou glissez le fichier Enregistrement .xlsx</div>
+                    <div class="file-name" id="enrFileName"></div>
+                </div>
+            </div>
+            
+            <!-- Step 2: Transactions -->
+            <div class="step">
+                <div class="step-label">
+                    <span class="step-num">2</span>
+                    <span class="step-title">Fichier Transactions</span>
+                    <span class="step-optional">optionnel</span>
+                </div>
+                <div class="upload-zone small-zone" id="dropZoneTrans" onclick="document.getElementById('transFile').click()">
+                    <input type="file" id="transFile" accept=".xlsx,.xls">
+                    <div class="upload-text"><strong>Cliquez</strong> ou glissez le fichier Transactions .xlsx</div>
+                    <div class="file-name" id="transFileName"></div>
+                </div>
+                <div id="mergeStatus" class="merge-status" style="display:none;"></div>
+            </div>
+            
+            <!-- Step 3: Présence -->
+            <div class="step">
+                <div class="step-label">
+                    <span class="step-num">3</span>
+                    <span class="step-title">Fichier Excel de présence</span>
+                </div>
+                <div class="upload-zone" id="dropZone" onclick="if(!document.getElementById('mergeId').value) document.getElementById('excelFile').click()">
+                    <input type="file" id="excelFile" name="excel_file" accept=".xlsx,.xls">
+                    <div style="font-size:28px;margin-bottom:6px">📁</div>
+                    <div class="upload-text" id="presenceText"><strong>Cliquez</strong> ou glissez votre fichier .xlsx</div>
+                    <div class="file-name" id="fileName"></div>
+                </div>
+                <div class="hint" style="margin-top:6px">Importez directement, ou il sera généré par la fusion (étapes 1-2).</div>
+                <div class="preview-box" id="previewBox">
+                    <h4>✅ Fichier analysé <span class="preview-badge" id="empCount"></span></h4>
+                    <div>Client détecté : <strong id="detectedClient"></strong></div>
+                    <div class="emp-list" id="empList"></div>
+                </div>
+            </div>
+            
+            <!-- Step 4: Client -->
+            <div class="step">
+                <div class="step-label">
+                    <span class="step-num">4</span>
+                    <span class="step-title">Informations entreprises</span>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Votre société (prestataire)</label>
+                        <input type="text" name="provider_name" placeholder="RAMYA TECHNOLOGIE & INNOVATION">
+                    </div>
+                    <div class="form-group">
+                        <label>Tél & Email prestataire</label>
+                        <input type="text" name="provider_info" placeholder="Tél: 2722204498 | Email: techniqueramya@gmail.com">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Client enregistré</label>
+                    <select name="client_id" id="clientSelect" onchange="fillClientInfo(this)">
+                        <option value="">— Sélectionner ou saisir manuellement —</option>
+                        {% for c in clients %}
+                        <option value="{{ c.id }}" data-name="{{ c.name }}" data-tel="{{ c.tel or '' }}" data-email="{{ c.email or '' }}">{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="hint">Choisissez un client enregistré ou remplissez manuellement ci-dessous</div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nom du client</label>
+                        <input type="text" name="client_name" id="clientInput" placeholder="Sera détecté du fichier">
+                    </div>
+                    <div class="form-group">
+                        <label>Tél du client</label>
+                        <input type="text" name="client_tel" id="clientTel" placeholder="Ex: 0768135568">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Email du client</label>
+                    <input type="email" name="client_email" id="clientEmail" placeholder="Ex: contact@client.ci">
+                </div>
+            </div>
+            
+            <!-- Step 5: Hours -->
+            <div class="step">
+                <div class="step-label">
+                    <span class="step-num">5</span>
+                    <span class="step-title">Heures obligatoires par jour</span>
+                </div>
+                <div class="form-group">
+                    <input type="number" name="required_hours" min="0" max="24" step="0.5" value="0" style="width:120px">
+                    <div class="hint">Ex: 8 ou 12. Mettez 0 pour utiliser l'emploi du temps du fichier.</div>
+                </div>
+            </div>
+            
+            <!-- Step 6: Logo -->
+            <div class="step" style="border-bottom:none">
+                <div class="step-label">
+                    <span class="step-num">6</span>
+                    <span class="step-title">Logo (optionnel)</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px">
+                    <label class="btn btn-outline btn-sm" for="logoFile" style="cursor:pointer">🖼️ Choisir un logo</label>
+                    <input type="file" id="logoFile" name="logo_file" accept=".png,.jpg,.jpeg" style="display:none">
+                    <span style="font-size:13px;color:#1a7a6d" id="logoName">Logo RAMYA par défaut</span>
+                </div>
+            </div>
+            
+            <!-- Submit -->
+            <div style="margin-top:20px">
+                <button type="submit" class="btn btn-orange btn-block" id="submitBtn" disabled style="padding:14px;font-size:16px">
+                    <span class="spinner" id="spinner"></span>
+                    <span id="btnText">📄 Générer le rapport PDF</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('excelFile');
+const fileName = document.getElementById('fileName');
+const submitBtn = document.getElementById('submitBtn');
+const previewBox = document.getElementById('previewBox');
+const enrFile = document.getElementById('enrFile');
+const transFile = document.getElementById('transFile');
+const mergeIdInput = document.getElementById('mergeId');
+
+// Fill client info from dropdown
+function fillClientInfo(sel) {
+    const opt = sel.options[sel.selectedIndex];
+    if (opt.value) {
+        document.getElementById('clientInput').value = opt.dataset.name || '';
+        document.getElementById('clientTel').value = opt.dataset.tel || '';
+        document.getElementById('clientEmail').value = opt.dataset.email || '';
+    }
+}
+
+// Merge logic
+enrFile.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+        document.getElementById('enrFileName').textContent = '✅ ' + e.target.files[0].name;
+        document.getElementById('dropZoneEnr').classList.add('has-file');
+        tryMerge();
+    }
+});
+transFile.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+        document.getElementById('transFileName').textContent = '✅ ' + e.target.files[0].name;
+        document.getElementById('dropZoneTrans').classList.add('has-file');
+        tryMerge();
+    }
+});
+
+['dropZoneEnr', 'dropZoneTrans'].forEach(id => {
+    const zone = document.getElementById(id);
+    const input = id === 'dropZoneEnr' ? enrFile : transFile;
+    ['dragenter','dragover'].forEach(e => zone.addEventListener(e, ev => {ev.preventDefault();zone.classList.add('dragover')}));
+    ['dragleave','drop'].forEach(e => zone.addEventListener(e, ev => {ev.preventDefault();zone.classList.remove('dragover')}));
+    zone.addEventListener('drop', e => { if(e.dataTransfer.files.length){input.files=e.dataTransfer.files;input.dispatchEvent(new Event('change'))} });
+});
+
+function tryMerge() {
+    if (!enrFile.files.length || !transFile.files.length) return;
+    const status = document.getElementById('mergeStatus');
+    status.style.display = 'block';
+    status.className = 'merge-status loading';
+    status.textContent = '🔄 Fusion en cours...';
+    
+    const fd = new FormData();
+    fd.append('enr_file', enrFile.files[0]);
+    fd.append('trans_file', transFile.files[0]);
+    
+    fetch('/traitement/merge', {method:'POST', body:fd})
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) { status.className='merge-status error'; status.textContent='❌ '+data.error; return; }
+            status.className = 'merge-status success';
+            status.innerHTML = `✅ Fusion réussie — ${data.employees} employés, ${data.rows} enregistrements<br><a href="/traitement/merge/download/${data.merge_id}" class="merge-dl-btn">📥 Télécharger le fichier Présence fusionné (.xlsx)</a>`;
+            mergeIdInput.value = data.merge_id;
+            fileName.textContent = '✅ ' + data.filename + ' (généré automatiquement)';
+            dropZone.classList.add('merged');
+            document.getElementById('presenceText').innerHTML = '<strong>✅ Fichier de présence généré automatiquement</strong>';
+            submitBtn.disabled = false;
+            document.getElementById('empCount').textContent = data.employees + ' employés';
+            document.getElementById('detectedClient').textContent = data.client;
+            previewBox.classList.add('visible');
+        })
+        .catch(() => { status.className='merge-status error'; status.textContent='❌ Erreur de connexion'; });
+}
+
+// Direct upload
+['dragenter','dragover'].forEach(e => dropZone.addEventListener(e, ev => {ev.preventDefault();dropZone.classList.add('dragover')}));
+['dragleave','drop'].forEach(e => dropZone.addEventListener(e, ev => {ev.preventDefault();dropZone.classList.remove('dragover')}));
+dropZone.addEventListener('drop', e => {
+    if(mergeIdInput.value) return;
+    if(e.dataTransfer.files.length){fileInput.files=e.dataTransfer.files;handleFile(e.dataTransfer.files[0])}
+});
+fileInput.addEventListener('change', e => {
+    if(e.target.files.length){mergeIdInput.value='';dropZone.classList.remove('merged');document.getElementById('presenceText').innerHTML='<strong>Cliquez</strong> ou glissez votre fichier .xlsx';handleFile(e.target.files[0])}
+});
+document.getElementById('logoFile').addEventListener('change', e => {
+    if(e.target.files.length) document.getElementById('logoName').textContent='✅ '+e.target.files[0].name;
+});
+
+function handleFile(file) {
+    fileName.textContent = '✅ ' + file.name;
+    dropZone.classList.add('has-file');
+    submitBtn.disabled = false;
+    const fd = new FormData(); fd.append('excel_file', file);
+    fetch('/traitement/preview', {method:'POST',body:fd})
+        .then(r=>r.json())
+        .then(data => {
+            if(data.error) return;
+            document.getElementById('empCount').textContent = data.count + ' employés';
+            document.getElementById('detectedClient').textContent = data.client;
+            let html = '';
+            data.employees.forEach((e,i) => html += `<div>${i+1}. <strong>${e.name}</strong> (${e.ref}) — ${e.days} jours</div>`);
+            document.getElementById('empList').innerHTML = html;
+            previewBox.classList.add('visible');
+        }).catch(()=>{});
+}
+
+document.getElementById('reportForm').addEventListener('submit', () => {
+    submitBtn.classList.add('loading');
+    document.getElementById('spinner').classList.add('active');
+    document.getElementById('btnText').textContent = 'Génération en cours...';
+});
+</script>
+{% endblock %}

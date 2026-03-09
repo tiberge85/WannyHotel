@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}WannyGest - Calendrier{% endblock %}
+{% block content %}
+<div class="page-header"><h1>📅 Calendrier</h1></div>
+<div style="margin-bottom:14px"><button class="btn btn-orange btn-sm" onclick="document.getElementById('addM').classList.add('active')">+ Événement</button></div>
+<div class="card"><div class="card-body">
+{% if events %}<div class="table-wrap"><table>
+<thead><tr><th>Date</th><th>Événement</th><th>Description</th></tr></thead>
+<tbody>{% for e in events %}<tr>
+<td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{{ e.color }};margin-right:6px"></span>{{ e.start_date }}</td>
+<td><strong>{{ e.title }}</strong></td><td style="font-size:12px">{{ e.description or '-' }}</td>
+</tr>{% endfor %}</tbody></table></div>{% else %}<p style="text-align:center;color:#999;padding:30px">Aucun événement</p>{% endif %}
+</div></div>
+<div class="modal-bg" id="addM"><div class="modal"><h3>📅 Nouvel événement</h3><form method="post" action="/calendrier/add">
+<div class="form-group"><label>Titre *</label><input type="text" name="title" required></div>
+<div class="form-row"><div class="form-group"><label>Date début *</label><input type="date" name="start_date" required></div><div class="form-group"><label>Date fin</label><input type="date" name="end_date"></div></div>
+<div class="form-row"><div class="form-group"><label>Couleur</label><input type="color" name="color" value="#1a3a5c" style="height:38px"></div></div>
+<div class="form-group"><label>Description</label><textarea name="description" rows="2" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:7px"></textarea></div>
+<div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-primary">Ajouter</button></div></form></div></div>
+{% endblock %}

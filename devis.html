@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}WannyGest - Devis{% endblock %}
+{% block content %}
+<div class="page-header"><h1>📝 Devis & Proformas</h1><p>Édition et suivi des devis clients</p></div>
+<div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon blue">📝</div><div class="stat-info"><div class="stat-num">{{ d_stats.brouillon }}</div><div class="stat-label">Brouillons</div></div></div>
+    <div class="stat-card"><div class="stat-icon orange">📤</div><div class="stat-info"><div class="stat-num">{{ d_stats.envoye }}</div><div class="stat-label">Envoyés</div></div></div>
+    <div class="stat-card"><div class="stat-icon green">✅</div><div class="stat-info"><div class="stat-num">{{ d_stats.accepte }}</div><div class="stat-label">Acceptés</div></div></div>
+    <div class="stat-card"><div class="stat-icon red">❌</div><div class="stat-info"><div class="stat-num">{{ d_stats.refuse }}</div><div class="stat-label">Refusés</div></div></div>
+</div>
+<div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
+    <a href="/devis?tab=all" class="btn {% if tab=='all' %}btn-primary{% else %}btn-outline{% endif %}">📋 Tous ({{ d_stats.total }})</a>
+    <a href="/devis?tab=devis" class="btn {% if tab=='devis' %}btn-primary{% else %}btn-outline{% endif %}">Devis</a>
+    <a href="/devis?tab=proforma" class="btn {% if tab=='proforma' %}btn-primary{% else %}btn-outline{% endif %}">Proformas</a>
+    <a href="/devis/new" class="btn btn-orange" style="margin-left:auto">+ Nouveau devis</a>
+</div>
+<div class="card"><div class="card-body">
+{% if devis_list %}<div class="table-wrap"><table>
+<thead><tr><th>Réf</th><th>Type</th><th>Client</th><th>Objet</th><th>Total TTC</th><th>Statut</th><th>Actions</th></tr></thead>
+<tbody>{% for d in devis_list %}<tr>
+<td><strong>{{ d.reference }}</strong></td>
+<td><span class="badge-status {% if d.doc_type=='devis' %}sent{% else %}pending{% endif %}">{{ d.doc_type }}</span></td>
+<td>{{ d.client_name }}</td>
+<td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ d.objet or '-' }}</td>
+<td><strong>{{ '{:,.0f}'.format(d.total_ttc) }} F</strong></td>
+<td>{% if d.status=='brouillon' %}<span class="badge-status" style="background:#e3f2fd;color:#1565c0">📝 Brouillon</span>
+    {% elif d.status=='envoye' %}<span class="badge-status pending">📤 Envoyé</span>
+    {% elif d.status=='accepte' %}<span class="badge-status sent">✅ Accepté</span>
+    {% elif d.status=='refuse' %}<span class="badge-status" style="background:#fde8e8;color:#c53030">❌ Refusé</span>{% endif %}</td>
+<td style="display:flex;gap:4px;flex-wrap:wrap">
+    <a href="/devis/pdf/{{ d.id }}" class="btn btn-primary btn-sm">📥 PDF</a>
+    {% if d.status=='brouillon' %}<a href="/devis/status/{{ d.id }}/envoye" class="btn btn-sm" style="background:#ff9800;color:#fff">📤</a>{% endif %}
+    {% if d.status=='envoye' %}<a href="/devis/status/{{ d.id }}/accepte" class="btn btn-sm" style="background:#2e7d32;color:#fff">✅</a><a href="/devis/status/{{ d.id }}/refuse" class="btn btn-danger btn-sm">❌</a>{% endif %}
+</td>
+</tr>{% endfor %}</tbody></table></div>
+{% else %}<p style="text-align:center;color:#999;padding:30px">Aucun devis. <a href="/devis/new" style="color:#1a3a5c">Créer le premier →</a></p>{% endif %}
+</div></div>
+{% endblock %}

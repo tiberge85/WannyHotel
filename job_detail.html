@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}RAMYA - Détail rapport{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>📄 Détail du rapport</h1>
+    <p>{{ job.client_name }} — {{ job.period }}</p>
+</div>
+
+<!-- Info rapport -->
+<div class="card">
+    <div class="card-header">
+        <h3>Informations</h3>
+        <div style="display:flex;gap:6px">
+            {% if job.filename_pdf %}
+            <a href="/fichiers/download/{{ job.job_id }}/pdf" class="btn btn-primary btn-sm">📥 PDF</a>
+            {% endif %}
+            {% if job.filename_xlsx %}
+            <a href="/fichiers/download/{{ job.job_id }}/xlsx" class="btn btn-outline btn-sm">📥 Excel</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:14px">
+            <div><strong>Client :</strong> {{ job.client_name }}</div>
+            <div><strong>Prestataire :</strong> {{ job.provider_name }}</div>
+            <div><strong>Période :</strong> {{ job.period }}</div>
+            <div><strong>Employés :</strong> {{ job.employee_count }}</div>
+            <div><strong>Heures :</strong> {{ job.hp }}</div>
+            <div><strong>Traité par :</strong> {{ job.user_name }}</div>
+            <div><strong>Date :</strong> {{ job.created_at[:16] }}</div>
+            <div><strong>Statut :</strong> 
+                {% if job.status == 'traite' %}<span class="badge-status pending">⏳ En attente</span>
+                {% else %}<span class="badge-status sent">✅ Envoyé{% if job.sent_by_name %} par {{ job.sent_by_name }}{% endif %}</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notes -->
+<div class="card">
+    <div class="card-header"><h3>📝 Notes</h3></div>
+    <div class="card-body">
+        <form method="post" action="/job/{{ job.job_id }}/notes">
+            <div class="form-group" style="margin-bottom:10px">
+                <textarea name="notes" rows="3" style="width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px" placeholder="Ajoutez des notes sur ce rapport...">{{ job.notes or '' }}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">💾 Sauvegarder les notes</button>
+        </form>
+    </div>
+</div>
+
+<!-- Commentaires -->
+<div class="card">
+    <div class="card-header"><h3>💬 Commentaires ({{ comments|length }})</h3></div>
+    <div class="card-body">
+        {% if comments %}
+        {% for c in comments %}
+        <div style="padding:12px;margin-bottom:10px;background:#f8faf9;border-radius:8px;border-left:3px solid #1a7a6d">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                <strong style="color:#1a7a6d;font-size:13px">{{ c.user_name }}</strong>
+                <span style="font-size:11px;color:#999">{{ c.created_at[:16] }}</span>
+            </div>
+            <div style="font-size:14px;color:#333">{{ c.comment }}</div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p style="color:#999;font-size:14px;margin-bottom:14px">Aucun commentaire pour l'instant</p>
+        {% endif %}
+        
+        <form method="post" action="/job/{{ job.job_id }}/comment" style="margin-top:14px;padding-top:14px;border-top:1px solid #eee">
+            <div class="form-group" style="margin-bottom:10px">
+                <textarea name="comment" rows="2" required style="width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px" placeholder="Écrire un commentaire..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">💬 Ajouter</button>
+        </form>
+    </div>
+</div>
+
+<div style="margin-top:14px">
+    <a href="/fichiers" class="btn btn-outline">← Retour aux fichiers</a>
+</div>
+{% endblock %}

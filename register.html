@@ -1,15 +1,77 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>WannyHotel - Inscription</title>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;background:linear-gradient(135deg,#0d2137,#1a4a6c);min-height:100vh;display:flex;align-items:center;justify-content:center}
-.box{background:#fff;border-radius:16px;padding:36px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}h2{text-align:center;color:#1a3a5c;margin-bottom:16px}
-.form-group{margin-bottom:12px}.form-group label{font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:3px}
-.form-group input{width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:14px}
-.btn{width:100%;padding:12px;background:#e8672a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}
-.link{text-align:center;margin-top:12px;font-size:12px}a{color:#1a3a5c}
-.flash{padding:8px;border-radius:6px;margin-bottom:12px;font-size:12px;text-align:center}.flash.error{background:#fde8e8;color:#c53030}</style></head>
-<body><div class="box"><h2>Créer un compte</h2>
-{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for c,m in messages %}<div class="flash {{ c }}">{{ m }}</div>{% endfor %}{% endif %}{% endwith %}
-<form method="post"><div class="form-group"><label>Nom complet</label><input type="text" name="full_name" required></div>
-<div class="form-group"><label>Identifiant</label><input type="text" name="username" required></div>
-<div class="form-group"><label>Mot de passe</label><input type="password" name="password" required minlength="6"></div>
-<button type="submit" class="btn">Créer le compte</button></form>
-<div class="link"><a href="/login">Déjà un compte ?</a></div></div></body></html>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WannyGest - Créer un compte</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#0d3b36 0%,#1a7a6d 50%,#0d3b36 100%);min-height:100vh;display:flex;align-items:center;justify-content:center}
+        .card{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:450px;max-width:90%;overflow:hidden}
+        .card-header{background:linear-gradient(135deg,#1a7a6d,#0d6b5e);padding:24px;text-align:center;color:#fff}
+        .card-header h2{font-size:18px}
+        .card-header p{font-size:13px;opacity:0.7;margin-top:4px}
+        .card-body{padding:24px}
+        .form-group{margin-bottom:14px}
+        .form-group label{display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:5px}
+        .form-group input{width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px}
+        .form-group input:focus{outline:none;border-color:#1a7a6d}
+        .row{display:flex;gap:12px}
+        .row .form-group{flex:1}
+        .hint{font-size:12px;color:#999;margin-top:3px}
+        .btn{width:100%;padding:13px;background:linear-gradient(135deg,#e8672a,#d45a20);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer}
+        .btn:hover{background:linear-gradient(135deg,#d45a20,#c04e15)}
+        .links{text-align:center;margin-top:14px;font-size:13px}
+        .links a{color:#1a7a6d;text-decoration:none;font-weight:600}
+        .flash{padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px}
+        .flash.error{background:#fde8e8;color:#c53030}
+        .flash.success{background:#e8f5f2;color:#1a7a6d}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="card-header">
+            <h2>📝 Créer un compte</h2>
+            <p>Demande d'accès à la plateforme</p>
+        </div>
+        <div class="card-body">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for cat, msg in messages %}
+            <div class="flash {{ cat }}">{{ msg }}</div>
+            {% endfor %}{% endif %}{% endwith %}
+            
+            <form method="post" action="/register">
+                <div class="form-group">
+                    <label>Nom complet</label>
+                    <input type="text" name="full_name" required placeholder="Ex: HAMIEN Yanick">
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Nom d'utilisateur</label>
+                        <input type="text" name="username" required placeholder="Ex: yanick">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" required placeholder="Ex: yanick@ramya.ci">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Mot de passe</label>
+                        <input type="password" name="password" required minlength="6" placeholder="Min. 6 caractères">
+                    </div>
+                    <div class="form-group">
+                        <label>Confirmer</label>
+                        <input type="password" name="password2" required placeholder="Répétez le mot de passe">
+                    </div>
+                </div>
+                <div class="hint" style="margin-bottom:14px">Votre compte sera créé avec le rôle Technicien. L'admin pourra changer votre rôle (RH, Commercial, Comptable). L'administrateur pourra modifier votre rôle.</div>
+                <button type="submit" class="btn">Créer mon compte</button>
+            </form>
+            <div class="links">
+                <a href="/login">Déjà un compte ? Se connecter</a> · <a href="/">Accueil</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}WannyGest - Congés{% endblock %}
+{% block content %}
+<div class="page-header"><h1>🏖️ Gestion des congés</h1></div>
+<div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+    {% for t,l in [('en_attente','⏳ En attente'),('approuve','✅ Approuvés'),('refuse','❌ Refusés'),('all','📋 Tous')] %}
+    <a href="/rh/conges?tab={{ t }}" class="btn {% if tab==t %}btn-primary{% else %}btn-outline{% endif %}">{{ l }}</a>{% endfor %}
+    <button class="btn btn-orange" onclick="document.getElementById('addLeave').classList.add('active')">+ Nouvelle demande</button>
+</div>
+<div class="card"><div class="card-body">
+{% if leaves %}<div class="table-wrap"><table>
+<thead><tr><th>Employé</th><th>Type</th><th>Du</th><th>Au</th><th>Jours</th><th>Motif</th><th>Statut</th><th>Actions</th></tr></thead>
+<tbody>{% for l in leaves %}<tr>
+<td><strong>{{ l.employee_name }}</strong></td>
+<td>{{ l.leave_type }}</td><td>{{ l.start_date }}</td><td>{{ l.end_date }}</td><td>{{ l.days }}</td>
+<td style="font-size:12px">{{ l.reason or '-' }}</td>
+<td>{% if l.status=='en_attente' %}<span class="badge-status pending">⏳</span>{% elif l.status=='approuve' %}<span class="badge-status sent">✅</span>{% else %}<span class="badge-status" style="background:#fde8e8;color:#c53030">❌</span>{% endif %}</td>
+<td>{% if l.status=='en_attente' %}<a href="/rh/conges/approve/{{ l.id }}/approuve" class="btn btn-sm" style="background:#2e7d32;color:#fff">✅</a><a href="/rh/conges/approve/{{ l.id }}/refuse" class="btn btn-danger btn-sm">❌</a>{% endif %}</td>
+</tr>{% endfor %}</tbody></table></div>
+{% else %}<p style="text-align:center;color:#999;padding:30px">Aucune demande</p>{% endif %}
+</div></div>
+<div class="modal-bg" id="addLeave"><div class="modal"><h3>🏖️ Nouvelle demande de congé</h3>
+<form method="post" action="/rh/conges/add">
+    <div class="form-group"><label>Employé</label><select name="employee_id" required>{% for e in employees %}<option value="{{ e.id }}">{{ e.first_name }} {{ e.last_name }}</option>{% endfor %}</select></div>
+    <div class="form-group"><label>Type</label><select name="leave_type"><option value="conge_annuel">Congé annuel</option><option value="maladie">Maladie</option><option value="maternite">Maternité</option><option value="sans_solde">Sans solde</option><option value="exceptionnel">Exceptionnel</option></select></div>
+    <div class="form-row"><div class="form-group"><label>Du</label><input type="date" name="start_date" required></div><div class="form-group"><label>Au</label><input type="date" name="end_date" required></div><div class="form-group"><label>Jours</label><input type="number" name="days" value="1" min="1"></div></div>
+    <div class="form-group"><label>Motif</label><textarea name="reason" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:14px"></textarea></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-primary">Soumettre</button></div>
+</form></div></div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}WannyGest - Trésorerie{% endblock %}
+{% block content %}
+<div class="page-header"><h1>🏦 Caisse / Banque</h1></div>
+<div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon green">📈</div><div class="stat-info"><div class="stat-num">{{ '{:,.0f}'.format(recettes) }}</div><div class="stat-label">Recettes (F)</div></div></div>
+    <div class="stat-card"><div class="stat-icon red">📉</div><div class="stat-info"><div class="stat-num">{{ '{:,.0f}'.format(depenses) }}</div><div class="stat-label">Dépenses (F)</div></div></div>
+    <div class="stat-card"><div class="stat-icon {% if solde >= 0 %}teal{% else %}red{% endif %}">💰</div><div class="stat-info"><div class="stat-num">{{ '{:,.0f}'.format(solde) }}</div><div class="stat-label">Solde (F)</div></div></div>
+</div>
+<div class="card"><div class="card-header"><h3>Mouvements</h3><button class="btn btn-orange btn-sm" onclick="document.getElementById('addM').classList.add('active')">+ Mouvement</button></div><div class="card-body">
+{% if movements %}<div class="table-wrap"><table>
+<thead><tr><th>Date</th><th>Type</th><th>Catégorie</th><th>Montant</th><th>Description</th><th>Moyen</th></tr></thead>
+<tbody>{% for m in movements %}<tr>
+<td>{{ m.created_at[:10] }}</td>
+<td>{% if m.movement_type=='recette' %}<span class="badge-status sent">📈 Recette</span>{% else %}<span class="badge-status" style="background:#fde8e8;color:#c53030">📉 Dépense</span>{% endif %}</td>
+<td>{{ m.category or '-' }}</td><td><strong>{{ '{:,.0f}'.format(m.amount) }} F</strong></td>
+<td style="font-size:12px">{{ m.description or '-' }}</td><td>{{ m.payment_method or '-' }}</td>
+</tr>{% endfor %}</tbody></table></div>{% else %}<p style="text-align:center;color:#999;padding:30px">Aucun mouvement</p>{% endif %}
+</div></div>
+<div class="modal-bg" id="addM"><div class="modal"><h3>🏦 Nouveau mouvement</h3><form method="post" action="/tresorerie/add">
+<div class="form-row"><div class="form-group"><label>Type *</label><select name="movement_type"><option value="recette">📈 Recette</option><option value="depense">📉 Dépense</option></select></div><div class="form-group"><label>Montant *</label><input type="number" name="amount" step="100" required></div></div>
+<div class="form-row"><div class="form-group"><label>Catégorie</label><input type="text" name="category" placeholder="Vente, Loyer..."></div><div class="form-group"><label>Moyen paiement</label><select name="payment_method"><option>Espèce</option><option>Virement</option><option>Chèque</option><option>Mobile Money</option></select></div></div>
+<div class="form-group"><label>Description</label><input type="text" name="description"></div>
+<div class="form-group"><label>Référence</label><input type="text" name="reference"></div>
+<div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-primary">Enregistrer</button></div></form></div></div>
+{% endblock %}

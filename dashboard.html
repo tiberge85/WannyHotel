@@ -1,22 +1,128 @@
-{% extends "base.html" %}{% block title %}WannyHotel - Tableau de bord{% endblock %}{% block content %}
-<div class="page-header"><h1>📊 Tableau de bord</h1><p>{{ now }} — Vue d'ensemble de l'hôtel</p></div>
-<div class="stats-grid">
-<div class="stat-card"><div class="stat-icon gold">🏨</div><div><div class="stat-num">{{ stats.occupancy_rate }}%</div><div class="stat-label">Taux d'occupation</div></div></div>
-<div class="stat-card"><div class="stat-icon green">🟢</div><div><div class="stat-num">{{ stats.available }}</div><div class="stat-label">Disponibles</div></div></div>
-<div class="stat-card"><div class="stat-icon red">🔴</div><div><div class="stat-num">{{ stats.occupied }}</div><div class="stat-label">Occupées</div></div></div>
-<div class="stat-card"><div class="stat-icon blue">📥</div><div><div class="stat-num">{{ stats.checkins_today }}</div><div class="stat-label">Arrivées aujourd'hui</div></div></div>
-<div class="stat-card"><div class="stat-icon blue">📤</div><div><div class="stat-num">{{ stats.checkouts_today }}</div><div class="stat-label">Départs aujourd'hui</div></div></div>
-<div class="stat-card"><div class="stat-icon gold">💰</div><div><div class="stat-num">{{ '{:,.0f}'.format(stats.revenue_today) }}</div><div class="stat-label">CA aujourd'hui (F)</div></div></div>
-<div class="stat-card"><div class="stat-icon green">💵</div><div><div class="stat-num">{{ '{:,.0f}'.format(stats.revenue_month) }}</div><div class="stat-label">CA du mois (F)</div></div></div>
-<div class="stat-card"><div class="stat-icon teal">🧹</div><div><div class="stat-num">{{ stats.dirty_rooms }}</div><div class="stat-label">À nettoyer</div></div></div>
+{% extends "base.html" %}
+{% block title %}WannyGest - Tableau de bord{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>👋 Bienvenue, {{ current_user.full_name }}</h1>
+    <p>{{ current_user.role | upper }} — Tableau de bord personnalisé</p>
 </div>
-<div class="card"><div class="card-header"><h3>Dernières réservations</h3><a href="/reservations/new" class="btn btn-gold btn-sm">+ Nouvelle</a></div><div class="card-body">
-{% if recent %}<div class="table-wrap"><table>
-<thead><tr><th>Réf</th><th>Client</th><th>Chambre</th><th>Arrivée</th><th>Départ</th><th>Montant</th><th>Statut</th></tr></thead>
-<tbody>{% for r in recent %}<tr>
-<td><a href="/reservations/{{ r.id }}" style="color:#d4a574;font-weight:600">{{ r.reference }}</a></td>
-<td>{{ r.guest_name }}</td><td>{{ r.room_number or '-' }}</td><td>{{ r.checkin_date }}</td><td>{{ r.checkout_date }}</td>
-<td>{{ '{:,.0f}'.format(r.total_amount) }} F</td>
-<td>{% if r.status=='confirmee' %}<span class="badge-s gold">Confirmée</span>{% elif r.status=='en_cours' %}<span class="badge-s blue">En cours</span>{% elif r.status=='terminee' %}<span class="badge-s green">Terminée</span>{% else %}<span class="badge-s">{{ r.status }}</span>{% endif %}</td>
-</tr>{% endfor %}</tbody></table></div>{% else %}<p style="text-align:center;color:#999;padding:20px">Aucune réservation</p>{% endif %}
-</div></div>{% endblock %}
+
+{# ======================== ADMIN / DIRECTEUR ======================== #}
+{% if user_role == 'admin' %}
+<div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon teal">📄</div><div class="stat-info"><div class="stat-num">{{ stats.total_jobs }}</div><div class="stat-label">Rapports traités</div></div></div>
+    <div class="stat-card"><div class="stat-icon orange">⏳</div><div class="stat-info"><div class="stat-num">{{ stats.pending_jobs }}</div><div class="stat-label">En attente</div></div></div>
+    <div class="stat-card"><div class="stat-icon green">✅</div><div class="stat-info"><div class="stat-num">{{ stats.sent_jobs }}</div><div class="stat-label">Envoyés</div></div></div>
+    <div class="stat-card"><div class="stat-icon blue">🏢</div><div class="stat-info"><div class="stat-num">{{ stats.total_clients }}</div><div class="stat-label">Clients</div></div></div>
+</div>
+<div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon orange">💰</div><div class="stat-info"><div class="stat-num">{{ inv_stats.a_envoyer }}</div><div class="stat-label">Factures à envoyer</div></div></div>
+    <div class="stat-card"><div class="stat-icon blue">⏳</div><div class="stat-info"><div class="stat-num">{{ inv_stats.en_attente_paiement }}</div><div class="stat-label">Attente paiement</div></div></div>
+    <div class="stat-card"><div class="stat-icon green">💵</div><div class="stat-info"><div class="stat-num">{{ inv_stats.payee }}</div><div class="stat-label">Payées</div></div></div>
+    <div class="stat-card"><div class="stat-icon teal">🔍</div><div class="stat-info"><div class="stat-num">{{ v_stats.en_attente }}</div><div class="stat-label">Visites → proforma</div></div></div>
+</div>
+<div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon blue">📝</div><div class="stat-info"><div class="stat-num">{{ d_stats.brouillon if d_stats else 0 }}</div><div class="stat-label">Devis brouillons</div></div></div>
+    <div class="stat-card"><div class="stat-icon orange">📤</div><div class="stat-info"><div class="stat-num">{{ d_stats.envoye if d_stats else 0 }}</div><div class="stat-label">Devis envoyés</div></div></div>
+    <div class="stat-card"><div class="stat-icon green">✅</div><div class="stat-info"><div class="stat-num">{{ d_stats.accepte if d_stats else 0 }}</div><div class="stat-label">Devis acceptés</div></div></div>
+    <div class="stat-card"><div class="stat-icon teal">👥</div><div class="stat-info"><div class="stat-num">{{ emp_stats.total if emp_stats else 0 }}</div><div class="stat-label">Employés actifs</div></div></div>
+</div>
+{% endif %}
+
+{# ======================== COMMERCIAL ======================== #}
+{% if user_role == 'commercial' %}
+<div class="stats-grid">
+    <div class="stat-card" style="border-left:4px solid #e8672a"><div class="stat-icon orange">🔍</div><div class="stat-info"><div class="stat-num">{{ v_stats.en_attente }}</div><div class="stat-label">Visites en attente</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #1a3a5c"><div class="stat-icon blue">📝</div><div class="stat-info"><div class="stat-num">{{ d_stats.brouillon if d_stats else 0 }}</div><div class="stat-label">Devis brouillons</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #2e7d32"><div class="stat-icon green">✅</div><div class="stat-info"><div class="stat-num">{{ d_stats.accepte if d_stats else 0 }}</div><div class="stat-label">Devis acceptés</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #7b1fa2"><div class="stat-icon purple">🏢</div><div class="stat-info"><div class="stat-num">{{ stats.total_clients }}</div><div class="stat-label">Clients</div></div></div>
+</div>
+<div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+    <a href="/visites/new" class="stat-card" style="text-decoration:none;border-left:4px solid #e8672a"><div class="stat-icon orange">🔍</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Nouveau rapport</div><div class="stat-label">Créer un rapport de visite</div></div></a>
+    <a href="/devis/new" class="stat-card" style="text-decoration:none;border-left:4px solid #1a3a5c"><div class="stat-icon blue">📝</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Nouveau devis</div><div class="stat-label">Éditer un devis / proforma</div></div></a>
+    <a href="/prospects" class="stat-card" style="text-decoration:none;border-left:4px solid #2e7d32"><div class="stat-icon green">🎯</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Prospects</div><div class="stat-label">Pipeline commercial</div></div></a>
+</div>
+{% endif %}
+
+{# ======================== COMPTABLE ======================== #}
+{% if user_role == 'comptable' %}
+<div class="stats-grid">
+    <div class="stat-card" style="border-left:4px solid #e8672a"><div class="stat-icon orange">📤</div><div class="stat-info"><div class="stat-num">{{ inv_stats.a_envoyer }}</div><div class="stat-label">Factures à envoyer</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #1565c0"><div class="stat-icon blue">📧</div><div class="stat-info"><div class="stat-num">{{ inv_stats.envoyee }}</div><div class="stat-label">Factures envoyées</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #f57f17"><div class="stat-icon orange">⏳</div><div class="stat-info"><div class="stat-num">{{ inv_stats.en_attente_paiement }}</div><div class="stat-label">Attente paiement</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #2e7d32"><div class="stat-icon green">✅</div><div class="stat-info"><div class="stat-num">{{ inv_stats.payee }}</div><div class="stat-label">Payées</div></div></div>
+</div>
+<div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+    <a href="/comptabilite" class="stat-card" style="text-decoration:none;border-left:4px solid #1a3a5c"><div class="stat-icon teal">🧾</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Factures</div><div class="stat-label">Gérer les factures clients</div></div></a>
+    <a href="/tresorerie" class="stat-card" style="text-decoration:none;border-left:4px solid #e8672a"><div class="stat-icon orange">🏦</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Trésorerie</div><div class="stat-label">Caisse / Banque</div></div></a>
+    <a href="/depenses" class="stat-card" style="text-decoration:none;border-left:4px solid #c53030"><div class="stat-icon red">💸</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Dépenses</div><div class="stat-label">Suivi des frais</div></div></a>
+</div>
+{% endif %}
+
+{# ======================== RH ======================== #}
+{% if user_role == 'rh' %}
+<div class="stats-grid">
+    <div class="stat-card" style="border-left:4px solid #1a3a5c"><div class="stat-icon teal">👤</div><div class="stat-info"><div class="stat-num">{{ emp_stats.total if emp_stats else 0 }}</div><div class="stat-label">Employés actifs</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #e8672a"><div class="stat-icon orange">🏖️</div><div class="stat-info"><div class="stat-num">{{ emp_stats.pending_leaves if emp_stats else 0 }}</div><div class="stat-label">Congés en attente</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #2e7d32"><div class="stat-icon green">📄</div><div class="stat-info"><div class="stat-num">{{ stats.pending_jobs }}</div><div class="stat-label">Fichiers à envoyer</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #1565c0"><div class="stat-icon blue">✅</div><div class="stat-info"><div class="stat-num">{{ stats.sent_jobs }}</div><div class="stat-label">Fichiers envoyés</div></div></div>
+</div>
+<div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+    <a href="/rh/personnel" class="stat-card" style="text-decoration:none;border-left:4px solid #1a3a5c"><div class="stat-icon teal">👥</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Personnel</div><div class="stat-label">Gérer les employés</div></div></a>
+    <a href="/rh/conges" class="stat-card" style="text-decoration:none;border-left:4px solid #e8672a"><div class="stat-icon orange">🏖️</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Congés</div><div class="stat-label">Demandes et approbations</div></div></a>
+    <a href="/rh/paie" class="stat-card" style="text-decoration:none;border-left:4px solid #2e7d32"><div class="stat-icon green">💵</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Paie</div><div class="stat-label">Bulletins de salaire</div></div></a>
+</div>
+{% endif %}
+
+{# ======================== TECHNICIEN ======================== #}
+{% if user_role == 'technicien' %}
+<div class="stats-grid">
+    <div class="stat-card" style="border-left:4px solid #1a3a5c"><div class="stat-icon teal">📄</div><div class="stat-info"><div class="stat-num">{{ stats.total_jobs }}</div><div class="stat-label">Rapports traités</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #e8672a"><div class="stat-icon orange">🔍</div><div class="stat-info"><div class="stat-num">{{ v_stats.en_attente }}</div><div class="stat-label">Visites en attente</div></div></div>
+</div>
+<div class="stats-grid" style="grid-template-columns:repeat(2,1fr)">
+    <a href="/traitement" class="stat-card" style="text-decoration:none;border-left:4px solid #1a3a5c"><div class="stat-icon teal">⏱️</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Calcul d'heures</div><div class="stat-label">Traiter un fichier de pointage</div></div></a>
+    <a href="/visites/new" class="stat-card" style="text-decoration:none;border-left:4px solid #e8672a"><div class="stat-icon orange">🔍</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Rapport de visite</div><div class="stat-label">Créer un rapport terrain</div></div></a>
+</div>
+{% endif %}
+
+{# ======================== MOYENS GÉNÉRAUX ======================== #}
+{% if user_role == 'moyens_generaux' %}
+<div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+    <a href="/stock" class="stat-card" style="text-decoration:none;border-left:4px solid #1a3a5c"><div class="stat-icon teal">📦</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Stock</div><div class="stat-label">Gestion du stock matériel</div></div></a>
+    <a href="/moyens-generaux/vehicules" class="stat-card" style="text-decoration:none;border-left:4px solid #e8672a"><div class="stat-icon orange">🚗</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Véhicules</div><div class="stat-label">Parc automobile</div></div></a>
+    <a href="/moyens-generaux/maintenance" class="stat-card" style="text-decoration:none;border-left:4px solid #2e7d32"><div class="stat-icon green">🔧</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Maintenance</div><div class="stat-label">Demandes d'intervention</div></div></a>
+</div>
+<div class="stats-grid">
+    <a href="/moyens-generaux/fournitures" class="stat-card" style="text-decoration:none;border-left:4px solid #7b1fa2"><div class="stat-icon purple">📦</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Fournitures</div><div class="stat-label">Fournitures de bureau</div></div></a>
+</div>
+{% endif %}
+
+{# ======================== INFORMATIQUE ======================== #}
+{% if user_role == 'informatique' %}
+<div class="stats-grid">
+    <div class="stat-card" style="border-left:4px solid #1a3a5c"><div class="stat-icon teal">📄</div><div class="stat-info"><div class="stat-num">{{ stats.total_jobs }}</div><div class="stat-label">Rapports traités</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #e8672a"><div class="stat-icon orange">🔍</div><div class="stat-info"><div class="stat-num">{{ v_stats.en_attente }}</div><div class="stat-label">Visites techniques</div></div></div>
+</div>
+<div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+    <a href="/projets" class="stat-card" style="text-decoration:none;border-left:4px solid #1a3a5c"><div class="stat-icon teal">📁</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Projets</div><div class="stat-label">Suivi des projets en cours</div></div></a>
+    <a href="/tickets" class="stat-card" style="text-decoration:none;border-left:4px solid #e8672a"><div class="stat-icon orange">🎫</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Tickets</div><div class="stat-label">Support technique</div></div></a>
+    <a href="/taches" class="stat-card" style="text-decoration:none;border-left:4px solid #2e7d32"><div class="stat-icon green">✅</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Tâches</div><div class="stat-label">Mes tâches assignées</div></div></a>
+</div>
+{% endif %}
+
+{# ======================== DERNIERS TRAITEMENTS (visible par tous) ======================== #}
+{% if stats.recent_jobs %}
+<div class="card">
+    <div class="card-header"><h3>📋 Derniers traitements</h3></div>
+    <div class="card-body">
+        <div class="table-wrap"><table>
+            <thead><tr><th>Date</th><th>Client</th><th>Statut</th></tr></thead>
+            <tbody>{% for job in stats.recent_jobs[:5] %}
+            <tr><td>{{ job.created_at[:10] }}</td><td><strong>{{ job.client_name }}</strong></td>
+            <td>{% if job.status == 'sent' %}<span class="badge-status sent">Envoyé</span>{% else %}<span class="badge-status pending">En attente</span>{% endif %}</td></tr>
+            {% endfor %}</tbody>
+        </table></div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
