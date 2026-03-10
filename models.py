@@ -11,7 +11,8 @@ import hashlib
 import secrets
 from datetime import datetime
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'ramya.db')
+PERSISTENT_DIR = os.environ.get('PERSISTENT_DIR', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data'))
+DB_PATH = os.path.join(PERSISTENT_DIR, 'ramya.db')
 
 
 def get_db():
@@ -1301,3 +1302,72 @@ def init_mg_tables():
     ''')
     conn.commit()
     conn.close()
+
+
+# ======================== CHAT / MESSAGING ========================
+
+def init_chat_tables():
+    conn = get_db()
+    conn.executescript('''
+        CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sender_id INTEGER NOT NULL,
+            receiver_id INTEGER,
+            channel TEXT DEFAULT 'general',
+            content TEXT NOT NULL,
+            read INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (sender_id) REFERENCES users(id)
+        );
+        CREATE TABLE IF NOT EXISTS rh_job_descriptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL, department TEXT,
+            description TEXT, requirements TEXT, responsibilities TEXT,
+            salary_range TEXT, status TEXT DEFAULT 'active',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS rh_trainings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL, description TEXT,
+            trainer TEXT, date TEXT, duration TEXT,
+            employees_json TEXT, status TEXT DEFAULT 'planifie',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS rh_announcements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL, content TEXT,
+            priority TEXT DEFAULT 'normale',
+            created_by INTEGER, created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (created_by) REFERENCES users(id)
+        );
+    ''')
+    conn.commit(); conn.close()
+
+def get_messages(channel='general', limit=50):
+    conn = get_db()
+    msgs = conn.execute("""SELECT m.*, u.full_name as sender_name FROM messages m
+        LEFT JOIN users u ON m.sender_id=u.id WHERE m.channel=? ORDER BY m.created_at DESC LIMIT ?""",
+        (channel, limit)).fetchall()
+    conn.close()
+    return [dict(m) for m in reversed(msgs)]
+
+def get_direct_messages(user1, user2, limit=50):
+    conn = get_db()
+    msgs = conn.execute("""SELECT m.*, u.full_name as sender_name FROM messages m
+        LEFT JOIN users u ON m.sender_id=u.id
+        WHERE (m.sender_id=? AND m.receiver_id=?) OR (m.sender_id=? AND m.receiver_id=?)
+        ORDER BY m.created_at DESC LIMIT ?""", (user1, user2, user2, user1, limit)).fetchall()
+    conn.close()
+    return [dict(m) for m in reversed(msgs)]
+
+def send_message(sender_id, content, channel='general', receiver_id=None):
+    conn = get_db()
+    conn.execute("INSERT INTO messages (sender_id, receiver_id, channel, content) VALUES (?,?,?,?)",
+                 (sender_id, receiver_id, channel, content))
+    conn.commit(); conn.close()
+
+def get_unread_count(user_id):
+    conn = get_db()
+    c = conn.execute("SELECT COUNT(*) FROM messages WHERE receiver_id=? AND read=0", (user_id,)).fetchone()[0]
+    conn.close()
+    return c

@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% block title %}WannyGest - Annonces{% endblock %}{% block content %}
+<div class="page-header"><h1>📢 Annonces</h1></div>
+<div style="margin-bottom:14px"><button class="btn btn-orange btn-sm" onclick="document.getElementById('addM').classList.add('active')">+ Nouvelle annonce</button></div>
+{% for a in annonces %}
+<div class="card" style="border-left:4px solid {% if a.priority=='urgente' %}#c53030{% elif a.priority=='importante' %}#e8672a{% else %}#1a3a5c{% endif %}">
+<div class="card-body">
+<div style="display:flex;justify-content:space-between;align-items:start">
+<h3 style="color:#1a3a5c;font-size:15px">{{ a.title }}</h3>
+<span style="font-size:10px;color:#888">{{ a.created_at[:10] }}</span>
+</div>
+<p style="font-size:13px;margin-top:6px;line-height:1.5;white-space:pre-wrap">{{ a.content }}</p>
+</div></div>
+{% else %}<div class="card"><div class="card-body" style="text-align:center;color:#999;padding:30px">Aucune annonce</div></div>{% endfor %}
+<div class="modal-bg" id="addM"><div class="modal"><h3>📢 Nouvelle annonce</h3><form method="post" action="/rh/annonces/add">
+<div class="form-group"><label>Titre *</label><input type="text" name="title" required></div>
+<div class="form-group"><label>Priorité</label><select name="priority"><option value="normale">Normale</option><option value="importante">Importante</option><option value="urgente">Urgente</option></select></div>
+<div class="form-group"><label>Contenu *</label><textarea name="content" rows="4" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:7px;font-size:13px" required></textarea></div>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-primary">Publier</button></div></form></div></div>
+{% endblock %}

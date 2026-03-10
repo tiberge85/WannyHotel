@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% block title %}WannyGest - Postes{% endblock %}{% block content %}
+<div class="page-header"><h1>📋 Descriptions d'emploi</h1></div>
+<div class="card"><div class="card-header"><h3>Fiches de poste</h3><button class="btn btn-orange btn-sm" onclick="document.getElementById('addM').classList.add('active')">+ Nouveau poste</button></div><div class="card-body">
+{% if postes %}<div class="table-wrap"><table>
+<thead><tr><th>Poste</th><th>Département</th><th>Salaire</th><th>Statut</th></tr></thead>
+<tbody>{% for p in postes %}<tr><td><strong>{{ p.title }}</strong><br><span style="font-size:11px;color:#888">{{ (p.description or '')[:80] }}</span></td><td>{{ p.department or '-' }}</td><td>{{ p.salary_range or '-' }}</td><td><span class="badge-status {% if p.status=='active' %}sent{% else %}pending{% endif %}">{{ p.status }}</span></td></tr>{% endfor %}</tbody></table></div>
+{% else %}<p style="text-align:center;color:#999;padding:30px">Aucune fiche de poste</p>{% endif %}
+</div></div>
+<div class="modal-bg" id="addM"><div class="modal"><h3>📋 Nouvelle fiche de poste</h3><form method="post" action="/rh/postes/add">
+<div class="form-group"><label>Intitulé du poste *</label><input type="text" name="title" required></div>
+<div class="form-row"><div class="form-group"><label>Département</label><input type="text" name="department"></div><div class="form-group"><label>Fourchette salariale</label><input type="text" name="salary_range" placeholder="200 000 - 350 000 F"></div></div>
+<div class="form-group"><label>Description</label><textarea name="description" rows="2" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:7px;font-size:13px"></textarea></div>
+<div class="form-group"><label>Responsabilités</label><textarea name="responsibilities" rows="2" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:7px;font-size:13px"></textarea></div>
+<div class="form-group"><label>Pré-requis</label><textarea name="requirements" rows="2" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:7px;font-size:13px"></textarea></div>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-primary">Ajouter</button></div></form></div></div>
+{% endblock %}

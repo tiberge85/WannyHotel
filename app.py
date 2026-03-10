@@ -47,8 +47,9 @@ from devis_generator import generate_devis_pdf
 app = Flask(__name__, template_folder=BASE_DIR, static_folder=BASE_DIR, static_url_path='/static')
 app.secret_key = os.environ.get('SECRET_KEY', 'ramya-tech-2026-secret-v3')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'uploads')
-app.config['FILES_FOLDER'] = os.path.join(BASE_DIR, 'files')
+PERSISTENT_DIR = os.environ.get('PERSISTENT_DIR', BASE_DIR)
+app.config['UPLOAD_FOLDER'] = os.path.join(PERSISTENT_DIR, 'uploads')
+app.config['FILES_FOLDER'] = os.path.join(PERSISTENT_DIR, 'files')
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['FILES_FOLDER'], exist_ok=True)
@@ -67,6 +68,10 @@ init_extra_tables()
 
 from models import init_mg_tables
 init_mg_tables()
+
+from models import (init_chat_tables, get_messages, get_direct_messages, 
+                    send_message, get_unread_count)
+init_chat_tables()
 
 # Register module routes
 from modules_routes import modules_bp
@@ -111,13 +116,15 @@ def permission_required(perm):
 @app.context_processor
 def inject_globals():
     """Injecte les variables globales dans tous les templates."""
-    ctx = {'current_user': None, 'permissions': [], 'pending_count': 0}
+    ctx = {'current_user': None, 'permissions': [], 'pending_count': 0, 'unread_messages': 0}
     if 'user_id' in session:
         user = get_user_by_id(session['user_id'])
         if user:
             ctx['current_user'] = user
             ctx['permissions'] = get_role_permissions(user['role'])
             ctx['pending_count'] = len(get_jobs_by_status('traite'))
+            try: ctx['unread_messages'] = get_unread_count(user['id'])
+            except: pass
     return ctx
 
 
@@ -535,7 +542,7 @@ def clients_delete(cid):
 def admin_page():
     users = get_all_users()
     stats = get_dashboard_stats()
-    role_perms = {r: get_role_permissions(r) for r in ['admin', 'rh', 'technicien']}
+    role_perms = {r: get_role_permissions(r) for r in ['admin', 'rh', 'technicien', 'commercial', 'comptable', 'moyens_generaux', 'informatique']}
     return render_template('admin.html', page='admin', users=users, stats=stats,
                           all_permissions=ALL_PERMISSIONS, role_perms=role_perms)
 
@@ -1297,6 +1304,103 @@ def rh_paie_add():
     )
     flash(f"Bulletin de paie créé — Net: {net:,.0f} FCFA", "success")
     return redirect(url_for('rh_paie'))
+
+
+# ======================== CHAT ========================
+
+@app.route('/chat')
+@login_required
+def chat_page():
+    channel = request.args.get('channel', 'general')
+    dm_user = request.args.get('dm')
+    users = get_all_users()
+    if dm_user:
+        msgs = get_direct_messages(session['user_id'], int(dm_user))
+        target = get_user_by_id(int(dm_user))
+        return render_template('chat.html', page='chat', messages=msgs, users=users,
+                              channel=f'dm_{dm_user}', dm_target=target)
+    msgs = get_messages(channel)
+    return render_template('chat.html', page='chat', messages=msgs, users=users,
+                          channel=channel, dm_target=None)
+
+@app.route('/chat/send', methods=['POST'])
+@login_required
+def chat_send():
+    content = request.form.get('content', '').strip()
+    channel = request.form.get('channel', 'general')
+    if content:
+        dm_id = None
+        if channel.startswith('dm_'):
+            dm_id = int(channel.split('_')[1])
+            channel = 'direct'
+        send_message(session['user_id'], content, channel, dm_id)
+    if dm_id:
+        return redirect(f'/chat?dm={dm_id}')
+    return redirect(f'/chat?channel={channel}')
+
+@app.route('/chat/api')
+@login_required
+def chat_api():
+    """API pour rafraîchir les messages (polling)."""
+    channel = request.args.get('channel', 'general')
+    dm_user = request.args.get('dm')
+    if dm_user:
+        msgs = get_direct_messages(session['user_id'], int(dm_user))
+    else:
+        msgs = get_messages(channel)
+    return jsonify([{'id': m['id'], 'sender': m['sender_name'], 'sender_id': m['sender_id'],
+                     'content': m['content'], 'time': m['created_at'][11:16]} for m in msgs])
+
+
+# ======================== RH EXPANDED ========================
+
+@app.route('/rh/postes')
+@permission_required('fichiers')
+def rh_postes():
+    from models import db_get_all
+    postes = db_get_all('rh_job_descriptions', order='title ASC')
+    return render_template('rh_postes.html', page='postes', postes=postes)
+
+@app.route('/rh/postes/add', methods=['POST'])
+@permission_required('fichiers')
+def rh_postes_add():
+    from models import db_insert
+    db_insert('rh_job_descriptions', title=request.form['title'],
+        department=request.form.get('department',''), description=request.form.get('description',''),
+        requirements=request.form.get('requirements',''), responsibilities=request.form.get('responsibilities',''),
+        salary_range=request.form.get('salary_range',''))
+    flash("Poste ajouté", "success"); return redirect(url_for('rh_postes'))
+
+@app.route('/rh/formations')
+@permission_required('fichiers')
+def rh_formations():
+    from models import db_get_all
+    trainings = db_get_all('rh_trainings', order='date DESC')
+    return render_template('rh_formations.html', page='formations', trainings=trainings)
+
+@app.route('/rh/formations/add', methods=['POST'])
+@permission_required('fichiers')
+def rh_formations_add():
+    from models import db_insert
+    db_insert('rh_trainings', title=request.form['title'], description=request.form.get('description',''),
+        trainer=request.form.get('trainer',''), date=request.form.get('date',''),
+        duration=request.form.get('duration',''))
+    flash("Formation ajoutée", "success"); return redirect(url_for('rh_formations'))
+
+@app.route('/rh/annonces')
+@permission_required('fichiers')
+def rh_annonces():
+    from models import db_get_all
+    annonces = db_get_all('rh_announcements', order='created_at DESC')
+    return render_template('rh_annonces.html', page='annonces', annonces=annonces)
+
+@app.route('/rh/annonces/add', methods=['POST'])
+@permission_required('fichiers')
+def rh_annonces_add():
+    from models import db_insert
+    db_insert('rh_announcements', title=request.form['title'], content=request.form.get('content',''),
+        priority=request.form.get('priority','normale'), created_by=session['user_id'])
+    flash("Annonce publiée", "success"); return redirect(url_for('rh_annonces'))
 
 
 # ======================== UTILS ========================

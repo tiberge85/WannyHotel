@@ -168,8 +168,11 @@
                 <div class="nav-section-items">
                     <a href="/rh" class="{% if page == 'rh' %}active{% endif %}">Tableau de bord RH</a>
                     <a href="/rh/personnel" class="{% if page == 'personnel' %}active{% endif %}">Personnel</a>
+                    <a href="/rh/postes" class="{% if page == 'postes' %}active{% endif %}">Descriptions d'emploi</a>
                     <a href="/rh/conges" class="{% if page == 'conges' %}active{% endif %}">Congés</a>
                     <a href="/rh/paie" class="{% if page == 'paie' %}active{% endif %}">Paie</a>
+                    <a href="/rh/formations" class="{% if page == 'formations' %}active{% endif %}">Formations</a>
+                    <a href="/rh/annonces" class="{% if page == 'annonces' %}active{% endif %}">Annonces</a>
                     <a href="/fichiers" class="{% if page == 'fichiers' %}active{% endif %}">
                         Fichiers à envoyer
                         {% if pending_count %}<span class="badge">{{ pending_count }}</span>{% endif %}
@@ -232,6 +235,7 @@
             {% endif %}
         </div>
         <div class="sidebar-footer">
+            <a href="/chat" style="display:flex;align-items:center;gap:6px">💬 Chat {% if unread_messages %}<span class="badge">{{ unread_messages }}</span>{% endif %}</a>
             <a href="/logout">🚪 Déconnexion</a>
         </div>
     </nav>
