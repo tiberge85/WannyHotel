@@ -1,0 +1,37 @@
+{% extends "base.html" %}{% block title %}WannyHotel - Planning{% endblock %}{% block content %}
+<style>
+.planning-grid{display:grid;gap:2px;overflow-x:auto}
+.plan-room{display:flex;align-items:center;min-height:36px;border-bottom:1px solid #f0f0f0}
+.plan-room-name{width:80px;flex-shrink:0;font-size:12px;font-weight:600;padding:4px 8px;background:#f8faf9}
+.plan-bar{position:relative;flex:1;height:30px}
+.plan-res{position:absolute;height:24px;top:3px;border-radius:6px;font-size:10px;color:#fff;padding:2px 8px;overflow:hidden;white-space:nowrap;cursor:pointer}
+.plan-res.en_cours{background:#1565c0}.plan-res.confirmee{background:#ff9800}
+.legend{display:flex;gap:12px;margin-bottom:14px;font-size:12px}
+.legend span{display:flex;align-items:center;gap:4px}
+.legend .dot{width:12px;height:12px;border-radius:3px}
+</style>
+<div class="page-header"><h1>📅 Planning des chambres</h1></div>
+<div class="legend">
+    <span><span class="dot" style="background:#1565c0"></span> En cours</span>
+    <span><span class="dot" style="background:#ff9800"></span> Confirmée</span>
+    <span><span class="dot" style="background:#2e7d32"></span> Disponible</span>
+</div>
+<div class="card"><div class="card-body">
+{% if rooms %}
+<div class="planning-grid">
+{% for room in rooms %}
+<div class="plan-room">
+    <div class="plan-room-name">{{ room.number }}<br><span style="font-size:9px;color:#888">{{ room.type_name or '' }}</span></div>
+    <div class="plan-bar">
+        {% for r in reservations %}{% if r.room_number == room.number %}
+        <div class="plan-res {{ r.status }}" style="left:0;width:90%" title="{{ r.first_name }} {{ r.last_name }} — {{ r.checkin_date }} → {{ r.checkout_date }}">
+            {{ r.first_name }} {{ r.last_name[:1] }}. · {{ r.checkin_date[5:] }}→{{ r.checkout_date[5:] }}
+        </div>
+        {% endif %}{% endfor %}
+    </div>
+</div>
+{% endfor %}
+</div>
+{% else %}<p style="text-align:center;color:#999;padding:30px">Aucune chambre</p>{% endif %}
+</div></div>
+{% endblock %}

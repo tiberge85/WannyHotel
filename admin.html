@@ -1,12 +1,41 @@
 {% extends "base.html" %}{% block title %}WannyHotel - Admin{% endblock %}{% block content %}
 <div class="page-header"><h1>⚙️ Administration</h1></div>
-<div class="card"><div class="card-header"><h3>Utilisateurs</h3><button class="btn btn-gold btn-sm" onclick="document.getElementById('addM').classList.add('active')">+ Utilisateur</button></div><div class="card-body">
-<div class="table-wrap"><table><thead><tr><th>Nom</th><th>Identifiant</th><th>Rôle</th></tr></thead>
-<tbody>{% for u in users %}<tr><td><strong>{{ u.full_name }}</strong></td><td>{{ u.username }}</td><td><span class="badge-s gold">{{ u.role }}</span></td></tr>{% endfor %}</tbody></table></div></div></div>
-<div class="card"><div class="card-header"><h3>Dernières activités</h3></div><div class="card-body">
+
+<!-- Users -->
+<div class="card"><div class="card-header"><h3>👥 Utilisateurs ({{ users|length }})</h3><button class="btn btn-gold btn-sm" onclick="document.getElementById('addM').classList.add('active')">+ Utilisateur</button></div><div class="card-body">
+<div class="table-wrap"><table><thead><tr><th>Nom</th><th>Identifiant</th><th>Rôle</th><th>Actions</th></tr></thead>
+<tbody>{% for u in users %}<tr>
+<td><strong>{{ u.full_name }}</strong></td><td>{{ u.username }}</td>
+<td><span class="badge-s gold">{{ role_labels.get(u.role, u.role) }}</span></td>
+<td>{% if u.role != 'admin' %}<a href="/admin/user/delete/{{ u.id }}" class="btn btn-outline btn-sm" style="color:#c53030" onclick="return confirm('Supprimer {{ u.full_name }} ?')">🗑️</a>{% endif %}</td>
+</tr>{% endfor %}</tbody></table></div></div></div>
+
+<!-- Permissions -->
+<div class="card"><div class="card-header"><h3>🔑 Permissions par rôle</h3></div><div class="card-body">
+<form method="post" action="/admin/permissions">
+<div class="table-wrap"><table>
+<thead><tr><th>Permission</th>
+{% for role in all_roles %}<th style="font-size:10px;text-align:center;white-space:nowrap">{{ role_labels.get(role, role)[:12] }}</th>{% endfor %}
+</tr></thead>
+<tbody>{% for perm in all_permissions %}<tr>
+<td><strong>{{ perm }}</strong></td>
+{% for role in all_roles %}
+<td style="text-align:center"><input type="checkbox" name="{{ role }}_{{ perm }}" {% if perm in role_perms.get(role,[]) %}checked{% endif %} {% if role == 'admin' %}disabled checked{% endif %}></td>
+{% endfor %}
+</tr>{% endfor %}</tbody>
+</table></div>
+<div style="margin-top:12px;text-align:right"><button type="submit" class="btn btn-gold">💾 Sauvegarder les permissions</button></div>
+</form></div></div>
+
+<!-- Logs -->
+<div class="card"><div class="card-header"><h3>📋 Dernières activités</h3></div><div class="card-body">
 <div class="table-wrap"><table><thead><tr><th>Date</th><th>Utilisateur</th><th>Action</th><th>Détail</th></tr></thead>
 <tbody>{% for l in logs %}<tr><td style="font-size:11px">{{ l.created_at[:16] }}</td><td>{{ l.user_name }}</td><td>{{ l.action }}</td><td style="font-size:11px">{{ l.detail }}</td></tr>{% endfor %}</tbody></table></div></div></div>
+
+<!-- Add user modal -->
 <div class="modal-bg" id="addM"><div class="modal"><h3>Nouvel utilisateur</h3><form method="post" action="/admin/user/add">
 <div class="form-row"><div class="form-group"><label>Identifiant *</label><input type="text" name="username" required></div><div class="form-group"><label>Mot de passe *</label><input type="password" name="password" required></div></div>
-<div class="form-row"><div class="form-group"><label>Nom complet *</label><input type="text" name="full_name" required></div><div class="form-group"><label>Rôle</label><select name="role"><option>receptionniste</option><option>restaurant</option><option>comptable</option><option>directeur</option><option>admin</option></select></div></div>
-<div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-gold">Créer</button></div></form></div></div>{% endblock %}
+<div class="form-row"><div class="form-group"><label>Nom complet *</label><input type="text" name="full_name" required></div>
+<div class="form-group"><label>Rôle</label><select name="role">{% for r in all_roles %}<option value="{{ r }}">{{ role_labels.get(r, r) }}</option>{% endfor %}</select></div></div>
+<div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-gold">Créer</button></div></form></div></div>
+{% endblock %}

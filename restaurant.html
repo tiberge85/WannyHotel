@@ -1,26 +1,72 @@
 {% extends "base.html" %}{% block title %}WannyHotel - Restaurant{% endblock %}{% block content %}
-<div class="page-header"><h1>🍽️ Restaurant / Bar</h1></div>
-<div style="display:flex;gap:8px;margin-bottom:14px"><button class="btn btn-orange btn-sm" onclick="document.getElementById('addItem').classList.add('active')">+ Plat/Boisson</button><button class="btn btn-primary btn-sm" onclick="document.getElementById('newOrder').classList.add('active')">📝 Commande</button></div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-<div class="card"><div class="card-header"><h3>Menu ({{ items|length }})</h3></div><div class="card-body">
-{% if items %}<div class="table-wrap"><table><thead><tr><th>Plat/Boisson</th><th>Catégorie</th><th>Prix</th></tr></thead>
-<tbody>{% for i in items %}<tr><td><strong>{{ i.name }}</strong></td><td>{{ i.category or '-' }}</td><td>{{ '{:,.0f}'.format(i.price) }} F</td></tr>{% endfor %}</tbody></table></div>
-{% else %}<p style="color:#999;text-align:center;padding:16px">Menu vide</p>{% endif %}</div></div>
+<div class="page-header"><h1>🍽️ Restaurant / Bar</h1>
+<div style="display:flex;gap:6px">
+    <button class="btn btn-orange btn-sm" onclick="document.getElementById('orderM').classList.add('active')">+ Commande</button>
+    <button class="btn btn-outline btn-sm" onclick="document.getElementById('menuM').classList.add('active')">📋 Gérer menu</button>
+</div></div>
+
+{% if orders %}
 <div class="card"><div class="card-header"><h3>Commandes récentes</h3></div><div class="card-body">
-{% for o in orders %}<div style="padding:8px;border-bottom:1px solid #f0f0f0;font-size:12px">
-<strong>{% if o.room_number %}Ch.{{ o.room_number }}{% elif o.table_number %}Table {{ o.table_number }}{% else %}#{{ o.id }}{% endif %}</strong>
-· {{ '{:,.0f}'.format(o.subtotal) }} F · <span class="badge-status {% if o.status=='paye' %}libre{% elif o.status=='servi' %}reservee{% else %}menage{% endif %}">{{ o.status }}</span>
-{% if o.status=='en_cours' %}<a href="/restaurant/order/{{ o.id }}/status/servi" class="btn btn-outline btn-sm">Servi</a>{% endif %}
-{% if o.status=='servi' %}<a href="/restaurant/order/{{ o.id }}/status/paye" class="btn btn-primary btn-sm">💵 Payé</a>{% endif %}
-</div>{% else %}<p style="color:#999;text-align:center;padding:16px">Aucune commande</p>{% endfor %}</div></div></div>
-<div class="modal-bg" id="addItem"><div class="modal"><h3>+ Plat/Boisson</h3><form method="post" action="/restaurant/items/add">
-<div class="form-group"><label>Nom *</label><input type="text" name="name" required></div>
-<div class="form-row"><div class="form-group"><label>Catégorie</label><select name="category"><option>Entrée</option><option>Plat</option><option>Dessert</option><option>Boisson</option><option>Cocktail</option><option>Petit-déjeuner</option></select></div><div class="form-group"><label>Prix (F)</label><input type="number" name="price" step="500"></div></div>
-<div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-primary">Ajouter</button></div></form></div></div>
-<div class="modal-bg" id="newOrder"><div class="modal"><h3>📝 Nouvelle commande</h3><form method="post" action="/restaurant/order">
-<div class="form-row"><div class="form-group"><label>Table</label><input type="text" name="table_number" placeholder="T1"></div><div class="form-group"><label>Chambre</label><input type="text" name="room_number" placeholder="101"></div></div>
+<div class="table-wrap"><table>
+<thead><tr><th>N°</th><th>Table/Chambre</th><th>Client</th><th>Articles</th><th>Total</th><th>Paiement</th><th>Date</th></tr></thead>
+<tbody>{% for o in orders %}<tr>
+<td>#{{ o.id }}</td><td>{{ o.table_number or '' }}{% if o.room_id %} 🛏️{{ o.room_id }}{% endif %}</td>
+<td>{{ o.guest_name or '-' }}</td>
+<td style="font-size:11px">{% if o.items_json %}{% for item in o.items_json|tojson|safe %}{% endfor %}{{ o.items_json[:50] }}{% endif %}</td>
+<td style="font-weight:700">{{ '{:,.0f}'.format(o.total) }} F</td>
+<td>{{ o.payment_method or '-' }}</td>
+<td style="font-size:11px">{{ o.created_at[:16] }}</td>
+</tr>{% endfor %}</tbody></table></div>
+</div></div>
+{% else %}
+<div class="card"><div class="card-body" style="text-align:center;color:#999;padding:40px">Aucune commande. Créez votre première commande.</div></div>
+{% endif %}
+
+<!-- Menu items -->
+{% if menu %}
+<div class="card" style="margin-top:14px"><div class="card-header"><h3>📋 Menu actif</h3></div><div class="card-body">
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">
+{% for m in menu %}<div style="border:1px solid #eee;border-radius:8px;padding:10px;display:flex;justify-content:space-between;align-items:center">
+<div><strong style="font-size:13px">{{ m.name }}</strong><br><span style="font-size:10px;color:#888">{{ m.category }}</span></div>
+<div style="font-weight:700;color:#B8860B">{{ '{:,.0f}'.format(m.price) }} F</div>
+</div>{% endfor %}
+</div></div></div>
+{% endif %}
+
+<!-- Order Modal -->
+<div class="modal-bg" id="orderM"><div class="modal" style="max-width:600px">
+<h3>🍽️ Nouvelle commande</h3>
+<form method="post" action="/restaurant/order">
+<div class="form-row">
+    <div class="form-group"><label>N° Table</label><input type="text" name="table_number" placeholder="Table 1"></div>
+    <div class="form-group"><label>Transférer sur chambre</label><select name="reservation_id"><option value="">— Aucune —</option>{% for r in rooms %}<option value="{{ r.res_id }}">Ch. {{ r.number }} — {{ r.first_name }} {{ r.last_name }}</option>{% endfor %}</select></div>
+</div>
+<div class="form-group"><label>Nom client</label><input type="text" name="guest_name"></div>
 <div id="orderItems">
-<div class="form-row"><div class="form-group"><label>Article</label><select name="item_1_id">{% for i in items %}<option value="{{ i.id }}">{{ i.name }} ({{ '{:,.0f}'.format(i.price) }}F)</option>{% endfor %}</select></div><div class="form-group" style="flex:0 0 80px"><label>Qté</label><input type="number" name="item_1_qty" value="1" min="1"></div></div></div>
-<div class="form-group"><label>Serveur</label><input type="text" name="waiter"></div>
-<div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-primary">Envoyer</button></div></form></div></div>
+<div style="display:grid;grid-template-columns:3fr 1fr 1fr 30px;gap:6px;margin-bottom:4px;font-size:11px;font-weight:600;color:#888"><span>Article</span><span>Qté</span><span>Prix</span><span></span></div>
+<div style="display:grid;grid-template-columns:3fr 1fr 1fr 30px;gap:6px;margin-bottom:4px">
+<select name="item_name[]" onchange="var p=this.options[this.selectedIndex].dataset.price;this.closest('div').querySelector('[name=\\'item_price[]\\']').value=p||0" style="padding:6px;border:1.5px solid #ddd;border-radius:6px;font-size:12px">
+<option value="">— Choisir —</option>{% for m in menu %}<option value="{{ m.name }}" data-price="{{ m.price }}">{{ m.name }} ({{ '{:,.0f}'.format(m.price) }})</option>{% endfor %}
+<option value="Autre">Autre...</option></select>
+<input type="number" name="item_qty[]" value="1" min="1" style="padding:6px;border:1.5px solid #ddd;border-radius:6px;font-size:12px">
+<input type="number" name="item_price[]" value="0" style="padding:6px;border:1.5px solid #ddd;border-radius:6px;font-size:12px">
+<button type="button" onclick="this.parentElement.remove()" style="background:#fde8e8;border:none;border-radius:6px;cursor:pointer;color:#c53030">✕</button>
+</div></div>
+<button type="button" onclick="addItem()" class="btn btn-outline btn-sm" style="margin-bottom:10px">+ Article</button>
+<div class="form-group"><label>Paiement</label><select name="payment_method"><option>especes</option><option>carte</option><option>mobile_money</option><option>chambre</option></select></div>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-primary">🍽️ Enregistrer</button></div>
+</form></div></div>
+
+<!-- Menu Modal -->
+<div class="modal-bg" id="menuM"><div class="modal">
+<h3>📋 Ajouter au menu</h3>
+<form method="post" action="/restaurant/menu/add">
+<div class="form-row"><div class="form-group"><label>Nom *</label><input type="text" name="name" required placeholder="Poulet braisé"></div>
+<div class="form-group"><label>Catégorie</label><select name="category"><option>plat</option><option>entrée</option><option>dessert</option><option>boisson</option><option>petit-dejeuner</option><option>snack</option></select></div></div>
+<div class="form-group"><label>Prix (F)</label><input type="number" name="price" step="100" required></div>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-primary">Ajouter</button></div>
+</form></div></div>
+<script>
+function addItem(){var d=document.createElement('div');d.style.cssText='display:grid;grid-template-columns:3fr 1fr 1fr 30px;gap:6px;margin-bottom:4px';d.innerHTML=document.getElementById('orderItems').children[1].innerHTML;document.getElementById('orderItems').appendChild(d);}
+</script>
 {% endblock %}

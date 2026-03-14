@@ -426,3 +426,257 @@ def get_smtp():
     s = conn.execute("SELECT * FROM smtp_settings LIMIT 1").fetchone()
     conn.close()
     return dict(s) if s else None
+
+
+# ======================== MIGRATIONS V3 ========================
+
+def migrate_v3():
+    conn = get_db()
+    # Restaurant orders
+    conn.executescript('''
+        CREATE TABLE IF NOT EXISTS restaurant_orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            table_number TEXT, room_id INTEGER,
+            guest_name TEXT, items_json TEXT,
+            subtotal REAL DEFAULT 0, tax REAL DEFAULT 0, total REAL DEFAULT 0,
+            status TEXT DEFAULT 'en_cours',
+            payment_method TEXT, reservation_id INTEGER,
+            created_by INTEGER, created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS restaurant_menu (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL, category TEXT DEFAULT 'plat',
+            price REAL DEFAULT 0, available INTEGER DEFAULT 1,
+            description TEXT
+        );
+        CREATE TABLE IF NOT EXISTS guest_reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            reservation_id INTEGER, guest_id INTEGER,
+            rating INTEGER DEFAULT 5, comment TEXT,
+            token TEXT UNIQUE, created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS loyalty_points (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            guest_id INTEGER, points INTEGER DEFAULT 0,
+            action TEXT, reservation_id INTEGER,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+    ''')
+    # Room planning
+    for col in ['color', 'floor_plan']:
+        try: conn.execute(f"ALTER TABLE rooms ADD COLUMN {col} TEXT DEFAULT ''")
+        except: pass
+    # Guest loyalty
+    for col in ['loyalty_points', 'preferred_room_type', 'notes_internes']:
+        try: conn.execute(f"ALTER TABLE guests ADD COLUMN {col} TEXT DEFAULT ''")
+        except: pass
+    conn.commit(); conn.close()
+
+
+def get_dashboard_stats():
+    conn = get_db()
+    s = {}
+    s['total_rooms'] = conn.execute("SELECT COUNT(*) FROM rooms").fetchone()[0]
+    s['occupied'] = conn.execute("SELECT COUNT(*) FROM rooms WHERE status='occupee'").fetchone()[0]
+    s['available'] = conn.execute("SELECT COUNT(*) FROM rooms WHERE status='disponible'").fetchone()[0]
+    s['cleaning'] = conn.execute("SELECT COUNT(*) FROM rooms WHERE status='a_nettoyer'").fetchone()[0]
+    s['occupancy_rate'] = round(s['occupied'] * 100 / max(s['total_rooms'], 1))
+    
+    s['total_guests'] = conn.execute("SELECT COUNT(*) FROM guests").fetchone()[0]
+    s['active_reservations'] = conn.execute("SELECT COUNT(*) FROM reservations WHERE status='en_cours'").fetchone()[0]
+    s['pending_reservations'] = conn.execute("SELECT COUNT(*) FROM reservations WHERE status='confirmee'").fetchone()[0]
+    s['online_pending'] = conn.execute("SELECT COUNT(*) FROM online_bookings WHERE status='en_attente'").fetchone()[0]
+    
+    # Revenue
+    try:
+        s['revenue_month'] = conn.execute("""SELECT COALESCE(SUM(amount),0) FROM payments 
+            WHERE created_at >= date('now','start of month')""").fetchone()[0]
+    except: s['revenue_month'] = 0
+    try:
+        s['revenue_total'] = conn.execute("SELECT COALESCE(SUM(amount),0) FROM payments").fetchone()[0]
+    except: s['revenue_total'] = 0
+    try:
+        s['charges_month'] = conn.execute("""SELECT COALESCE(SUM(total),0) FROM charges 
+            WHERE created_at >= date('now','start of month')""").fetchone()[0]
+    except: s['charges_month'] = 0
+    
+    # Housekeeping
+    s['hk_pending'] = conn.execute("SELECT COUNT(*) FROM housekeeping WHERE status='a_faire'").fetchone()[0]
+    
+    # RevPAR
+    s['adr'] = round(s['charges_month'] / max(s['occupied'], 1))
+    s['revpar'] = round(s['revenue_month'] / max(s['total_rooms'], 1))
+    
+    # Recent reservations
+    s['recent'] = [dict(r) for r in conn.execute("""SELECT r.*, g.first_name, g.last_name 
+        FROM reservations r LEFT JOIN guests g ON r.guest_id=g.id 
+        ORDER BY r.created_at DESC LIMIT 5""").fetchall()]
+    
+    # Restaurant
+    try:
+        s['restaurant_today'] = conn.execute("""SELECT COALESCE(SUM(total),0) FROM restaurant_orders 
+            WHERE date(created_at)=date('now')""").fetchone()[0]
+    except: s['restaurant_today'] = 0
+    
+    conn.close()
+    return s
+
+
+def get_occupancy_data():
+    """7 derniers jours d'occupation pour le graphique."""
+    conn = get_db()
+    data = []
+    for i in range(6, -1, -1):
+        row = conn.execute("""SELECT COUNT(*) FROM reservations 
+            WHERE status IN ('en_cours','terminee') 
+            AND checkin_date <= date('now', ? || ' days') 
+            AND checkout_date > date('now', ? || ' days')""", (f'-{i}', f'-{i}')).fetchone()
+        data.append(row[0] if row else 0)
+    conn.close()
+    return data
+
+
+# ======================== PERMISSIONS ========================
+
+def migrate_permissions():
+    conn = get_db()
+    conn.executescript('''
+        CREATE TABLE IF NOT EXISTS role_permissions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            role TEXT NOT NULL, permission TEXT NOT NULL,
+            UNIQUE(role, permission)
+        );
+    ''')
+    conn.commit(); conn.close()
+
+def init_default_permissions(default_perms):
+    conn = get_db()
+    for role, perms in default_perms.items():
+        for p in perms:
+            try: conn.execute("INSERT OR IGNORE INTO role_permissions (role, permission) VALUES (?,?)", (role, p))
+            except: pass
+    conn.commit(); conn.close()
+
+def get_role_perms(role):
+    conn = get_db()
+    rows = conn.execute("SELECT permission FROM role_permissions WHERE role=?", (role,)).fetchall()
+    conn.close()
+    return [r['permission'] for r in rows]
+
+def update_role_perms(role, perms):
+    conn = get_db()
+    conn.execute("DELETE FROM role_permissions WHERE role=?", (role,))
+    for p in perms:
+        conn.execute("INSERT INTO role_permissions (role, permission) VALUES (?,?)", (role, p))
+    conn.commit(); conn.close()
+
+def has_perm(role, permission):
+    return permission in get_role_perms(role)
+
+def delete_user(uid):
+    conn = get_db()
+    conn.execute("DELETE FROM users WHERE id=? AND role != 'admin'", (uid,))
+    conn.commit(); conn.close()
+
+
+# ======================== RH MODULE ========================
+
+def migrate_rh():
+    conn = get_db()
+    conn.executescript('''
+        CREATE TABLE IF NOT EXISTS rh_employees (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            matricule TEXT, first_name TEXT NOT NULL, last_name TEXT NOT NULL,
+            email TEXT, tel TEXT, photo TEXT,
+            birth_date TEXT, gender TEXT, nationality TEXT,
+            position TEXT, department TEXT,
+            hire_date TEXT, contract_type TEXT DEFAULT 'CDI',
+            contract_end TEXT, salary REAL DEFAULT 0,
+            cnps_number TEXT, insurance TEXT, insurance_number TEXT,
+            emergency_contact TEXT, emergency_tel TEXT,
+            bank_name TEXT, bank_account TEXT,
+            status TEXT DEFAULT 'actif',
+            notes TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS rh_leaves (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            employee_id INTEGER, leave_type TEXT DEFAULT 'annuel',
+            start_date TEXT, end_date TEXT, days INTEGER DEFAULT 1,
+            reason TEXT, status TEXT DEFAULT 'en_attente',
+            approved_by INTEGER, created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (employee_id) REFERENCES rh_employees(id)
+        );
+        CREATE TABLE IF NOT EXISTS rh_payslips (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            employee_id INTEGER, period TEXT,
+            base_salary REAL DEFAULT 0,
+            prime_transport REAL DEFAULT 0, prime_anciennete REAL DEFAULT 0,
+            prime_logement REAL DEFAULT 0, prime_rendement REAL DEFAULT 0,
+            heures_sup REAL DEFAULT 0, bonus REAL DEFAULT 0,
+            avantages_nature REAL DEFAULT 0,
+            salaire_brut REAL DEFAULT 0,
+            cnps_employee REAL DEFAULT 0, assurance REAL DEFAULT 0,
+            its REAL DEFAULT 0, avances REAL DEFAULT 0,
+            autres_retenues REAL DEFAULT 0,
+            total_retenues REAL DEFAULT 0,
+            net_salary REAL DEFAULT 0,
+            jours_travailles INTEGER DEFAULT 26,
+            jours_absence INTEGER DEFAULT 0,
+            mode_paiement TEXT DEFAULT 'virement',
+            status TEXT DEFAULT 'brouillon',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (employee_id) REFERENCES rh_employees(id)
+        );
+        CREATE TABLE IF NOT EXISTS rh_contracts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            employee_id INTEGER, code TEXT,
+            contract_type TEXT DEFAULT 'CDI',
+            start_date TEXT, end_date TEXT,
+            salary REAL DEFAULT 0, status TEXT DEFAULT 'actif',
+            notes TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (employee_id) REFERENCES rh_employees(id)
+        );
+        CREATE TABLE IF NOT EXISTS rh_trainings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT, description TEXT,
+            trainer TEXT, department TEXT,
+            date TEXT, duration TEXT, cost REAL DEFAULT 0,
+            status TEXT DEFAULT 'planifie',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS rh_announcements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT, content TEXT,
+            priority TEXT DEFAULT 'normale',
+            created_by INTEGER, created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+    ''')
+    conn.commit(); conn.close()
+
+def get_rh_employees(status=None):
+    conn = get_db()
+    if status:
+        rows = conn.execute("SELECT * FROM rh_employees WHERE status=? ORDER BY last_name", (status,)).fetchall()
+    else:
+        rows = conn.execute("SELECT * FROM rh_employees ORDER BY last_name").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def get_rh_employee(eid):
+    conn = get_db()
+    e = conn.execute("SELECT * FROM rh_employees WHERE id=?", (eid,)).fetchone()
+    conn.close()
+    return dict(e) if e else None
+
+def get_rh_stats():
+    conn = get_db()
+    s = {}
+    s['total'] = conn.execute("SELECT COUNT(*) FROM rh_employees WHERE status='actif'").fetchone()[0]
+    s['cdi'] = conn.execute("SELECT COUNT(*) FROM rh_employees WHERE contract_type='CDI' AND status='actif'").fetchone()[0]
+    s['cdd'] = conn.execute("SELECT COUNT(*) FROM rh_employees WHERE contract_type='CDD' AND status='actif'").fetchone()[0]
+    try: s['pending_leaves'] = conn.execute("SELECT COUNT(*) FROM rh_leaves WHERE status='en_attente'").fetchone()[0]
+    except: s['pending_leaves'] = 0
+    try: s['masse_salariale'] = conn.execute("SELECT COALESCE(SUM(salary),0) FROM rh_employees WHERE status='actif'").fetchone()[0]
+    except: s['masse_salariale'] = 0
+    conn.close()
+    return s

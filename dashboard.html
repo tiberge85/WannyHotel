@@ -1,22 +1,64 @@
-{% extends "base.html" %}{% block title %}WannyHotel - Tableau de bord{% endblock %}{% block content %}
-<div class="page-header"><h1>📊 Tableau de bord</h1><p>{{ now }} — Vue d'ensemble de l'hôtel</p></div>
-<div class="stats-grid">
-<div class="stat-card"><div class="stat-icon gold">🏨</div><div><div class="stat-num">{{ stats.occupancy_rate }}%</div><div class="stat-label">Taux d'occupation</div></div></div>
-<div class="stat-card"><div class="stat-icon green">🟢</div><div><div class="stat-num">{{ stats.available }}</div><div class="stat-label">Disponibles</div></div></div>
-<div class="stat-card"><div class="stat-icon red">🔴</div><div><div class="stat-num">{{ stats.occupied }}</div><div class="stat-label">Occupées</div></div></div>
-<div class="stat-card"><div class="stat-icon blue">📥</div><div><div class="stat-num">{{ stats.checkins_today }}</div><div class="stat-label">Arrivées aujourd'hui</div></div></div>
-<div class="stat-card"><div class="stat-icon blue">📤</div><div><div class="stat-num">{{ stats.checkouts_today }}</div><div class="stat-label">Départs aujourd'hui</div></div></div>
-<div class="stat-card"><div class="stat-icon gold">💰</div><div><div class="stat-num">{{ '{:,.0f}'.format(stats.revenue_today) }}</div><div class="stat-label">CA aujourd'hui (F)</div></div></div>
-<div class="stat-card"><div class="stat-icon green">💵</div><div><div class="stat-num">{{ '{:,.0f}'.format(stats.revenue_month) }}</div><div class="stat-label">CA du mois (F)</div></div></div>
-<div class="stat-card"><div class="stat-icon teal">🧹</div><div><div class="stat-num">{{ stats.dirty_rooms }}</div><div class="stat-label">À nettoyer</div></div></div>
+{% extends "base.html" %}{% block title %}WannyHotel - Dashboard{% endblock %}{% block content %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<div class="page-header"><h1>📊 Tableau de bord</h1></div>
+
+<!-- KPI Cards -->
+<div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+    <div class="stat-card" style="border-left:4px solid #2e7d32"><div class="stat-icon green">🛏️</div><div class="stat-info"><div class="stat-num">{{ stats.occupancy_rate }}%</div><div class="stat-label">Taux d'occupation</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #1a3a5c"><div class="stat-icon teal">📋</div><div class="stat-info"><div class="stat-num">{{ stats.active_reservations }}</div><div class="stat-label">En cours</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #e8672a"><div class="stat-icon orange">⏳</div><div class="stat-info"><div class="stat-num">{{ stats.pending_reservations + stats.online_pending }}</div><div class="stat-label">En attente</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #B8860B"><div class="stat-icon" style="background:#fff8e1">💰</div><div class="stat-info"><div class="stat-num">{{ '{:,.0f}'.format(stats.revenue_month) }}</div><div class="stat-label">Revenus du mois (F)</div></div></div>
 </div>
-<div class="card"><div class="card-header"><h3>Dernières réservations</h3><a href="/reservations/new" class="btn btn-gold btn-sm">+ Nouvelle</a></div><div class="card-body">
-{% if recent %}<div class="table-wrap"><table>
-<thead><tr><th>Réf</th><th>Client</th><th>Chambre</th><th>Arrivée</th><th>Départ</th><th>Montant</th><th>Statut</th></tr></thead>
-<tbody>{% for r in recent %}<tr>
-<td><a href="/reservations/{{ r.id }}" style="color:#d4a574;font-weight:600">{{ r.reference }}</a></td>
-<td>{{ r.guest_name }}</td><td>{{ r.room_number or '-' }}</td><td>{{ r.checkin_date }}</td><td>{{ r.checkout_date }}</td>
-<td>{{ '{:,.0f}'.format(r.total_amount) }} F</td>
-<td>{% if r.status=='confirmee' %}<span class="badge-s gold">Confirmée</span>{% elif r.status=='en_cours' %}<span class="badge-s blue">En cours</span>{% elif r.status=='terminee' %}<span class="badge-s green">Terminée</span>{% else %}<span class="badge-s">{{ r.status }}</span>{% endif %}</td>
-</tr>{% endfor %}</tbody></table></div>{% else %}<p style="text-align:center;color:#999;padding:20px">Aucune réservation</p>{% endif %}
-</div></div>{% endblock %}
+
+<!-- Charts -->
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:16px">
+    <div class="card"><div class="card-header"><h3>📈 Occupation (7 jours)</h3></div><div class="card-body" style="height:200px"><canvas id="cOcc"></canvas></div></div>
+    <div class="card"><div class="card-header"><h3>🛏️ État des chambres</h3></div><div class="card-body" style="height:200px"><canvas id="cRooms"></canvas></div></div>
+</div>
+
+<!-- Room status grid -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+    <div style="background:#e8f5e9;border-radius:10px;padding:14px;text-align:center"><div style="font-size:28px;font-weight:800;color:#2e7d32">{{ stats.available }}</div><div style="font-size:11px;color:#2e7d32">Disponibles</div></div>
+    <div style="background:#e3f2fd;border-radius:10px;padding:14px;text-align:center"><div style="font-size:28px;font-weight:800;color:#1565c0">{{ stats.occupied }}</div><div style="font-size:11px;color:#1565c0">Occupées</div></div>
+    <div style="background:#fff3e0;border-radius:10px;padding:14px;text-align:center"><div style="font-size:28px;font-weight:800;color:#e8672a">{{ stats.cleaning }}</div><div style="font-size:11px;color:#e8672a">À nettoyer</div></div>
+    <div style="background:#f3e5f5;border-radius:10px;padding:14px;text-align:center"><div style="font-size:28px;font-weight:800;color:#7b1fa2">{{ stats.hk_pending }}</div><div style="font-size:11px;color:#7b1fa2">Ménage en attente</div></div>
+</div>
+
+<!-- KPIs + Restaurant -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px">
+    <div class="card"><div class="card-body" style="text-align:center;padding:18px">
+        <div style="font-size:11px;color:#888;margin-bottom:4px">RevPAR</div>
+        <div style="font-size:28px;font-weight:800;color:#1a3a5c">{{ '{:,.0f}'.format(stats.revpar) }}</div>
+        <div style="font-size:10px;color:#888">FCFA / chambre</div>
+    </div></div>
+    <div class="card"><div class="card-body" style="text-align:center;padding:18px">
+        <div style="font-size:11px;color:#888;margin-bottom:4px">ADR</div>
+        <div style="font-size:28px;font-weight:800;color:#e8672a">{{ '{:,.0f}'.format(stats.adr) }}</div>
+        <div style="font-size:10px;color:#888">Tarif moyen / chambre</div>
+    </div></div>
+    <div class="card"><div class="card-body" style="text-align:center;padding:18px">
+        <div style="font-size:11px;color:#888;margin-bottom:4px">Restaurant aujourd'hui</div>
+        <div style="font-size:28px;font-weight:800;color:#2e7d32">{{ '{:,.0f}'.format(stats.restaurant_today) }}</div>
+        <div style="font-size:10px;color:#888">FCFA</div>
+    </div></div>
+</div>
+
+<!-- Recent reservations -->
+{% if stats.recent %}
+<div class="card"><div class="card-header"><h3>📋 Dernières réservations</h3></div><div class="card-body">
+<div class="table-wrap"><table>
+<thead><tr><th>Réf.</th><th>Client</th><th>Arrivée</th><th>Départ</th><th>Statut</th></tr></thead>
+<tbody>{% for r in stats.recent %}<tr>
+<td><strong>{{ r.reference }}</strong></td><td>{{ r.first_name }} {{ r.last_name }}</td>
+<td>{{ r.checkin_date }}</td><td>{{ r.checkout_date }}</td>
+<td><span class="badge-status {% if r.status=='en_cours' %}sent{% elif r.status=='confirmee' %}pending{% else %}{% endif %}">{{ r.status }}</span></td>
+</tr>{% endfor %}</tbody></table></div>
+</div></div>
+{% endif %}
+
+<script>
+var days = ['J-6','J-5','J-4','J-3','J-2','Hier','Auj.'];
+new Chart(document.getElementById('cOcc'),{type:'line',data:{labels:days,datasets:[{label:'Chambres occupées',data:{{ occ_data }},borderColor:'#1a3a5c',backgroundColor:'rgba(26,58,92,0.15)',fill:true,tension:0.4,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
+new Chart(document.getElementById('cRooms'),{type:'doughnut',data:{labels:['Disponibles','Occupées','À nettoyer'],datasets:[{data:[{{stats.available}},{{stats.occupied}},{{stats.cleaning}}],backgroundColor:['#2e7d32','#1565c0','#e8672a']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
+</script>
+{% endblock %}

@@ -1,16 +1,26 @@
-{% extends "base.html" %}
-{% block title %}WannyGest - Gestion RH{% endblock %}
-{% block content %}
-<div class="page-header"><h1>👥 Gestion des Ressources Humaines</h1></div>
-<div class="stats-grid">
-    <div class="stat-card"><div class="stat-icon teal">👤</div><div class="stat-info"><div class="stat-num">{{ emp_stats.total }}</div><div class="stat-label">Employés actifs</div></div></div>
-    <div class="stat-card"><div class="stat-icon blue">📄</div><div class="stat-info"><div class="stat-num">{{ emp_stats.cdi }}</div><div class="stat-label">CDI</div></div></div>
-    <div class="stat-card"><div class="stat-icon orange">📋</div><div class="stat-info"><div class="stat-num">{{ emp_stats.cdd }}</div><div class="stat-label">CDD</div></div></div>
-    <div class="stat-card"><div class="stat-icon red">🏖️</div><div class="stat-info"><div class="stat-num">{{ emp_stats.pending_leaves }}</div><div class="stat-label">Congés en attente</div></div></div>
+{% extends "base.html" %}{% block title %}WannyHotel - RH{% endblock %}{% block content %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<div class="page-header"><h1>👥 Ressources Humaines</h1></div>
+<div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+    <div class="stat-card" style="border-left:4px solid #1a3a5c"><div class="stat-icon teal">👥</div><div class="stat-info"><div class="stat-num">{{ stats.total }}</div><div class="stat-label">Employés actifs</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #2e7d32"><div class="stat-icon green">📑</div><div class="stat-info"><div class="stat-num">{{ stats.cdi }}</div><div class="stat-label">CDI</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #e8672a"><div class="stat-icon orange">🏖️</div><div class="stat-info"><div class="stat-num">{{ stats.pending_leaves }}</div><div class="stat-label">Congés en attente</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #B8860B"><div class="stat-icon" style="background:#fff8e1">💰</div><div class="stat-info"><div class="stat-num">{{ '{:,.0f}'.format(stats.masse_salariale) }}</div><div class="stat-label">Masse salariale (F)</div></div></div>
 </div>
-<div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
-    <a href="/rh/personnel" class="stat-card" style="text-decoration:none;border-left:4px solid #1a4a6c"><div class="stat-icon teal">👤</div><div class="stat-info"><div style="font-size:16px;font-weight:700;color:#1a4a6c">Personnel</div><div class="stat-label">Gérer les employés, contrats, assurances</div></div></a>
-    <a href="/rh/conges" class="stat-card" style="text-decoration:none;border-left:4px solid #e8672a"><div class="stat-icon orange">🏖️</div><div class="stat-info"><div style="font-size:16px;font-weight:700;color:#1a4a6c">Congés</div><div class="stat-label">Demandes, approbations, soldes</div></div></a>
-    <a href="/rh/paie" class="stat-card" style="text-decoration:none;border-left:4px solid #2e7d32"><div class="stat-icon green">💵</div><div class="stat-info"><div style="font-size:16px;font-weight:700;color:#1a4a6c">Paie</div><div class="stat-label">Bulletins, salaires, déductions</div></div></a>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+    <div class="card"><div class="card-header"><h3>📊 Répartition contrats</h3></div><div class="card-body" style="height:180px"><canvas id="cContracts"></canvas></div></div>
+    <div class="card"><div class="card-header"><h3>📢 Annonces récentes</h3></div><div class="card-body">
+    {% for a in announcements[:3] %}<div style="padding:8px 0;border-bottom:1px solid #f0f0f0;font-size:13px">
+    <strong{% if a.priority=='urgente' %} style="color:#c53030"{% endif %}>{{ a.title }}</strong>
+    <span style="font-size:10px;color:#888;float:right">{{ a.created_at[:10] }}</span>
+    </div>{% else %}<p style="color:#999;font-size:12px;text-align:center;padding:20px">Aucune annonce</p>{% endfor %}
+    </div></div>
 </div>
+{% if leaves %}
+<div class="card" style="margin-bottom:16px"><div class="card-header"><h3>🏖️ Congés récents</h3></div><div class="card-body">
+<div class="table-wrap"><table><thead><tr><th>Employé</th><th>Type</th><th>Début</th><th>Fin</th><th>Jours</th><th>Statut</th></tr></thead>
+<tbody>{% for l in leaves[:5] %}<tr><td>{{ l.first_name }} {{ l.last_name }}</td><td>{{ l.leave_type }}</td><td>{{ l.start_date }}</td><td>{{ l.end_date }}</td><td>{{ l.days }}</td>
+<td><span class="badge-status {% if l.status=='approuve' %}sent{% elif l.status=='refuse' %}{% else %}pending{% endif %}">{{ l.status }}</span></td></tr>{% endfor %}</tbody></table></div>
+</div></div>{% endif %}
+<script>new Chart(document.getElementById('cContracts'),{type:'doughnut',data:{labels:['CDI','CDD','Autres'],datasets:[{data:[{{stats.cdi}},{{stats.cdd}},{{stats.total-stats.cdi-stats.cdd}}],backgroundColor:['#1a3a5c','#e8672a','#888']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}});</script>
 {% endblock %}

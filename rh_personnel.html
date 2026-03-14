@@ -1,18 +1,17 @@
-{% extends "base.html" %}
-{% block title %}WannyGest - Personnel{% endblock %}
-{% block content %}
-<div class="page-header"><h1>👤 Gestion du personnel</h1></div>
-<div class="card"><div class="card-header"><h3>Employés ({{ employees|length }})</h3><a href="/rh/personnel/add" class="btn btn-primary btn-sm">+ Ajouter</a></div><div class="card-body">
+{% extends "base.html" %}{% block title %}WannyHotel - Personnel{% endblock %}{% block content %}
+<div class="page-header"><h1>👤 Personnel</h1>
+<a href="/rh/personnel/add" class="btn btn-gold btn-sm">+ Employé</a></div>
+<div class="card"><div class="card-body">
 {% if employees %}<div class="table-wrap"><table>
-<thead><tr><th>Matricule</th><th>Nom</th><th>Poste</th><th>Département</th><th>Contrat</th><th>Salaire</th><th>Assurance</th><th>Actions</th></tr></thead>
+<thead><tr><th></th><th>Nom</th><th>Matricule</th><th>Poste</th><th>Département</th><th>Contrat</th><th>Embauche</th><th>Statut</th><th></th></tr></thead>
 <tbody>{% for e in employees %}<tr>
-<td>{{ e.matricule or '-' }}</td>
-<td><strong>{{ e.first_name }} {{ e.last_name }}</strong><br><span style="font-size:11px;color:#888">{{ e.email or '' }}</span></td>
-<td>{{ e.position or '-' }}</td><td>{{ e.department or '-' }}</td>
-<td><span class="badge-status {% if e.contract_type=='CDI' %}sent{% else %}pending{% endif %}">{{ e.contract_type }}</span></td>
-<td>{{ '{:,.0f}'.format(e.salary) }} F</td><td>{{ e.insurance or '-' }}</td>
-<td><a href="/rh/personnel/edit/{{ e.id }}" class="btn btn-outline btn-sm">✏️</a></td>
+<td>{% if e.photo %}<img src="/uploads/photos/{{ e.photo }}" style="width:32px;height:32px;border-radius:50%;object-fit:cover">{% else %}<div style="width:32px;height:32px;border-radius:50%;background:#1a3a5c;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">{{ e.first_name[:1] }}{{ e.last_name[:1] }}</div>{% endif %}</td>
+<td><strong>{{ e.first_name }} {{ e.last_name }}</strong><br><span style="font-size:10px;color:#888">{{ e.email or '' }}</span></td>
+<td style="font-size:11px">{{ e.matricule or '-' }}</td><td>{{ e.position or '-' }}</td><td>{{ e.department or '-' }}</td>
+<td>{{ e.contract_type or 'CDI' }}</td><td style="font-size:11px">{{ e.hire_date or '-' }}</td>
+<td><span class="badge-status {% if e.status=='actif' %}sent{% else %}pending{% endif %}">{{ e.status }}</span></td>
+<td><a href="/rh/personnel/{{ e.id }}/edit" class="btn btn-outline btn-sm">✏️</a></td>
 </tr>{% endfor %}</tbody></table></div>
-{% else %}<p style="text-align:center;color:#999;padding:30px">Aucun employé. <a href="/rh/personnel/add" style="color:#1a4a6c">Ajouter le premier →</a></p>{% endif %}
+{% else %}<p style="text-align:center;color:#999;padding:30px">Aucun employé.<br><a href="/rh/personnel/add">Ajouter le premier →</a></p>{% endif %}
 </div></div>
 {% endblock %}

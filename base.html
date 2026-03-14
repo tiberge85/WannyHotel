@@ -82,16 +82,28 @@
             <a href="/reservations" class="{% if page=='reservations' %}active{% endif %}">📋 Réservations</a>
 <a href="/online-bookings" class="{% if page=='online' %}active{% endif %}">🌐 Résa. en ligne</a>
             <a href="/chambres" class="{% if page=='chambres' %}active{% endif %}">🛏️ Chambres</a>
+            <a href="/planning" class="{% if page=='planning' %}active{% endif %}">📅 Planning</a>
             <a href="/guests" class="{% if page=='guests' %}active{% endif %}">👤 Clients</a>
             <a href="/housekeeping" class="{% if page=='housekeeping' %}active{% endif %}">🧹 Ménage</a>
             <div class="sep"></div>
             <div class="section">Services</div>
+            <a href="/restaurant" class="{% if page=='restaurant' %}active{% endif %}">🍽️ Restaurant / Bar</a>
             <a href="/events" class="{% if page=='events' %}active{% endif %}">🎉 Événements</a>
             <a href="/stock" class="{% if page=='stock' %}active{% endif %}">📦 Stock</a>
             <a href="/personnel" class="{% if page=='personnel' %}active{% endif %}">👥 Personnel</a>
             <div class="sep"></div>
             <div class="section">Finance</div>
             <a href="/rapports" class="{% if page=='rapports' %}active{% endif %}">📈 Rapports</a>
+            <a href="/reviews" class="{% if page=='reviews' %}active{% endif %}">⭐ Avis clients</a>
+            {% if 'rh' in permissions or user_role in ('admin','directeur') %}
+            <div class="sep"></div>
+            <div class="section">Ressources Humaines</div>
+            <a href="/rh" class="{% if page=='rh' %}active{% endif %}">📊 Tableau de bord RH</a>
+            <a href="/rh/personnel" class="{% if page=='rh_personnel' %}active{% endif %}">👤 Personnel</a>
+            <a href="/rh/conges" class="{% if page=='rh_conges' %}active{% endif %}">🏖️ Congés</a>
+            <a href="/rh/paie" class="{% if page=='rh_paie' %}active{% endif %}">💵 Paie</a>
+            <a href="/rh/annonces" class="{% if page=='rh_annonces' %}active{% endif %}">📢 Annonces</a>
+            {% endif %}
             {% if current_user.role in ('admin','directeur') %}
             <div class="sep"></div>
             <a href="/admin" class="{% if page=='admin' %}active{% endif %}">⚙️ Administration</a>

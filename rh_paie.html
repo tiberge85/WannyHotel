@@ -1,34 +1,42 @@
-{% extends "base.html" %}
-{% block title %}WannyGest - Paie{% endblock %}
-{% block content %}
-<div class="page-header"><h1>💵 Gestion de la paie</h1></div>
-<div style="display:flex;gap:8px;margin-bottom:20px;align-items:center">
-    <form method="get" style="display:flex;gap:8px;align-items:center">
-        <input type="month" name="period" value="{{ period }}" style="padding:8px 12px;border:1.5px solid #ddd;border-radius:8px">
-        <button type="submit" class="btn btn-outline btn-sm">Filtrer</button>
-    </form>
-    <a href="/rh/paie" class="btn btn-outline btn-sm">Tous</a>
-    <button class="btn btn-orange btn-sm" style="margin-left:auto" onclick="document.getElementById('addPay').classList.add('active')">+ Bulletin de paie</button>
-</div>
+{% extends "base.html" %}{% block title %}WannyHotel - Paie{% endblock %}{% block content %}
+<div class="page-header"><h1>💵 Gestion de la paie</h1>
+<button class="btn btn-gold btn-sm" onclick="document.getElementById('addM').classList.add('active')">+ Bulletin</button></div>
 <div class="card"><div class="card-body">
 {% if payslips %}<div class="table-wrap"><table>
-<thead><tr><th>Période</th><th>Employé</th><th>Matricule</th><th>Base</th><th>Bonus</th><th>Déductions</th><th>Net</th><th>Statut</th></tr></thead>
+<thead><tr><th>Période</th><th>Employé</th><th>Mat.</th><th style="text-align:right">Brut</th><th style="text-align:right">Net</th><th>Statut</th><th>Actions</th></tr></thead>
 <tbody>{% for p in payslips %}<tr>
-<td>{{ p.period }}</td><td><strong>{{ p.employee_name }}</strong></td><td>{{ p.matricule or '-' }}</td>
-<td>{{ '{:,.0f}'.format(p.base_salary) }}</td><td style="color:#2e7d32">+{{ '{:,.0f}'.format(p.bonus + p.commission + p.overtime_amount) }}</td>
-<td style="color:#c53030">-{{ '{:,.0f}'.format(p.deductions + p.insurance_amount + p.tax_amount) }}</td>
-<td><strong>{{ '{:,.0f}'.format(p.net_salary) }} F</strong></td>
-<td><span class="badge-status {% if p.status=='valide' %}sent{% else %}pending{% endif %}">{{ p.status }}</span></td>
-</tr>{% endfor %}</tbody></table></div>
+<td>{{ p.period }}</td><td><strong>{{ p.first_name }} {{ p.last_name }}</strong></td><td style="font-size:11px">{{ p.matricule or '-' }}</td>
+<td style="text-align:right;color:#2e7d32">{{ '{:,.0f}'.format(p.salaire_brut) }}</td>
+<td style="text-align:right;font-weight:700">{{ '{:,.0f}'.format(p.net_salary) }}</td>
+<td><span class="badge-status {% if p.status=='valide' %}sent{% elif p.status=='envoye' %}{% else %}pending{% endif %}">{{ p.status }}</span></td>
+<td style="display:flex;gap:3px">
+{% if p.status=='brouillon' %}<a href="/rh/paie/{{ p.id }}/status/valide" class="btn btn-sm" style="background:#2e7d32;color:#fff;padding:2px 8px;font-size:10px">✅</a>{% endif %}
+{% if p.status=='valide' %}<a href="/rh/paie/{{ p.id }}/status/envoye" class="btn btn-sm" style="background:#e8672a;color:#fff;padding:2px 8px;font-size:10px">📧</a>{% endif %}
+</td></tr>{% endfor %}</tbody></table></div>
 {% else %}<p style="text-align:center;color:#999;padding:30px">Aucun bulletin</p>{% endif %}
 </div></div>
-<div class="modal-bg" id="addPay"><div class="modal"><h3>💵 Nouveau bulletin de paie</h3>
-<form method="post" action="/rh/paie/add">
-    <div class="form-row"><div class="form-group"><label>Employé</label><select name="employee_id" required>{% for e in employees %}<option value="{{ e.id }}">{{ e.first_name }} {{ e.last_name }} ({{ '{:,.0f}'.format(e.salary) }} F)</option>{% endfor %}</select></div><div class="form-group"><label>Période</label><input type="month" name="period" required></div></div>
-    <div class="form-row"><div class="form-group"><label>Salaire de base</label><input type="number" name="base_salary" step="1000" value="0"></div><div class="form-group"><label>Heures sup</label><input type="number" name="overtime_amount" step="500" value="0"></div></div>
-    <div class="form-row"><div class="form-group"><label>Bonus / KPI</label><input type="number" name="bonus" step="1000" value="0"></div><div class="form-group"><label>Commissions</label><input type="number" name="commission" step="1000" value="0"></div></div>
-    <div class="form-row"><div class="form-group"><label>Déductions</label><input type="number" name="deductions" step="500" value="0"></div><div class="form-group"><label>Assurance</label><input type="number" name="insurance_amount" step="500" value="0"></div></div>
-    <div class="form-group"><label>Impôts sur le revenu</label><input type="number" name="tax_amount" step="500" value="0"></div>
-    <div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-primary">Créer le bulletin</button></div>
+<div class="modal-bg" id="addM"><div class="modal" style="max-width:650px;max-height:90vh;overflow-y:auto">
+<h3>💵 Nouveau bulletin</h3><form method="post" action="/rh/paie/add">
+<div class="form-row"><div class="form-group"><label>Employé *</label><select name="employee_id" required>{% for e in employees %}<option value="{{ e.id }}">{{ e.first_name }} {{ e.last_name }}</option>{% endfor %}</select></div>
+<div class="form-group"><label>Période *</label><input type="month" name="period" required></div></div>
+<h4 style="color:#2e7d32;font-size:12px;margin:8px 0 4px;border-bottom:1px solid #2e7d32;padding-bottom:2px">💰 Gains</h4>
+<div class="form-row"><div class="form-group"><label>Salaire base *</label><input type="number" name="base_salary" step="1000" required></div>
+<div class="form-group"><label>H. sup.</label><input type="number" name="heures_sup" value="0" step="500"></div></div>
+<div class="form-row"><div class="form-group"><label>P. transport</label><input type="number" name="prime_transport" value="0" step="500"></div>
+<div class="form-group"><label>P. ancienneté</label><input type="number" name="prime_anciennete" value="0" step="500"></div>
+<div class="form-group"><label>P. logement</label><input type="number" name="prime_logement" value="0" step="500"></div></div>
+<div class="form-row"><div class="form-group"><label>Rendement</label><input type="number" name="prime_rendement" value="0" step="500"></div>
+<div class="form-group"><label>Bonus</label><input type="number" name="bonus" value="0" step="500"></div>
+<div class="form-group"><label>Avantages nature</label><input type="number" name="avantages_nature" value="0" step="500"></div></div>
+<h4 style="color:#c53030;font-size:12px;margin:8px 0 4px;border-bottom:1px solid #c53030;padding-bottom:2px">📉 Retenues</h4>
+<div class="form-row"><div class="form-group"><label>CNPS</label><input type="number" name="cnps_employee" value="0" step="100"></div>
+<div class="form-group"><label>Assurance</label><input type="number" name="assurance" value="0" step="100"></div>
+<div class="form-group"><label>ITS</label><input type="number" name="its" value="0" step="100"></div></div>
+<div class="form-row"><div class="form-group"><label>Avances</label><input type="number" name="avances" value="0" step="100"></div>
+<div class="form-group"><label>Autres retenues</label><input type="number" name="autres_retenues" value="0" step="100"></div>
+<div class="form-group"><label>Mode paiement</label><select name="mode_paiement"><option>virement</option><option>cheque</option><option>especes</option><option>mobile_money</option></select></div></div>
+<div class="form-row"><div class="form-group"><label>Jours travaillés</label><input type="number" name="jours_travailles" value="26"></div>
+<div class="form-group"><label>Jours absence</label><input type="number" name="jours_absence" value="0"></div></div>
+<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-gold">💾 Créer</button></div>
 </form></div></div>
 {% endblock %}

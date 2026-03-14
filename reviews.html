@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% block title %}WannyHotel - Avis{% endblock %}{% block content %}
+<div class="page-header"><h1>⭐ Avis clients</h1></div>
+<div class="stats-grid" style="grid-template-columns:1fr 1fr">
+    <div class="stat-card"><div class="stat-icon" style="background:#fff8e1;font-size:20px">⭐</div><div class="stat-info"><div class="stat-num">{{ '%.1f'|format(avg_rating) }}/5</div><div class="stat-label">Note moyenne</div></div></div>
+    <div class="stat-card"><div class="stat-icon teal">📝</div><div class="stat-info"><div class="stat-num">{{ reviews|length }}</div><div class="stat-label">Avis reçus</div></div></div>
+</div>
+{% for r in reviews %}
+<div class="card" style="margin-bottom:10px"><div class="card-body">
+<div style="display:flex;justify-content:space-between;align-items:start">
+<div><strong>{{ r.first_name }} {{ r.last_name }}</strong> <span style="font-size:11px;color:#888">— {{ r.reference or '' }}</span><br>
+<span style="color:#B8860B;font-size:16px">{% for i in range(r.rating) %}★{% endfor %}{% for i in range(5-r.rating) %}☆{% endfor %}</span></div>
+<span style="font-size:10px;color:#888">{{ r.created_at[:10] }}</span>
+</div>
+{% if r.comment %}<p style="margin-top:8px;font-size:13px;color:#555;line-height:1.5">{{ r.comment }}</p>{% endif %}
+</div></div>
+{% else %}<div class="card"><div class="card-body" style="text-align:center;color:#999;padding:30px">Aucun avis reçu</div></div>{% endfor %}
+{% endblock %}

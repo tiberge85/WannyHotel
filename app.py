@@ -26,6 +26,13 @@ init_db()
 migrate_db()
 migrate_db_v2()
 migrate_db_v3()
+from models import migrate_v3, get_dashboard_stats, get_occupancy_data
+migrate_v3()
+from models import (migrate_permissions, init_default_permissions, get_role_perms, 
+                    update_role_perms, has_perm, delete_user,
+                    migrate_rh, get_rh_employees, get_rh_employee, get_rh_stats)
+migrate_permissions()
+migrate_rh()
 
 import smtplib
 from email.mime.text import MIMEText
@@ -50,8 +57,22 @@ def send_email_notification(to_email, subject, html_body):
     except Exception as e:
         print(f"Email error: {e}")
         return False
-ROLES = {'admin': 'all', 'directeur': 'all', 'receptionniste': ['dashboard','reservations','chambres','guests','housekeeping'],
-         'restaurant': ['dashboard','stock','events'], 'comptable': ['dashboard','caisse','rapports']}
+ALL_ROLES = ['admin', 'directeur', 'receptionniste', 'restaurant', 'comptable', 'menage', 'technicien_surface']
+ROLE_LABELS = {'admin': 'Administrateur', 'directeur': 'Directeur', 'receptionniste': 'Réceptionniste',
+               'restaurant': 'Restaurant/Bar', 'comptable': 'Comptable', 'menage': 'Ménage',
+               'technicien_surface': 'Technicien de surface'}
+ALL_PERMISSIONS = ['dashboard', 'reservations', 'chambres', 'guests', 'housekeeping', 'restaurant',
+                   'stock', 'events', 'personnel', 'rapports', 'caisse', 'rh', 'admin']
+DEFAULT_PERMS = {
+    'admin': ALL_PERMISSIONS,
+    'directeur': ALL_PERMISSIONS,
+    'receptionniste': ['dashboard','reservations','chambres','guests','housekeeping','events'],
+    'restaurant': ['dashboard','restaurant','stock','events'],
+    'comptable': ['dashboard','caisse','rapports','guests'],
+    'menage': ['dashboard','housekeeping'],
+    'technicien_surface': ['dashboard','housekeeping','stock'],
+}
+init_default_permissions(DEFAULT_PERMS)
 
 # ======================== SECURITY MIDDLEWARE ========================
 
@@ -115,7 +136,10 @@ def login_required(f):
 @app.context_processor
 def inject_globals():
     u = get_user(session['user_id']) if 'user_id' in session else None
-    return {'current_user': u, 'now': datetime.now().strftime('%Y-%m-%d')}
+    perms = get_role_perms(u['role']) if u else []
+    return {'current_user': u, 'now': datetime.now().strftime('%Y-%m-%d'),
+            'permissions': perms, 'user_role': u['role'] if u else '',
+            'ROLE_LABELS': ROLE_LABELS}
 
 @app.route('/robots.txt')
 def robots(): return "User-agent: *\nAllow: /\n", 200, {'Content-Type':'text/plain'}
@@ -148,8 +172,8 @@ def logout(): session.clear(); return redirect('/')
 @login_required
 def dashboard():
     stats = get_dashboard_stats()
-    recent = get_recent_reservations(8)
-    return render_template('dashboard.html', page='dashboard', stats=stats, recent=recent)
+    occ_data = get_occupancy_data()
+    return render_template('dashboard.html', page='dashboard', stats=stats, occ_data=occ_data)
 
 # ======================== CHAMBRES ========================
 @app.route('/chambres')
@@ -504,13 +528,205 @@ def rapports():
 def admin_page():
     users = get_all_users()
     logs = db_all('activity_logs', order='created_at DESC', limit=50)
-    return render_template('admin.html', page='admin', users=users, logs=logs)
+    role_perms = {r: get_role_perms(r) for r in ALL_ROLES}
+    return render_template('admin.html', page='admin', users=users, logs=logs,
+                          all_roles=ALL_ROLES, role_labels=ROLE_LABELS,
+                          all_permissions=ALL_PERMISSIONS, role_perms=role_perms)
 
 @app.route('/admin/user/add', methods=['POST'])
 @login_required
 def admin_user_add():
     create_user(request.form['username'], request.form['password'], request.form['full_name'], request.form.get('role','receptionniste'))
     flash("Utilisateur créé","success"); return redirect('/admin')
+
+@app.route('/admin/user/delete/<int:uid>')
+@login_required
+def admin_user_delete(uid):
+    u = get_user(session['user_id'])
+    if not u or u['role'] not in ('admin','directeur'):
+        flash("Non autorisé","error"); return redirect('/admin')
+    target = get_user(uid)
+    if target and target['role'] == 'admin':
+        flash("Impossible de supprimer un admin","error"); return redirect('/admin')
+    delete_user(uid)
+    log_activity(session['user_id'], u['full_name'], 'Admin', f"Utilisateur #{uid} supprimé", request.remote_addr)
+    flash("Utilisateur supprimé","success"); return redirect('/admin')
+
+@app.route('/admin/permissions', methods=['POST'])
+@login_required
+def admin_permissions_save():
+    u = get_user(session['user_id'])
+    if not u or u['role'] not in ('admin','directeur'):
+        flash("Non autorisé","error"); return redirect('/admin')
+    for role in ALL_ROLES:
+        if role == 'admin': continue  # admin garde tout
+        perms = [p for p in ALL_PERMISSIONS if request.form.get(f'{role}_{p}')]
+        update_role_perms(role, perms)
+    update_role_perms('admin', ALL_PERMISSIONS)
+    flash("Permissions mises à jour","success"); return redirect('/admin')
+
+
+# ======================== RH MODULE ========================
+
+@app.route('/rh')
+@login_required
+def rh_dashboard():
+    stats = get_rh_stats()
+    employees = get_rh_employees('actif')
+    conn = get_db()
+    leaves = [dict(r) for r in conn.execute("""SELECT l.*, e.first_name, e.last_name FROM rh_leaves l
+        LEFT JOIN rh_employees e ON l.employee_id=e.id ORDER BY l.created_at DESC LIMIT 10""").fetchall()]
+    announcements = [dict(r) for r in conn.execute("SELECT * FROM rh_announcements ORDER BY created_at DESC LIMIT 5").fetchall()]
+    trainings = [dict(r) for r in conn.execute("SELECT * FROM rh_trainings ORDER BY date DESC LIMIT 5").fetchall()]
+    conn.close()
+    return render_template('rh_dashboard.html', page='rh', stats=stats, employees=employees,
+                          leaves=leaves, announcements=announcements, trainings=trainings)
+
+@app.route('/rh/personnel')
+@login_required
+def rh_personnel():
+    employees = get_rh_employees()
+    return render_template('rh_personnel.html', page='rh_personnel', employees=employees)
+
+@app.route('/rh/personnel/add', methods=['GET','POST'])
+@login_required
+def rh_personnel_add():
+    if request.method == 'POST':
+        from models import db_insert
+        db_insert('rh_employees', matricule=request.form.get('matricule',''),
+            first_name=request.form['first_name'], last_name=request.form['last_name'],
+            email=request.form.get('email',''), tel=request.form.get('tel',''),
+            birth_date=request.form.get('birth_date',''), gender=request.form.get('gender',''),
+            nationality=request.form.get('nationality',''),
+            position=request.form.get('position',''), department=request.form.get('department',''),
+            hire_date=request.form.get('hire_date',''),
+            contract_type=request.form.get('contract_type','CDI'),
+            contract_end=request.form.get('contract_end',''),
+            salary=float(request.form.get('salary',0) or 0),
+            cnps_number=request.form.get('cnps_number',''),
+            insurance=request.form.get('insurance',''),
+            insurance_number=request.form.get('insurance_number',''),
+            emergency_contact=request.form.get('emergency_contact',''),
+            emergency_tel=request.form.get('emergency_tel',''),
+            bank_name=request.form.get('bank_name',''),
+            bank_account=request.form.get('bank_account',''))
+        # Photo
+        if 'photo' in request.files and request.files['photo'].filename:
+            f = request.files['photo']
+            ext = os.path.splitext(f.filename)[1].lower()
+            if ext in ('.jpg','.jpeg','.png','.webp'):
+                photo_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'photos')
+                os.makedirs(photo_dir, exist_ok=True)
+                conn = get_db()
+                new_id = conn.execute("SELECT id FROM rh_employees ORDER BY id DESC LIMIT 1").fetchone()['id']
+                conn.close()
+                fname = f"emp_{new_id}{ext}"
+                f.save(os.path.join(photo_dir, fname))
+                conn = get_db(); conn.execute("UPDATE rh_employees SET photo=? WHERE id=?", (fname, new_id)); conn.commit(); conn.close()
+        flash("Employé ajouté","success"); return redirect('/rh/personnel')
+    return render_template('rh_personnel_form.html', page='rh_personnel', emp=None)
+
+@app.route('/rh/personnel/<int:eid>/edit', methods=['GET','POST'])
+@login_required
+def rh_personnel_edit(eid):
+    emp = get_rh_employee(eid)
+    if not emp: flash("Non trouvé","error"); return redirect('/rh/personnel')
+    if request.method == 'POST':
+        conn = get_db()
+        for field in ['first_name','last_name','matricule','email','tel','birth_date','gender','nationality',
+                      'position','department','hire_date','contract_type','contract_end','cnps_number',
+                      'insurance','insurance_number','emergency_contact','emergency_tel','bank_name',
+                      'bank_account','status','notes']:
+            val = request.form.get(field, emp.get(field, ''))
+            conn.execute(f"UPDATE rh_employees SET {field}=? WHERE id=?", (val, eid))
+        if request.form.get('salary'):
+            conn.execute("UPDATE rh_employees SET salary=? WHERE id=?", (float(request.form['salary']), eid))
+        conn.commit(); conn.close()
+        flash("Employé modifié","success"); return redirect('/rh/personnel')
+    return render_template('rh_personnel_form.html', page='rh_personnel', emp=emp)
+
+@app.route('/rh/conges')
+@login_required
+def rh_conges():
+    conn = get_db()
+    leaves = [dict(r) for r in conn.execute("""SELECT l.*, e.first_name, e.last_name FROM rh_leaves l
+        LEFT JOIN rh_employees e ON l.employee_id=e.id ORDER BY l.created_at DESC""").fetchall()]
+    conn.close()
+    employees = get_rh_employees('actif')
+    return render_template('rh_conges.html', page='rh_conges', leaves=leaves, employees=employees)
+
+@app.route('/rh/conges/add', methods=['POST'])
+@login_required
+def rh_conges_add():
+    from models import db_insert
+    db_insert('rh_leaves', employee_id=int(request.form['employee_id']),
+        leave_type=request.form.get('leave_type','annuel'),
+        start_date=request.form['start_date'], end_date=request.form['end_date'],
+        days=int(request.form.get('days',1) or 1), reason=request.form.get('reason',''))
+    flash("Demande de congé enregistrée","success"); return redirect('/rh/conges')
+
+@app.route('/rh/conges/<int:lid>/<action>')
+@login_required
+def rh_conges_action(lid, action):
+    if action in ('approuve','refuse'):
+        conn = get_db()
+        conn.execute("UPDATE rh_leaves SET status=?, approved_by=? WHERE id=?", (action, session['user_id'], lid))
+        conn.commit(); conn.close()
+        flash(f"Congé {action}","success")
+    return redirect('/rh/conges')
+
+@app.route('/rh/paie')
+@login_required
+def rh_paie():
+    conn = get_db()
+    payslips = [dict(r) for r in conn.execute("""SELECT p.*, e.first_name, e.last_name, e.matricule
+        FROM rh_payslips p LEFT JOIN rh_employees e ON p.employee_id=e.id ORDER BY p.period DESC, e.last_name""").fetchall()]
+    conn.close()
+    employees = get_rh_employees('actif')
+    return render_template('rh_paie.html', page='rh_paie', payslips=payslips, employees=employees)
+
+@app.route('/rh/paie/add', methods=['POST'])
+@login_required
+def rh_paie_add():
+    f = lambda k: float(request.form.get(k, 0) or 0)
+    base = f('base_salary')
+    brut = base + f('heures_sup') + f('prime_transport') + f('prime_anciennete') + f('prime_logement') + f('prime_rendement') + f('bonus') + f('avantages_nature')
+    retenues = f('cnps_employee') + f('assurance') + f('its') + f('avances') + f('autres_retenues')
+    net = brut - retenues
+    from models import db_insert
+    db_insert('rh_payslips', employee_id=int(request.form['employee_id']), period=request.form['period'],
+        base_salary=base, prime_transport=f('prime_transport'), prime_anciennete=f('prime_anciennete'),
+        prime_logement=f('prime_logement'), prime_rendement=f('prime_rendement'),
+        heures_sup=f('heures_sup'), bonus=f('bonus'), avantages_nature=f('avantages_nature'),
+        salaire_brut=brut, cnps_employee=f('cnps_employee'), assurance=f('assurance'),
+        its=f('its'), avances=f('avances'), autres_retenues=f('autres_retenues'),
+        total_retenues=retenues, net_salary=net,
+        jours_travailles=int(request.form.get('jours_travailles',26) or 26),
+        jours_absence=int(request.form.get('jours_absence',0) or 0),
+        mode_paiement=request.form.get('mode_paiement','virement'))
+    flash(f"Bulletin créé — Net: {net:,.0f} FCFA","success"); return redirect('/rh/paie')
+
+@app.route('/rh/paie/<int:pid>/status/<status>')
+@login_required
+def rh_paie_status(pid, status):
+    if status in ('brouillon','valide','envoye'):
+        conn = get_db(); conn.execute("UPDATE rh_payslips SET status=? WHERE id=?", (status, pid)); conn.commit(); conn.close()
+        flash(f"Statut → {status}","success")
+    return redirect('/rh/paie')
+
+@app.route('/rh/annonces')
+@login_required
+def rh_annonces():
+    annonces = db_all('rh_announcements', order='created_at DESC')
+    return render_template('rh_annonces.html', page='rh_annonces', annonces=annonces)
+
+@app.route('/rh/annonces/add', methods=['POST'])
+@login_required
+def rh_annonces_add():
+    from models import db_insert
+    db_insert('rh_announcements', title=request.form['title'], content=request.form.get('content',''),
+        priority=request.form.get('priority','normale'), created_by=session['user_id'])
+    flash("Annonce publiée","success"); return redirect('/rh/annonces')
 
 # ======================== SMTP SETTINGS ========================
 
@@ -883,6 +1099,137 @@ def admin_reset():
             flash("Programme réinitialisé", "success")
         return redirect('/admin/reset')
     return render_template('admin_reset.html', page='admin')
+
+
+# ======================== RESTAURANT / BAR ========================
+
+@app.route('/restaurant')
+@login_required
+def restaurant():
+    conn = get_db()
+    orders = conn.execute("""SELECT * FROM restaurant_orders ORDER BY created_at DESC LIMIT 30""").fetchall()
+    menu = conn.execute("SELECT * FROM restaurant_menu WHERE available=1 ORDER BY category, name").fetchall()
+    rooms_occ = conn.execute("SELECT r.id, r.number, g.first_name, g.last_name, res.id as res_id FROM rooms r LEFT JOIN reservations res ON r.id=res.room_id AND res.status='en_cours' LEFT JOIN guests g ON res.guest_id=g.id WHERE r.status='occupee'").fetchall()
+    conn.close()
+    return render_template('restaurant.html', page='restaurant', orders=[dict(o) for o in orders],
+                          menu=[dict(m) for m in menu], rooms=[dict(r) for r in rooms_occ])
+
+@app.route('/restaurant/menu/add', methods=['POST'])
+@login_required
+def restaurant_menu_add():
+    db_insert('restaurant_menu', name=request.form['name'],
+        category=request.form.get('category', 'plat'),
+        price=float(request.form.get('price', 0) or 0),
+        description=request.form.get('description', ''))
+    flash("Article ajouté au menu", "success")
+    return redirect('/restaurant')
+
+@app.route('/restaurant/order', methods=['POST'])
+@login_required
+def restaurant_order():
+    import json
+    items = []
+    names = request.form.getlist('item_name[]')
+    qtys = request.form.getlist('item_qty[]')
+    prices = request.form.getlist('item_price[]')
+    subtotal = 0
+    for n, q, p in zip(names, qtys, prices):
+        if n and float(q or 0) > 0:
+            items.append({'name': n, 'qty': int(q), 'price': float(p)})
+            subtotal += int(q) * float(p)
+    tax = round(subtotal * 0.18)  # TVA 18%
+    total = subtotal + tax
+    
+    res_id = int(request.form.get('reservation_id', 0) or 0) or None
+    db_insert('restaurant_orders',
+        table_number=request.form.get('table_number', ''),
+        room_id=int(request.form.get('room_id', 0) or 0) or None,
+        guest_name=request.form.get('guest_name', ''),
+        items_json=json.dumps(items),
+        subtotal=subtotal, tax=tax, total=total,
+        reservation_id=res_id,
+        payment_method=request.form.get('payment_method', 'especes'),
+        created_by=session.get('user_id'))
+    
+    # If linked to room, add as charge
+    if res_id:
+        conn = get_db()
+        conn.execute("INSERT INTO charges (reservation_id, category, description, quantity, unit_price, total) VALUES (?,?,?,?,?,?)",
+                     (res_id, 'restaurant', f"Restaurant — {len(items)} articles", 1, total, total))
+        conn.commit(); conn.close()
+        flash(f"Commande {total:,.0f} F ajoutée à la chambre", "success")
+    else:
+        flash(f"Commande enregistrée — {total:,.0f} F", "success")
+    return redirect('/restaurant')
+
+
+# ======================== PLANNING CHAMBRES ========================
+
+@app.route('/planning')
+@login_required
+def planning():
+    conn = get_db()
+    rooms = conn.execute("SELECT r.*, rt.name as type_name FROM rooms r LEFT JOIN room_types rt ON r.room_type_id=rt.id ORDER BY r.number").fetchall()
+    reservations = conn.execute("""SELECT r.*, rm.number as room_number, g.first_name, g.last_name 
+        FROM reservations r LEFT JOIN rooms rm ON r.room_id=rm.id LEFT JOIN guests g ON r.guest_id=g.id
+        WHERE r.status IN ('confirmee','en_cours') ORDER BY r.checkin_date""").fetchall()
+    conn.close()
+    return render_template('planning.html', page='planning', rooms=[dict(r) for r in rooms],
+                          reservations=[dict(r) for r in reservations])
+
+
+# ======================== AVIS CLIENTS ========================
+
+@app.route('/review/<token>', methods=['GET','POST'])
+def guest_review(token):
+    conn = get_db()
+    review = conn.execute("SELECT * FROM guest_reviews WHERE token=?", (token,)).fetchone()
+    conn.close()
+    if not review: return "<h1>Lien invalide</h1>", 404
+    if review['rating'] > 0 and review['comment']:
+        return render_template('review_done.html', review=dict(review))
+    if request.method == 'POST':
+        conn = get_db()
+        conn.execute("UPDATE guest_reviews SET rating=?, comment=? WHERE token=?",
+                     (int(request.form.get('rating', 5)), request.form.get('comment', ''), token))
+        # Add loyalty points
+        conn.execute("INSERT INTO loyalty_points (guest_id, points, action, reservation_id) VALUES (?,?,?,?)",
+                     (review['guest_id'], 50, 'review', review['reservation_id']))
+        conn.commit(); conn.close()
+        flash("Merci pour votre avis !", "success")
+        return render_template('review_done.html', review={'rating': int(request.form.get('rating', 5))})
+    res_data, _, _ = get_invoice_data(review['reservation_id'])
+    return render_template('review_form.html', review=dict(review), res=res_data)
+
+@app.route('/reviews')
+@login_required
+def reviews_list():
+    conn = get_db()
+    reviews = conn.execute("""SELECT gr.*, g.first_name, g.last_name, r.reference
+        FROM guest_reviews gr LEFT JOIN guests g ON gr.guest_id=g.id 
+        LEFT JOIN reservations r ON gr.reservation_id=r.id
+        WHERE gr.comment IS NOT NULL AND gr.comment != '' ORDER BY gr.created_at DESC""").fetchall()
+    avg = conn.execute("SELECT AVG(rating) FROM guest_reviews WHERE comment IS NOT NULL AND comment != ''").fetchone()[0]
+    conn.close()
+    return render_template('reviews.html', page='reviews', reviews=[dict(r) for r in reviews], avg_rating=avg or 0)
+
+
+# ======================== WHATSAPP NOTIFICATION ========================
+
+@app.route('/whatsapp/<int:res_id>')
+@login_required  
+def whatsapp_notify(res_id):
+    res_data, charges, payments = get_invoice_data(res_id)
+    if not res_data:
+        flash("Réservation non trouvée", "error"); return redirect('/reservations')
+    total = sum(c['total'] for c in charges)
+    guest_tel = res_data.get('tel', '').replace(' ', '').replace('+', '')
+    if not guest_tel.startswith('225'): guest_tel = '225' + guest_tel
+    base_url = request.host_url.rstrip('/')
+    msg = f"🏨 *WannyHotel*\n\nBonjour {res_data.get('first_name','')} {res_data.get('last_name','')},\n\n✅ Réservation *{res_data['reference']}* confirmée\n📅 {res_data['checkin_date']} → {res_data['checkout_date']}\n🏠 Chambre {res_data.get('room_number','')}\n💰 Total: {total:,.0f} FCFA\n\n🧾 Facture: {base_url}/invoice/{res_id}\n💳 Paiement: {base_url}/payment/{res_id}\n\nMerci et bienvenue !"
+    import urllib.parse
+    wa_url = f"https://wa.me/{guest_tel}?text={urllib.parse.quote(msg)}"
+    return redirect(wa_url)
 
 
 if __name__ == "__main__":

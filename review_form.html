@@ -1,0 +1,27 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WannyHotel — Votre avis</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;background:#f0f2f5;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.box{background:#fff;border-radius:16px;padding:30px;width:440px;box-shadow:0 10px 40px rgba(0,0,0,0.1);text-align:center}
+.box img{height:50px;margin-bottom:12px}h2{color:#1a3a5c;margin-bottom:4px;font-size:18px}
+.sub{color:#888;font-size:13px;margin-bottom:20px}
+.stars{display:flex;gap:6px;justify-content:center;margin-bottom:16px}.star{font-size:36px;cursor:pointer;transition:transform 0.2s}.star:hover{transform:scale(1.2)}
+.fg{margin-bottom:14px;text-align:left}.fg label{font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:3px}
+.fg textarea{width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;resize:vertical}
+.btn{width:100%;padding:12px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#B8860B,#DAA520);color:#fff}
+</style></head><body>
+<div class="box">
+<img src="/static/logo_wannyhotel.png" alt="WannyHotel">
+<h2>Comment était votre séjour ?</h2>
+<p class="sub">{{ res.first_name if res else '' }} {{ res.last_name if res else '' }} — {{ res.reference if res else '' }}</p>
+<form method="post">
+<div class="stars" id="stars">
+{% for i in range(1,6) %}<span class="star" data-val="{{ i }}" onclick="setRating({{ i }})">☆</span>{% endfor %}
+</div>
+<input type="hidden" name="rating" id="ratingVal" value="5">
+<div class="fg"><label>Votre commentaire</label><textarea name="comment" rows="4" placeholder="Partagez votre expérience..."></textarea></div>
+<button type="submit" class="btn">Envoyer mon avis ⭐</button>
+</form></div>
+<script>
+function setRating(n){document.getElementById('ratingVal').value=n;document.querySelectorAll('.star').forEach(function(s,i){s.textContent=i<n?'★':'☆';s.style.color=i<n?'#B8860B':'#ccc'});}
+setRating(5);
+</script></body></html>
