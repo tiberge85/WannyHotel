@@ -1,130 +1,22 @@
-{% extends "base.html" %}
-{% block title %}WannyGest - Tableau de bord{% endblock %}
-{% block content %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<div class="page-header">
-    <h1>👋 Bienvenue, {{ current_user.full_name }}</h1>
-    <p>{{ current_user.role | upper }} — Tableau de bord</p>
-</div>
-
-{# ======================== ADMIN ======================== #}
-{% if user_role == 'admin' %}
+{% extends "base.html" %}{% block title %}WannyHotel - Tableau de bord{% endblock %}{% block content %}
+<div class="page-header"><h1>📊 Tableau de bord</h1><p>{{ now }} — Vue d'ensemble de l'hôtel</p></div>
 <div class="stats-grid">
-    <div class="stat-card"><div class="stat-icon teal">📄</div><div class="stat-info"><div class="stat-num">{{ stats.total_jobs }}</div><div class="stat-label">Rapports traités</div></div></div>
-    <div class="stat-card"><div class="stat-icon orange">⏳</div><div class="stat-info"><div class="stat-num">{{ stats.pending_jobs }}</div><div class="stat-label">En attente</div></div></div>
-    <div class="stat-card"><div class="stat-icon green">✅</div><div class="stat-info"><div class="stat-num">{{ stats.sent_jobs }}</div><div class="stat-label">Envoyés</div></div></div>
-    <div class="stat-card"><div class="stat-icon blue">🏢</div><div class="stat-info"><div class="stat-num">{{ stats.total_clients }}</div><div class="stat-label">Clients</div></div></div>
+<div class="stat-card"><div class="stat-icon gold">🏨</div><div><div class="stat-num">{{ stats.occupancy_rate }}%</div><div class="stat-label">Taux d'occupation</div></div></div>
+<div class="stat-card"><div class="stat-icon green">🟢</div><div><div class="stat-num">{{ stats.available }}</div><div class="stat-label">Disponibles</div></div></div>
+<div class="stat-card"><div class="stat-icon red">🔴</div><div><div class="stat-num">{{ stats.occupied }}</div><div class="stat-label">Occupées</div></div></div>
+<div class="stat-card"><div class="stat-icon blue">📥</div><div><div class="stat-num">{{ stats.checkins_today }}</div><div class="stat-label">Arrivées aujourd'hui</div></div></div>
+<div class="stat-card"><div class="stat-icon blue">📤</div><div><div class="stat-num">{{ stats.checkouts_today }}</div><div class="stat-label">Départs aujourd'hui</div></div></div>
+<div class="stat-card"><div class="stat-icon gold">💰</div><div><div class="stat-num">{{ '{:,.0f}'.format(stats.revenue_today) }}</div><div class="stat-label">CA aujourd'hui (F)</div></div></div>
+<div class="stat-card"><div class="stat-icon green">💵</div><div><div class="stat-num">{{ '{:,.0f}'.format(stats.revenue_month) }}</div><div class="stat-label">CA du mois (F)</div></div></div>
+<div class="stat-card"><div class="stat-icon teal">🧹</div><div><div class="stat-num">{{ stats.dirty_rooms }}</div><div class="stat-label">À nettoyer</div></div></div>
 </div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px">
-    <div class="card"><div class="card-header"><h3>📊 Factures</h3></div><div class="card-body" style="height:220px">
-        <canvas id="chartFactures"></canvas>
-    </div></div>
-    <div class="card"><div class="card-header"><h3>📈 Commercial</h3></div><div class="card-body" style="height:220px">
-        <canvas id="chartDevis"></canvas>
-    </div></div>
-</div>
-<div class="stats-grid">
-    <div class="stat-card"><div class="stat-icon orange">💰</div><div class="stat-info"><div class="stat-num">{{ inv_stats.a_envoyer }}</div><div class="stat-label">Factures à envoyer</div></div></div>
-    <div class="stat-card"><div class="stat-icon blue">⏳</div><div class="stat-info"><div class="stat-num">{{ inv_stats.en_attente_paiement }}</div><div class="stat-label">Attente paiement</div></div></div>
-    <div class="stat-card"><div class="stat-icon green">💵</div><div class="stat-info"><div class="stat-num">{{ inv_stats.payee }}</div><div class="stat-label">Payées</div></div></div>
-    <div class="stat-card"><div class="stat-icon teal">👥</div><div class="stat-info"><div class="stat-num">{{ emp_stats.total if emp_stats else 0 }}</div><div class="stat-label">Employés</div></div></div>
-</div>
-<script>
-new Chart(document.getElementById('chartFactures'), {type:'doughnut',data:{labels:['À envoyer','Envoyées','Attente','Payées'],datasets:[{data:[{{ inv_stats.a_envoyer }},{{ inv_stats.envoyee }},{{ inv_stats.en_attente_paiement }},{{ inv_stats.payee }}],backgroundColor:['#e8672a','#42a5f5','#ff9800','#2e7d32']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11}}}}}});
-new Chart(document.getElementById('chartDevis'), {type:'bar',data:{labels:['Brouillons','Envoyés','Acceptés','Refusés'],datasets:[{label:'Devis',data:[{{ d_stats.brouillon if d_stats else 0 }},{{ d_stats.envoye if d_stats else 0 }},{{ d_stats.accepte if d_stats else 0 }},{{ d_stats.refuse if d_stats else 0 }}],backgroundColor:['#42a5f5','#ff9800','#2e7d32','#ef5350'],borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
-</script>
-{% endif %}
-
-{# ======================== COMMERCIAL ======================== #}
-{% if user_role == 'commercial' %}
-<div class="stats-grid">
-    <div class="stat-card" style="border-left:4px solid #e8672a"><div class="stat-icon orange">🔍</div><div class="stat-info"><div class="stat-num">{{ v_stats.en_attente }}</div><div class="stat-label">Visites en attente</div></div></div>
-    <div class="stat-card" style="border-left:4px solid #1a3a5c"><div class="stat-icon blue">📝</div><div class="stat-info"><div class="stat-num">{{ d_stats.brouillon if d_stats else 0 }}</div><div class="stat-label">Devis brouillons</div></div></div>
-    <div class="stat-card" style="border-left:4px solid #2e7d32"><div class="stat-icon green">✅</div><div class="stat-info"><div class="stat-num">{{ d_stats.accepte if d_stats else 0 }}</div><div class="stat-label">Devis acceptés</div></div></div>
-    <div class="stat-card" style="border-left:4px solid #7b1fa2"><div class="stat-icon purple">🏢</div><div class="stat-info"><div class="stat-num">{{ stats.total_clients }}</div><div class="stat-label">Clients</div></div></div>
-</div>
-<div class="card" style="margin-bottom:16px"><div class="card-body" style="height:200px"><canvas id="chartCommercial"></canvas></div></div>
-<div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
-    <a href="/visites/new" class="stat-card" style="text-decoration:none;border-left:4px solid #e8672a"><div class="stat-icon orange">🔍</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Nouveau rapport</div><div class="stat-label">Rapport de visite terrain</div></div></a>
-    <a href="/devis/new" class="stat-card" style="text-decoration:none;border-left:4px solid #1a3a5c"><div class="stat-icon blue">📝</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Nouveau devis</div><div class="stat-label">Éditer un devis / proforma</div></div></a>
-    <a href="/prospects" class="stat-card" style="text-decoration:none;border-left:4px solid #2e7d32"><div class="stat-icon green">🎯</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Prospects</div><div class="stat-label">Pipeline commercial</div></div></a>
-</div>
-<script>
-new Chart(document.getElementById('chartCommercial'), {type:'bar',data:{labels:['Brouillons','Envoyés','Acceptés','Visites'],datasets:[{label:'Activité',data:[{{ d_stats.brouillon if d_stats else 0 }},{{ d_stats.envoye if d_stats else 0 }},{{ d_stats.accepte if d_stats else 0 }},{{ v_stats.total if v_stats else 0 }}],backgroundColor:['#42a5f5','#ff9800','#2e7d32','#e8672a'],borderRadius:8}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}}}});
-</script>
-{% endif %}
-
-{# ======================== COMPTABLE ======================== #}
-{% if user_role == 'comptable' %}
-<div class="stats-grid">
-    <div class="stat-card" style="border-left:4px solid #e8672a"><div class="stat-icon orange">📤</div><div class="stat-info"><div class="stat-num">{{ inv_stats.a_envoyer }}</div><div class="stat-label">Factures à envoyer</div></div></div>
-    <div class="stat-card" style="border-left:4px solid #1565c0"><div class="stat-icon blue">📧</div><div class="stat-info"><div class="stat-num">{{ inv_stats.envoyee }}</div><div class="stat-label">Envoyées</div></div></div>
-    <div class="stat-card" style="border-left:4px solid #f57f17"><div class="stat-icon orange">⏳</div><div class="stat-info"><div class="stat-num">{{ inv_stats.en_attente_paiement }}</div><div class="stat-label">Attente paiement</div></div></div>
-    <div class="stat-card" style="border-left:4px solid #2e7d32"><div class="stat-icon green">✅</div><div class="stat-info"><div class="stat-num">{{ inv_stats.payee }}</div><div class="stat-label">Payées</div></div></div>
-</div>
-<div class="card" style="margin-bottom:16px"><div class="card-body" style="height:200px"><canvas id="chartCompta"></canvas></div></div>
-<div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
-    <a href="/comptabilite" class="stat-card" style="text-decoration:none;border-left:4px solid #1a3a5c"><div class="stat-icon teal">🧾</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Factures</div><div class="stat-label">Gérer les factures</div></div></a>
-    <a href="/tresorerie" class="stat-card" style="text-decoration:none;border-left:4px solid #e8672a"><div class="stat-icon orange">🏦</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Trésorerie</div><div class="stat-label">Caisse / Banque</div></div></a>
-    <a href="/depenses" class="stat-card" style="text-decoration:none;border-left:4px solid #c53030"><div class="stat-icon red">💸</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Dépenses</div><div class="stat-label">Suivi des frais</div></div></a>
-</div>
-<script>
-new Chart(document.getElementById('chartCompta'), {type:'doughnut',data:{labels:['À envoyer','Envoyées','Attente paiement','Payées'],datasets:[{data:[{{ inv_stats.a_envoyer }},{{ inv_stats.envoyee }},{{ inv_stats.en_attente_paiement }},{{ inv_stats.payee }}],backgroundColor:['#e8672a','#42a5f5','#ff9800','#2e7d32']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:11}}}}}});
-</script>
-{% endif %}
-
-{# ======================== RH ======================== #}
-{% if user_role == 'rh' %}
-<div class="stats-grid">
-    <div class="stat-card" style="border-left:4px solid #1a3a5c"><div class="stat-icon teal">👤</div><div class="stat-info"><div class="stat-num">{{ emp_stats.total if emp_stats else 0 }}</div><div class="stat-label">Employés actifs</div></div></div>
-    <div class="stat-card" style="border-left:4px solid #e8672a"><div class="stat-icon orange">🏖️</div><div class="stat-info"><div class="stat-num">{{ emp_stats.pending_leaves if emp_stats else 0 }}</div><div class="stat-label">Congés en attente</div></div></div>
-    <div class="stat-card" style="border-left:4px solid #2e7d32"><div class="stat-icon green">📄</div><div class="stat-info"><div class="stat-num">{{ stats.pending_jobs }}</div><div class="stat-label">Fichiers à envoyer</div></div></div>
-    <div class="stat-card" style="border-left:4px solid #1565c0"><div class="stat-icon blue">📑</div><div class="stat-info"><div class="stat-num">{{ emp_stats.cdi if emp_stats else 0 }}</div><div class="stat-label">CDI</div></div></div>
-</div>
-<div class="card" style="margin-bottom:16px"><div class="card-body" style="height:180px"><canvas id="chartRH"></canvas></div></div>
-<div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
-    <a href="/rh/personnel" class="stat-card" style="text-decoration:none;border-left:4px solid #1a3a5c"><div class="stat-icon teal">👥</div><div class="stat-info"><div style="font-size:14px;font-weight:700;color:#1a3a5c">Personnel</div></div></a>
-    <a href="/rh/conges" class="stat-card" style="text-decoration:none;border-left:4px solid #e8672a"><div class="stat-icon orange">🏖️</div><div class="stat-info"><div style="font-size:14px;font-weight:700;color:#1a3a5c">Congés</div></div></a>
-    <a href="/rh/paie" class="stat-card" style="text-decoration:none;border-left:4px solid #2e7d32"><div class="stat-icon green">💵</div><div class="stat-info"><div style="font-size:14px;font-weight:700;color:#1a3a5c">Paie</div></div></a>
-    <a href="/rh/formations" class="stat-card" style="text-decoration:none;border-left:4px solid #7b1fa2"><div class="stat-icon purple">🎓</div><div class="stat-info"><div style="font-size:14px;font-weight:700;color:#1a3a5c">Formations</div></div></a>
-</div>
-<script>
-new Chart(document.getElementById('chartRH'), {type:'bar',data:{labels:['CDI','CDD','Congés en attente','Fichiers'],datasets:[{data:[{{ emp_stats.cdi if emp_stats else 0 }},{{ emp_stats.cdd if emp_stats else 0 }},{{ emp_stats.pending_leaves if emp_stats else 0 }},{{ stats.pending_jobs }}],backgroundColor:['#1a3a5c','#42a5f5','#ff9800','#2e7d32'],borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
-</script>
-{% endif %}
-
-{# ======================== TECHNICIEN ======================== #}
-{% if user_role == 'technicien' %}
-<div class="stats-grid">
-    <div class="stat-card" style="border-left:4px solid #1a3a5c"><div class="stat-icon teal">📄</div><div class="stat-info"><div class="stat-num">{{ stats.total_jobs }}</div><div class="stat-label">Rapports traités</div></div></div>
-    <div class="stat-card" style="border-left:4px solid #e8672a"><div class="stat-icon orange">🔍</div><div class="stat-info"><div class="stat-num">{{ v_stats.en_attente }}</div><div class="stat-label">Visites en attente</div></div></div>
-</div>
-<div class="stats-grid" style="grid-template-columns:repeat(2,1fr)">
-    <a href="/traitement" class="stat-card" style="text-decoration:none;border-left:4px solid #1a3a5c"><div class="stat-icon teal">⏱️</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Calcul d'heures</div><div class="stat-label">Traiter un fichier de pointage</div></div></a>
-    <a href="/visites/new" class="stat-card" style="text-decoration:none;border-left:4px solid #e8672a"><div class="stat-icon orange">🔍</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Rapport de visite</div><div class="stat-label">Créer un rapport terrain</div></div></a>
-</div>
-{% endif %}
-
-{# ======================== MOYENS GÉNÉRAUX ======================== #}
-{% if user_role == 'moyens_generaux' %}
-<div class="stats-grid" style="grid-template-columns:repeat(2,1fr)">
-    <a href="/stock" class="stat-card" style="text-decoration:none;border-left:4px solid #1a3a5c"><div class="stat-icon teal">📦</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Stock</div><div class="stat-label">Gestion du stock matériel</div></div></a>
-    <a href="/moyens-generaux/vehicules" class="stat-card" style="text-decoration:none;border-left:4px solid #e8672a"><div class="stat-icon orange">🚗</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Véhicules</div><div class="stat-label">Parc automobile</div></div></a>
-    <a href="/moyens-generaux/maintenance" class="stat-card" style="text-decoration:none;border-left:4px solid #2e7d32"><div class="stat-icon green">🔧</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Maintenance</div><div class="stat-label">Demandes d'intervention</div></div></a>
-    <a href="/moyens-generaux/fournitures" class="stat-card" style="text-decoration:none;border-left:4px solid #7b1fa2"><div class="stat-icon purple">📦</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Fournitures</div><div class="stat-label">Fournitures de bureau</div></div></a>
-</div>
-{% endif %}
-
-{# ======================== INFORMATIQUE ======================== #}
-{% if user_role == 'informatique' %}
-<div class="stats-grid">
-    <div class="stat-card" style="border-left:4px solid #1a3a5c"><div class="stat-icon teal">📄</div><div class="stat-info"><div class="stat-num">{{ stats.total_jobs }}</div><div class="stat-label">Rapports traités</div></div></div>
-    <div class="stat-card" style="border-left:4px solid #e8672a"><div class="stat-icon orange">🔍</div><div class="stat-info"><div class="stat-num">{{ v_stats.en_attente }}</div><div class="stat-label">Visites techniques</div></div></div>
-</div>
-<div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
-    <a href="/projets" class="stat-card" style="text-decoration:none;border-left:4px solid #1a3a5c"><div class="stat-icon teal">📁</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Projets</div><div class="stat-label">Suivi des projets</div></div></a>
-    <a href="/tickets" class="stat-card" style="text-decoration:none;border-left:4px solid #e8672a"><div class="stat-icon orange">🎫</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Tickets</div><div class="stat-label">Support technique</div></div></a>
-    <a href="/taches" class="stat-card" style="text-decoration:none;border-left:4px solid #2e7d32"><div class="stat-icon green">✅</div><div class="stat-info"><div style="font-size:15px;font-weight:700;color:#1a3a5c">Tâches</div><div class="stat-label">Mes tâches assignées</div></div></a>
-</div>
-{% endif %}
-{% endblock %}
+<div class="card"><div class="card-header"><h3>Dernières réservations</h3><a href="/reservations/new" class="btn btn-gold btn-sm">+ Nouvelle</a></div><div class="card-body">
+{% if recent %}<div class="table-wrap"><table>
+<thead><tr><th>Réf</th><th>Client</th><th>Chambre</th><th>Arrivée</th><th>Départ</th><th>Montant</th><th>Statut</th></tr></thead>
+<tbody>{% for r in recent %}<tr>
+<td><a href="/reservations/{{ r.id }}" style="color:#d4a574;font-weight:600">{{ r.reference }}</a></td>
+<td>{{ r.guest_name }}</td><td>{{ r.room_number or '-' }}</td><td>{{ r.checkin_date }}</td><td>{{ r.checkout_date }}</td>
+<td>{{ '{:,.0f}'.format(r.total_amount) }} F</td>
+<td>{% if r.status=='confirmee' %}<span class="badge-s gold">Confirmée</span>{% elif r.status=='en_cours' %}<span class="badge-s blue">En cours</span>{% elif r.status=='terminee' %}<span class="badge-s green">Terminée</span>{% else %}<span class="badge-s">{{ r.status }}</span>{% endif %}</td>
+</tr>{% endfor %}</tbody></table></div>{% else %}<p style="text-align:center;color:#999;padding:20px">Aucune réservation</p>{% endif %}
+</div></div>{% endblock %}

@@ -1,264 +1,110 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#1a3a5c">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="manifest" href="/manifest.json">
-    <link rel="apple-touch-icon" href="/static/logo_wannygest.png">
-    <title>{% block title %}WannyGest{% endblock %}</title>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}WannyHotel{% endblock %}</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;color:#333;display:flex;min-height:100vh}
-        .sidebar{width:260px;background:linear-gradient(180deg,#0d2137,#1a3a5c);color:#fff;display:flex;flex-direction:column;position:fixed;height:100vh;z-index:100;overflow-y:auto}
-        .sidebar-header{padding:18px 16px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.08)}
-        .sidebar-header img{height:36px}
-        .sidebar-user{padding:12px 16px;background:rgba(0,0,0,0.15);font-size:13px}
-        .sidebar-user .name{font-weight:600}
-        .sidebar-user .role{opacity:0.6;font-size:11px;text-transform:uppercase;letter-spacing:0.5px}
-        .sidebar-nav{flex:1;padding:8px 0}
-        .sidebar-nav a{display:flex;align-items:center;gap:10px;padding:10px 18px;color:rgba(255,255,255,0.75);text-decoration:none;font-size:13px;transition:all 0.2s;border-left:3px solid transparent}
-        .sidebar-nav a:hover{background:rgba(255,255,255,0.08);color:#fff}
-        .sidebar-nav a.active{background:rgba(255,255,255,0.12);color:#fff;border-left-color:#e8672a}
-        .sidebar-nav .separator{height:1px;background:rgba(255,255,255,0.08);margin:6px 16px}
-        .sidebar-nav .badge{background:#e8672a;color:#fff;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700;margin-left:auto}
-        /* Collapsible sections */
-        .nav-section{margin:2px 0}
-        .nav-section-title{display:flex;align-items:center;gap:10px;padding:10px 18px;color:rgba(255,255,255,0.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;cursor:pointer;user-select:none}
-        .nav-section-title:hover{color:rgba(255,255,255,0.8)}
-        .nav-section-title .arrow{font-size:9px;margin-left:auto;transition:transform 0.2s}
-        .nav-section.collapsed .nav-section-items{display:none}
-        .nav-section.collapsed .arrow{transform:rotate(-90deg)}
-        .nav-section-items a{padding-left:32px;font-size:12px}
-        .sidebar-footer{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.08);font-size:12px}
-        .sidebar-footer a{color:rgba(255,255,255,0.5);text-decoration:none}
-        .sidebar-footer a:hover{color:#fff}
-        .main{flex:1;margin-left:260px;padding:24px 28px}
-        .page-header{margin-bottom:22px}
-        .page-header h1{font-size:22px;font-weight:700;color:#1a3a5c}
-        .page-header p{color:#888;font-size:13px;margin-top:3px}
-        .card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);overflow:hidden;margin-bottom:18px}
-        .card-header{padding:14px 18px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between}
-        .card-header h3{font-size:15px;font-weight:600;color:#1a3a5c}
-        .card-body{padding:18px}
-        .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:20px}
-        .stat-card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:flex;align-items:center;gap:14px}
-        .stat-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
-        .stat-icon.teal{background:#e0f0ee}.stat-icon.orange{background:#fff3e0}.stat-icon.red{background:#fde8e8}.stat-icon.blue{background:#e3f2fd}.stat-icon.green{background:#e8f5e9}.stat-icon.purple{background:#f3e5f5}
-        .stat-info .stat-num{font-size:26px;font-weight:700;color:#333}
-        .stat-info .stat-label{font-size:11px;color:#888;margin-top:1px}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f3f0;color:#2d2926;display:flex;min-height:100vh}
+        .sidebar{width:250px;background:linear-gradient(180deg,#1a1a2e,#16213e);color:#fff;position:fixed;height:100vh;overflow-y:auto;z-index:100}
+        .sidebar-header{padding:16px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.08)}
+        .sidebar-header img{height:32px}
+        .sidebar-header .app-name{font-size:20px;font-weight:800;margin-top:4px;color:#d4a574}
+        .sidebar-header .app-sub{font-size:10px;opacity:0.5}
+        .sidebar-user{padding:10px 16px;background:rgba(0,0,0,0.2);font-size:12px}
+        .sidebar-user .name{font-weight:600}.sidebar-user .role{opacity:0.5;font-size:10px;text-transform:uppercase}
+        .sidebar-nav{padding:6px 0}
+        .sidebar-nav a{display:flex;align-items:center;gap:10px;padding:9px 18px;color:rgba(255,255,255,0.65);text-decoration:none;font-size:13px;border-left:3px solid transparent;transition:all 0.2s}
+        .sidebar-nav a:hover{background:rgba(255,255,255,0.06);color:#fff}
+        .sidebar-nav a.active{background:rgba(212,165,116,0.15);color:#d4a574;border-left-color:#d4a574}
+        .sidebar-nav .sep{height:1px;background:rgba(255,255,255,0.06);margin:6px 14px}
+        .sidebar-nav .section{color:rgba(255,255,255,0.3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;padding:10px 18px 4px}
+        .badge{background:#d4a574;color:#1a1a2e;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;margin-left:auto}
+        .sidebar-footer{padding:10px 16px;border-top:1px solid rgba(255,255,255,0.06)}.sidebar-footer a{color:rgba(255,255,255,0.4);text-decoration:none;font-size:12px}
+        .main{flex:1;margin-left:250px;padding:22px 26px}
+        .page-header{margin-bottom:18px}.page-header h1{font-size:22px;font-weight:700;color:#1a1a2e}.page-header p{color:#888;font-size:13px;margin-top:2px}
+        .card{background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.05);overflow:hidden;margin-bottom:16px}
+        .card-header{padding:13px 16px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between}.card-header h3{font-size:14px;font-weight:600;color:#1a1a2e}
+        .card-body{padding:16px}
+        .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px}
+        .stat-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.04);display:flex;align-items:center;gap:12px}
+        .stat-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+        .stat-icon.gold{background:#fdf3e7;color:#d4a574}.stat-icon.green{background:#e8f5e9}.stat-icon.red{background:#fde8e8}.stat-icon.blue{background:#e3f2fd}.stat-icon.teal{background:#e0f0ee}
+        .stat-num{font-size:24px;font-weight:700;color:#1a1a2e}.stat-label{font-size:11px;color:#888}
         .table-wrap{overflow-x:auto}
         table{width:100%;border-collapse:collapse;font-size:13px}
-        th{background:#f8faf9;padding:9px 12px;text-align:left;font-weight:600;color:#555;border-bottom:2px solid #e0e0e0}
-        td{padding:9px 12px;border-bottom:1px solid #f0f0f0}
-        tr:hover td{background:#f8fffe}
-        .badge-status{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600}
-        .badge-status.pending{background:#fff8e1;color:#f57f17}
-        .badge-status.sent{background:#e8f5e9;color:#2e7d32}
-        .badge-status.admin{background:#e8672a;color:#fff}
-        .badge-status.rh{background:#1a3a5c;color:#fff}
-        .badge-status.technicien{background:#42a5f5;color:#fff}
-        .badge-status.commercial{background:#ff9800;color:#fff}
-        .badge-status.comptable{background:#66bb6a;color:#fff}
-        .badge-status.moyens_generaux{background:#8d6e63;color:#fff}
-        .badge-status.informatique{background:#5c6bc0;color:#fff}
-        .form-row{display:flex;gap:12px;margin-bottom:12px}.form-row .form-group{flex:1}
-        .form-group{margin-bottom:12px}
-        .form-group label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:4px}
-        .form-group input,.form-group select,.form-group textarea{width:100%;padding:8px 11px;border:1.5px solid #ddd;border-radius:7px;font-size:13px;transition:border-color 0.2s}
-        .form-group input:focus,.form-group select:focus{outline:none;border-color:#1a3a5c;box-shadow:0 0 0 3px rgba(26,58,92,0.1)}
-        .hint{font-size:11px;color:#999;margin-top:2px}
-        .btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:all 0.2s}
-        .btn-primary{background:#1a3a5c;color:#fff}.btn-primary:hover{background:#153050}
-        .btn-orange{background:#e8672a;color:#fff}.btn-orange:hover{background:#d45a20}
-        .btn-outline{background:#fff;color:#666;border:1.5px solid #ddd}.btn-outline:hover{border-color:#1a3a5c;color:#1a3a5c}
-        .btn-danger{background:#fff;color:#c53030;border:1.5px solid #feb2b2}.btn-danger:hover{background:#fde8e8}
-        .btn-sm{padding:5px 11px;font-size:12px}
-        .btn-block{width:100%;justify-content:center;padding:12px}
-        .flash{padding:11px 16px;border-radius:9px;margin-bottom:14px;font-size:13px}
-        .flash.error{background:#fde8e8;color:#c53030;border:1px solid #feb2b2}
-        .flash.success{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7}
-        .flash.info{background:#e3f2fd;color:#1565c0;border:1px solid #90caf9}
-        .upload-zone{border:2px dashed #ccc;border-radius:10px;padding:18px;text-align:center;cursor:pointer;transition:all 0.3s;background:#fafffe}
-        .upload-zone:hover,.upload-zone.dragover{border-color:#1a3a5c;background:#e8f0f5}
-        .upload-zone.has-file{border-color:#1a3a5c;border-style:solid;background:#e8f0f5}
-        .upload-zone.merged{border-color:#1a3a5c;border-style:solid;background:#d4e8f0;pointer-events:none}
-        .upload-zone.small-zone{padding:14px}
-        .upload-zone input[type="file"]{display:none}
-        .upload-text{color:#666;font-size:13px}.upload-text strong{color:#1a3a5c}
-        .file-name{color:#1a3a5c;font-weight:600;font-size:13px;margin-top:4px}
-        .step-optional{font-size:10px;color:#999;background:#f0f0f0;padding:2px 7px;border-radius:4px;margin-left:5px}
-        .merge-status{margin-top:8px;padding:10px 14px;border-radius:7px;font-size:12px;font-weight:500}
-        .merge-status.loading{background:#fff8e1;color:#f57f17}.merge-status.success{background:#e8f5e9;color:#2e7d32}.merge-status.error{background:#fde8e8;color:#c53030}
-        .merge-dl-btn{display:inline-block;margin-top:6px;padding:6px 14px;background:#1a3a5c;color:#fff!important;text-decoration:none;border-radius:6px;font-size:12px;font-weight:600}
-        .preview-box{background:#f0f5f8;border:1px solid #d0dfe8;border-radius:9px;padding:12px;margin-top:10px;display:none}
-        .preview-box.visible{display:block}
-        .preview-box h4{color:#1a3a5c;font-size:13px;margin-bottom:5px}
-        .preview-badge{display:inline-block;background:#1a3a5c;color:#fff;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;margin-left:5px}
-        .emp-list{font-size:11px;color:#555;line-height:1.5;max-height:140px;overflow-y:auto}
-        .step{margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #eee}.step:last-of-type{border-bottom:none}
-        .step-label{display:flex;align-items:center;gap:9px;margin-bottom:9px}
-        .step-num{width:26px;height:26px;background:#1a3a5c;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
-        .step-title{font-size:14px;font-weight:600;color:#1a3a5c}
-        .spinner{display:none}.spinner.active{display:inline-block}
-        .spinner::after{content:'';width:16px;height:16px;border:2.5px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;display:inline-block;vertical-align:middle;margin-right:6px;animation:spin 0.8s linear infinite}
-        @keyframes spin{to{transform:rotate(360deg)}}
+        th{background:#f8f6f3;padding:8px 12px;text-align:left;font-weight:600;color:#555;font-size:11px;text-transform:uppercase;letter-spacing:0.3px}
+        td{padding:8px 12px;border-bottom:1px solid #f0eeeb}
+        tr:hover td{background:#fdfcfb}
+        .badge-s{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:600}
+        .badge-s.green{background:#e8f5e9;color:#2e7d32}.badge-s.orange{background:#fff3e0;color:#e65100}
+        .badge-s.red{background:#fde8e8;color:#c53030}.badge-s.blue{background:#e3f2fd;color:#1565c0}
+        .badge-s.gold{background:#fdf3e7;color:#8b6914}
+        .form-row{display:flex;gap:10px;margin-bottom:10px}.form-row .form-group{flex:1}
+        .form-group{margin-bottom:10px}.form-group label{display:block;font-size:11px;font-weight:600;color:#555;margin-bottom:3px}
+        .form-group input,.form-group select,.form-group textarea{width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:7px;font-size:13px}
+        .form-group input:focus,.form-group select:focus{outline:none;border-color:#d4a574}
+        .btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;transition:all 0.2s}
+        .btn-primary{background:#1a1a2e;color:#fff}.btn-gold{background:#d4a574;color:#fff}.btn-gold:hover{background:#c49564}
+        .btn-outline{background:#fff;color:#666;border:1.5px solid #ddd}.btn-outline:hover{border-color:#d4a574}
+        .btn-danger{background:#fff;color:#c53030;border:1.5px solid #feb2b2}.btn-sm{padding:4px 10px;font-size:11px}
+        .flash{padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px}
+        .flash.error{background:#fde8e8;color:#c53030}.flash.success{background:#e8f5e9;color:#2e7d32}.flash.info{background:#e3f2fd;color:#1565c0}
         .modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center}
-        .modal-bg.active{display:flex}
-        .modal{background:#fff;border-radius:14px;padding:24px;width:520px;max-width:90%;max-height:80vh;overflow-y:auto}
-        .modal h3{font-size:17px;color:#1a3a5c;margin-bottom:14px}
-        @media(max-width:768px){
-            .sidebar{transform:translateX(-260px);transition:transform 0.3s}
-            .sidebar.open{transform:translateX(0)}
-            .main{margin-left:0}
-            .stats-grid{grid-template-columns:1fr 1fr}
-            .form-row{flex-direction:column;gap:0}
-            .mobile-toggle{display:block!important;position:fixed;top:12px;left:12px;z-index:150;background:#1a3a5c;color:#fff;border:none;border-radius:8px;padding:10px 14px;font-size:18px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.2)}
-            .mobile-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:99}
-            .mobile-overlay.open{display:block}
-        }
+        .modal-bg.active{display:flex}.modal{background:#fff;border-radius:14px;padding:22px;width:520px;max-width:90%;max-height:80vh;overflow-y:auto}.modal h3{font-size:16px;color:#1a1a2e;margin-bottom:12px}
+        /* Room grid */
+        .rooms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+        .room-card{border-radius:10px;padding:14px;text-align:center;font-size:12px;border:2px solid #eee;transition:all 0.2s}
+        .room-card .room-num{font-size:18px;font-weight:800;margin-bottom:4px}
+        .room-card.available{background:#e8f5e9;border-color:#a5d6a7;color:#2e7d32}
+        .room-card.occupied{background:#fde8e8;border-color:#ef9a9a;color:#c53030}
+        .room-card.dirty{background:#fff3e0;border-color:#ffcc80;color:#e65100}
+        .room-card.maintenance{background:#e0e0e0;border-color:#bdbdbd;color:#616161}
+        .mobile-toggle{display:none;position:fixed;top:10px;left:10px;z-index:150;background:#1a1a2e;color:#fff;border:none;border-radius:8px;padding:10px 14px;font-size:18px;cursor:pointer}
+        .mobile-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:99}
+        @media(max-width:768px){.sidebar{transform:translateX(-250px);transition:transform 0.3s}.sidebar.open{transform:translateX(0)}.main{margin-left:0}.mobile-toggle{display:block!important}.mobile-overlay.open{display:block}.stats-grid{grid-template-columns:1fr 1fr}.form-row{flex-direction:column;gap:0}.rooms-grid{grid-template-columns:repeat(3,1fr)}}
     </style>
 </head>
 <body>
-    <button class="mobile-toggle" style="display:none" onclick="document.querySelector('.sidebar').classList.toggle('open');document.querySelector('.mobile-overlay').classList.toggle('open')">☰</button>
+    <button class="mobile-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open');document.querySelector('.mobile-overlay').classList.toggle('open')">☰</button>
     <div class="mobile-overlay" onclick="document.querySelector('.sidebar').classList.remove('open');this.classList.remove('open')"></div>
     {% if current_user %}
     <nav class="sidebar">
         <div class="sidebar-header">
-            <img src="/static/logo_wannygest_clean.png" alt="WannyGest" onerror="this.parentElement.innerHTML='<h2 style=color:#fff>WannyGest</h2>'">
+            <div class="app-name">🏨 WannyHotel</div>
+            <div class="app-sub">Système de gestion hôtelière</div>
         </div>
-        <div class="sidebar-user">
-            <div class="name">{{ current_user.full_name }}</div>
-            <div class="role">{{ current_user.role }}</div>
-        </div>
+        <div class="sidebar-user"><div class="name">{{ current_user.full_name }}</div><div class="role">{{ current_user.role }}</div></div>
         <div class="sidebar-nav">
-            <a href="/dashboard" class="{% if page == 'dashboard' %}active{% endif %}">📊 Tableau de bord</a>
-            
-            {% if 'traitement' in permissions %}
-            <!-- Gestion du temps -->
-            <div class="nav-section" id="sec-temps">
-                <div class="nav-section-title" onclick="toggleSection('sec-temps')">⏱️ GESTION DU TEMPS <span class="arrow">▼</span></div>
-                <div class="nav-section-items">
-                    <a href="/traitement" class="{% if page == 'traitement' %}active{% endif %}">Calcul d'heures</a>
-                    <a href="/alertes" class="{% if page == 'alertes' %}active{% endif %}">Alertes assiduité</a>
-                    <a href="/comparaison" class="{% if page == 'comparaison' %}active{% endif %}">Comparaison</a>
-                </div>
-            </div>
-            {% endif %}
-            
-            {% if 'visites' in permissions or 'proforma' in permissions or 'clients' in permissions %}
-            <!-- Commercial & CRM -->
-            <div class="nav-section" id="sec-commercial">
-                <div class="nav-section-title" onclick="toggleSection('sec-commercial')">💼 COMMERCIAL &amp; CRM <span class="arrow">▼</span></div>
-                <div class="nav-section-items">
-                    {% if 'visites' in permissions %}<a href="/visites" class="{% if page == 'visites' %}active{% endif %}">Rapports de visite</a>{% endif %}
-                    {% if 'proforma' in permissions %}<a href="/devis" class="{% if page == 'devis' %}active{% endif %}">Devis / Proformas</a>{% endif %}
-                    {% if 'clients' in permissions %}<a href="/prospects" class="{% if page == 'prospects' %}active{% endif %}">Prospects</a>{% endif %}
-                    {% if 'clients' in permissions %}<a href="/clients" class="{% if page == 'clients' %}active{% endif %}">Clients</a>{% endif %}
-                    {% if 'contrats' in permissions %}<a href="/contrats" class="{% if page == 'contrats' %}active{% endif %}">Contrats</a>{% endif %}
-                </div>
-            </div>
-            {% endif %}
-            
-            {% if 'fichiers' in permissions %}
-            <!-- Gestion RH -->
-            <div class="nav-section" id="sec-rh">
-                <div class="nav-section-title" onclick="toggleSection('sec-rh')">👥 GESTION RH <span class="arrow">▼</span></div>
-                <div class="nav-section-items">
-                    <a href="/rh" class="{% if page == 'rh' %}active{% endif %}">Tableau de bord RH</a>
-                    <a href="/rh/personnel" class="{% if page == 'personnel' %}active{% endif %}">Personnel</a>
-                    <a href="/rh/postes" class="{% if page == 'postes' %}active{% endif %}">Descriptions d'emploi</a>
-                    <a href="/rh/conges" class="{% if page == 'conges' %}active{% endif %}">Congés</a>
-                    <a href="/rh/paie" class="{% if page == 'paie' %}active{% endif %}">Paie</a>
-                    <a href="/rh/formations" class="{% if page == 'formations' %}active{% endif %}">Formations</a>
-                    <a href="/rh/annonces" class="{% if page == 'annonces' %}active{% endif %}">Annonces</a>
-                    <a href="/fichiers" class="{% if page == 'fichiers' %}active{% endif %}">
-                        Fichiers à envoyer
-                        {% if pending_count %}<span class="badge">{{ pending_count }}</span>{% endif %}
-                    </a>
-                </div>
-            </div>
-            {% endif %}
-            
-            {% if 'comptabilite' in permissions %}
-            <!-- Comptabilité -->
-            <div class="nav-section" id="sec-compta">
-                <div class="nav-section-title" onclick="toggleSection('sec-compta')">💰 COMPTABILITÉ <span class="arrow">▼</span></div>
-                <div class="nav-section-items">
-                    <a href="/comptabilite" class="{% if page == 'comptabilite' %}active{% endif %}">Factures</a>
-                    <a href="/tresorerie" class="{% if page == 'tresorerie' %}active{% endif %}">Caisse / Banque</a>
-                    <a href="/depenses" class="{% if page == 'depenses' %}active{% endif %}">Dépenses</a>
-                </div>
-            </div>
-            {% endif %}
-            
-            {% if 'informatique' in permissions or 'projets' in permissions %}
-            <!-- Informatique & Projets -->
-            <div class="nav-section" id="sec-info">
-                <div class="nav-section-title" onclick="toggleSection('sec-info')">💻 INFORMATIQUE <span class="arrow">▼</span></div>
-                <div class="nav-section-items">
-                    <a href="/projets" class="{% if page == 'projets' %}active{% endif %}">Projets</a>
-                    <a href="/taches" class="{% if page == 'taches' %}active{% endif %}">Tâches</a>
-                    <a href="/tickets" class="{% if page == 'tickets' %}active{% endif %}">Tickets / Support</a>
-                    <a href="/calendrier" class="{% if page == 'calendrier' %}active{% endif %}">Calendrier</a>
-                    <a href="/todos" class="{% if page == 'todos' %}active{% endif %}">Mes Todos</a>
-                </div>
-            </div>
-            {% endif %}
-            
-            {% if 'moyens_generaux' in permissions or 'admin' in permissions %}
-            <!-- Moyens Généraux -->
-            <div class="nav-section" id="sec-moyens">
-                <div class="nav-section-title" onclick="toggleSection('sec-moyens')">🏠 MOYENS GÉNÉRAUX <span class="arrow">▼</span></div>
-                <div class="nav-section-items">
-                    <a href="/moyens-generaux" class="{% if page == 'moyens' %}active{% endif %}">Tableau de bord</a>
-                    <a href="/stock" class="{% if page == 'stock' %}active{% endif %}">Stock</a>
-                    <a href="/moyens-generaux/vehicules" class="{% if page == 'vehicules' %}active{% endif %}">Parc véhicules</a>
-                    <a href="/moyens-generaux/fournitures" class="{% if page == 'fournitures' %}active{% endif %}">Fournitures bureau</a>
-                    <a href="/moyens-generaux/maintenance" class="{% if page == 'maintenance' %}active{% endif %}">Maintenance</a>
-                </div>
-            </div>
-            {% endif %}
-            
-            {% if 'admin' in permissions %}
-            <!-- Administration -->
-            <div class="nav-section" id="sec-admin">
-                <div class="nav-section-title" onclick="toggleSection('sec-admin')">⚙️ ADMINISTRATION <span class="arrow">▼</span></div>
-                <div class="nav-section-items">
-                    <a href="/admin" class="{% if page == 'admin' %}active{% endif %}">Utilisateurs & rôles</a>
-                    <a href="/logs" class="{% if page == 'logs' %}active{% endif %}">Logs d'activité</a>
-                    <a href="/admin/backup">Sauvegarde BDD</a>
-                    <a href="/export/stats">Export statistiques</a>
-                </div>
-            </div>
+            <a href="/dashboard" class="{% if page=='dashboard' %}active{% endif %}">📊 Tableau de bord</a>
+            <div class="sep"></div>
+            <div class="section">Hébergement</div>
+            <a href="/reservations" class="{% if page=='reservations' %}active{% endif %}">📋 Réservations</a>
+<a href="/online-bookings" class="{% if page=='online' %}active{% endif %}">🌐 Résa. en ligne</a>
+            <a href="/chambres" class="{% if page=='chambres' %}active{% endif %}">🛏️ Chambres</a>
+            <a href="/guests" class="{% if page=='guests' %}active{% endif %}">👤 Clients</a>
+            <a href="/housekeeping" class="{% if page=='housekeeping' %}active{% endif %}">🧹 Ménage</a>
+            <div class="sep"></div>
+            <div class="section">Services</div>
+            <a href="/events" class="{% if page=='events' %}active{% endif %}">🎉 Événements</a>
+            <a href="/stock" class="{% if page=='stock' %}active{% endif %}">📦 Stock</a>
+            <a href="/personnel" class="{% if page=='personnel' %}active{% endif %}">👥 Personnel</a>
+            <div class="sep"></div>
+            <div class="section">Finance</div>
+            <a href="/rapports" class="{% if page=='rapports' %}active{% endif %}">📈 Rapports</a>
+            {% if current_user.role in ('admin','directeur') %}
+            <div class="sep"></div>
+            <a href="/admin" class="{% if page=='admin' %}active{% endif %}">⚙️ Administration</a>
+            <a href="/admin/smtp" class="{% if page=='smtp' %}active{% endif %}">📧 Email SMTP</a>
+            <a href="/admin/reset" class="{% if page=='reset' %}active{% endif %}">🔄 Réinitialiser</a>
             {% endif %}
         </div>
-        <div class="sidebar-footer">
-            <a href="/chat" style="display:flex;align-items:center;gap:6px">💬 Chat {% if unread_messages %}<span class="badge">{{ unread_messages }}</span>{% endif %}</a>
-            <a href="/logout">🚪 Déconnexion</a>
-        </div>
+        <div class="sidebar-footer"><a href="/logout">🚪 Déconnexion</a></div>
     </nav>
     {% endif %}
-    
     <div class="main" {% if not current_user %}style="margin-left:0"{% endif %}>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}{% for category, message in messages %}
-        <div class="flash {{ category }}">{{ message }}</div>
-        {% endfor %}{% endif %}{% endwith %}
+        {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for cat, msg in messages %}<div class="flash {{ cat }}">{{ msg }}</div>{% endfor %}{% endif %}{% endwith %}
         {% block content %}{% endblock %}
     </div>
-    
-    <script>
-    function toggleSection(id) {
-        document.getElementById(id).classList.toggle('collapsed');
-        // Save state
-        try { localStorage.setItem('nav_'+id, document.getElementById(id).classList.contains('collapsed') ? '1' : '0'); } catch(e) {}
-    }
-    // Restore states
-    document.querySelectorAll('.nav-section').forEach(s => {
-        try { if(localStorage.getItem('nav_'+s.id)==='1') s.classList.add('collapsed'); } catch(e) {}
-    });
-    </script>
 </body>
 </html>

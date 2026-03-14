@@ -1,141 +1,24 @@
 <!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#1a3a5c">
-    <link rel="manifest" href="/manifest.json">
-    <title>WannyGest — Pilotez votre entreprise avec précision</title>
-    <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#333}
-        .navbar{background:#fff;padding:14px 40px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,0.06);position:sticky;top:0;z-index:100}
-        .navbar img{height:38px}
-        .nav-links{display:flex;gap:26px;align-items:center}
-        .nav-links a{text-decoration:none;color:#1a3a5c;font-size:14px;font-weight:500}.nav-links a:hover{color:#e8672a}
-        .btn-nav{background:#e8672a;color:#fff!important;padding:9px 22px;border-radius:8px;font-weight:700;font-size:13px}.btn-nav:hover{background:#d45a20}
-        
-        .hero{background:linear-gradient(135deg,#0d2137 0%,#1a4a6c 40%,#1a5a5c 100%);padding:70px 40px 50px;display:flex;align-items:center;gap:50px;position:relative;overflow:hidden}
-        .hero::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
-        .hero-text{flex:1;color:#fff;position:relative;z-index:1}
-        .hero-text h1{font-size:44px;font-weight:900;margin-bottom:2px}.hero-text h1 span{color:#e8672a}
-        .hero-text .slogan{font-size:20px;font-weight:400;opacity:0.8;margin-bottom:18px}
-        .hero-text p{font-size:14px;line-height:1.7;opacity:0.75;max-width:480px;margin-bottom:28px}
-        .hero-actions{display:flex;gap:14px}
-        .btn-hero{padding:13px 30px;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;transition:all 0.3s;display:inline-block}
-        .btn-start{background:#e8672a;color:#fff;box-shadow:0 6px 20px rgba(232,103,42,0.4)}.btn-start:hover{transform:translateY(-2px)}
-        .btn-login-hero{background:rgba(255,255,255,0.12);color:#fff;border:2px solid rgba(255,255,255,0.3)}.btn-login-hero:hover{background:rgba(255,255,255,0.2)}
-        .hero-img{flex:0 0 400px;position:relative;z-index:1}.hero-img img{width:100%;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
-        
-        /* Fonctionnalités */
-        .features{padding:50px 40px;background:#f8faf9}
-        .section-title{text-align:center;margin-bottom:32px}.section-title h2{font-size:26px;font-weight:800;color:#1a3a5c}.section-title h2 span{color:#e8672a}.section-title p{color:#888;font-size:14px;margin-top:6px}
-        .features-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;max-width:1100px;margin:0 auto}
-        .feat-card{background:#fff;border-radius:14px;padding:26px 18px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.05);transition:all 0.3s;border-top:3px solid transparent}
-        .feat-card:hover{transform:translateY(-3px);border-top-color:#e8672a}
-        .feat-card .icon{font-size:32px;margin-bottom:10px}.feat-card h3{font-size:15px;font-weight:700;color:#1a3a5c;margin-bottom:6px}.feat-card p{font-size:12px;color:#888;line-height:1.4}
-        
-        /* Solutions */
-        .solutions{padding:50px 40px;background:#fff}
-        .solutions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:1000px;margin:0 auto}
-        .sol-card{background:linear-gradient(135deg,#1a3a5c,#1a5060);border-radius:14px;padding:30px 22px;color:#fff;text-align:center;transition:all 0.3s}
-        .sol-card:hover{transform:translateY(-3px)}
-        .sol-card .icon{font-size:36px;margin-bottom:10px}.sol-card h3{font-size:17px;font-weight:700;margin-bottom:8px}.sol-card p{font-size:13px;opacity:0.7;line-height:1.5}
-        
-        /* Why */
-        .why{padding:36px 40px;background:#f0f2f5}
-        .why-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
-        .why-inner img{height:36px}
-        .why-inner h3{font-size:18px;color:#1a3a5c;font-weight:700;font-style:italic}.why-inner h3 span{color:#e8672a}
-        .why-badges{display:flex;gap:24px;margin-left:auto;flex-wrap:wrap}
-        .why-badge{display:flex;align-items:center;gap:6px;font-size:13px;color:#1a3a5c;font-weight:500}.why-badge::before{content:'✅';font-size:14px}
-        
-        .footer{background:#0d2137;color:#fff;padding:36px 40px 18px}
-        .footer-grid{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:240px 1fr 1fr 1fr;gap:28px;margin-bottom:24px}
-        .footer-brand img{height:36px;margin-bottom:10px}.footer-brand p{font-size:11px;opacity:0.5;line-height:1.5}
-        .footer-col h4{font-size:13px;font-weight:700;margin-bottom:10px;color:#e8672a}
-        .footer-col a{display:block;color:rgba(255,255,255,0.5);text-decoration:none;font-size:12px;margin-bottom:5px}.footer-col a:hover{color:#fff}
-        .footer-bottom{max-width:1100px;margin:0 auto;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;font-size:11px;opacity:0.4}
-        .flash{max-width:600px;margin:0 auto 14px;background:rgba(255,255,255,0.12);border-radius:8px;padding:10px;color:#fff;font-size:13px;text-align:center}
-        @media(max-width:768px){.hero{flex-direction:column;padding:30px 16px}.hero-img{display:none}.features-grid{grid-template-columns:1fr 1fr}.solutions-grid{grid-template-columns:1fr}.footer-grid{grid-template-columns:1fr 1fr}.navbar{padding:10px 14px}.nav-links{gap:12px}}
-    </style>
-</head>
-<body>
-    <nav class="navbar">
-        <img src="/static/logo_wannygest.png" alt="WannyGest">
-        <div class="nav-links">
-            <a href="#features">Fonctionnalités</a>
-            <a href="#solutions">Solutions</a>
-            <a href="#support">Support</a>
-            <a href="/register">Créer un compte</a>
-            <a href="/login" class="btn-nav">Se connecter</a>
-        </div>
-    </nav>
-    
-    <section class="hero">
-        <div class="hero-text">
-            <h1>Wanny<span>Gest</span></h1>
-            <div class="slogan">Pilotez votre entreprise avec précision.</div>
-            <p>WannyGest est une plateforme intelligente qui centralise la gestion des heures de travail, des rapports techniques, de la facturation et des ressources humaines dans une seule interface.</p>
-            {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for cat, msg in messages %}<div class="flash">{{ msg }}</div>{% endfor %}{% endif %}{% endwith %}
-            <div class="hero-actions">
-                <a href="/register" class="btn-hero btn-start">Commencer maintenant</a>
-                <a href="/login" class="btn-hero btn-login-hero">🔐 Se connecter</a>
-            </div>
-        </div>
-        <div class="hero-img">
-            <img src="/static/accueil_mockup.png" alt="Dashboard" onerror="this.style.display='none'">
-        </div>
-    </section>
-    
-    <section class="features" id="features">
-        <div class="section-title">
-            <h2>Nos <span>fonctionnalités</span></h2>
-            <p>Des outils puissants pour chaque service de votre entreprise</p>
-        </div>
-        <div class="features-grid">
-            <div class="feat-card"><div class="icon">⏱️</div><h3>Gestion du temps</h3><p>Calcul automatique des heures travaillées, retards, heures supplémentaires et assiduité</p></div>
-            <div class="feat-card"><div class="icon">🔍</div><h3>Rapports techniques</h3><p>Fiches de visite terrain avec localisation GPS et identification des besoins clients</p></div>
-            <div class="feat-card"><div class="icon">💰</div><h3>Comptabilité</h3><p>Suivi complet des factures : émission, envoi, relance et confirmation de paiement</p></div>
-            <div class="feat-card"><div class="icon">👥</div><h3>Gestion RH</h3><p>Dossiers du personnel, congés, bulletins de paie, assurances et contrats</p></div>
-        </div>
-    </section>
-    
-    <section class="solutions" id="solutions">
-        <div class="section-title" style="color:#fff">
-            <h2 style="color:#fff">Adapté à votre <span>structure</span></h2>
-            <p style="color:rgba(255,255,255,0.6)">WannyGest s'adapte à la taille et aux besoins de votre entreprise</p>
-        </div>
-        <div class="solutions-grid">
-            <div class="sol-card"><div class="icon">🏠</div><h3>Petites entreprises</h3><p>Gestion simplifiée du temps et de la facturation pour les équipes de 1 à 20 personnes</p></div>
-            <div class="sol-card"><div class="icon">🏢</div><h3>PME</h3><p>Solution complète avec gestion RH, comptabilité et reporting pour 20 à 200 employés</p></div>
-            <div class="sol-card"><div class="icon">🏗️</div><h3>Grandes entreprises</h3><p>Multi-sites, multi-clients, rôles personnalisables et intégration avec vos systèmes existants</p></div>
-        </div>
-    </section>
-    
-    <section class="why" id="support">
-        <div class="why-inner">
-            <img src="/static/logo_wannygest.png" alt="WannyGest" style="height:32px">
-            <h3>Pourquoi choisir Wanny<span>Gest</span></h3>
-            <div class="why-badges">
-                <div class="why-badge">Gestion centralisée</div>
-                <div class="why-badge">Gain de temps administratif</div>
-                <div class="why-badge">Suivi précis de votre activité</div>
-            </div>
-        </div>
-    </section>
-    
-    <footer class="footer">
-        <div class="footer-grid">
-            <div class="footer-brand">
-                <img src="/static/logo_wannygest_clean.png" alt="WannyGest" onerror="this.style.display='none'">
-                <p>© 2026 WANNYGEST<br>RAMYA TECHNOLOGIE<br>& INNOVATION<br>Abidjan · Côte d'Ivoire</p>
-            </div>
-            <div class="footer-col"><h4>Fonctionnalités</h4><a href="#">Gestion du temps</a><a href="#">Rapports techniques</a><a href="#">Comptabilité</a><a href="#">Gestion RH</a><a href="#">Paie</a></div>
-            <div class="footer-col"><h4>Solutions</h4><a href="#">Petites entreprises</a><a href="#">PME</a><a href="#">Grandes entreprises</a><a href="#">Sur mesure</a></div>
-            <div class="footer-col"><h4>Support</h4><a href="#">Centre d'aide</a><a href="tel:+2250747682027">+225 07 47 68 20 27</a><a href="tel:+2250566750669">+225 05 66 75 06 69</a><a href="mailto:yanick.hamien@ramyaci.tech">yanick.hamien@ramyaci.tech</a></div>
-        </div>
-        <div class="footer-bottom"><span>Confidentialité · Contact · Support</span><span>Powered by WannyGest</span></div>
-    </footer>
-</body>
-</html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WannyHotel — Système de gestion hôtelière</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#1a1a2e;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px}
+.logo{font-size:48px;margin-bottom:10px}.brand{font-size:38px;font-weight:900;color:#d4a574;margin-bottom:4px}.sub{font-size:16px;opacity:0.5;margin-bottom:30px}
+.desc{max-width:550px;font-size:14px;line-height:1.7;opacity:0.7;margin-bottom:36px}
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:700px;margin-bottom:36px}
+.feat{background:rgba(255,255,255,0.06);border-radius:12px;padding:20px 14px;font-size:12px}.feat .icon{font-size:28px;margin-bottom:8px}.feat h3{font-size:13px;color:#d4a574;margin-bottom:4px}
+.actions{display:flex;gap:14px}.btn-h{padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;transition:all 0.3s}
+.btn-gold{background:#d4a574;color:#1a1a2e}.btn-gold:hover{background:#c49564}.btn-out{border:2px solid rgba(255,255,255,0.2);color:#fff}.btn-out:hover{background:rgba(255,255,255,0.1)}
+.footer{margin-top:40px;font-size:11px;opacity:0.3}.flash{background:rgba(255,255,255,0.1);border-radius:8px;padding:10px;margin-bottom:14px;font-size:13px}
+@media(max-width:600px){.features{grid-template-columns:1fr}.brand{font-size:28px}}
+</style></head><body>
+<div style="margin-bottom:16px"><img src="/static/logo_wannyhotel.png" alt="WannyHotel" style="height:120px"></div><div class="brand">WannyHotel</div><div class="sub">Gérez votre établissement avec précision</div>
+<div class="desc">WannyHotel est un PMS complet pour gérer votre établissement : réservations, check-in/out, gestion des chambres, ménage, facturation, restaurant, événements et rapports d'occupation.</div>
+<div class="features">
+<div class="feat"><div class="icon">🛏️</div><h3>Hébergement</h3>Réservations, check-in/out, planning chambres</div>
+<div class="feat"><div class="icon">🍽️</div><h3>Restaurant</h3>Stock cuisine/bar, gestion des consommations</div>
+<div class="feat"><div class="icon">📊</div><h3>Rapports</h3>Taux d'occupation, RevPAR, CA par période</div>
+</div>
+{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for cat, msg in messages %}<div class="flash">{{ msg }}</div>{% endfor %}{% endif %}{% endwith %}
+<div class="actions"><a href="/booking" class="btn-h" style="background:linear-gradient(135deg,#B8860B,#DAA520);color:#fff;padding:12px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px">📅 Réserver en ligne</a> <a href="/client/login" class="btn-h" style="background:rgba(255,255,255,0.15);color:#fff;padding:12px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;border:2px solid rgba(255,255,255,0.3)">👤 Espace Client</a> <a href="/login" class="btn-h" style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);padding:12px 28px;border-radius:10px;text-decoration:none;font-weight:600;font-size:13px">🔐 Staff</a></div>
+<div class="footer">WannyHotel © 2026 — WannyHotel<br>+225 07 47 68 20 27 · contact@wannyhotel.com</div>
+</body></html>
