@@ -1,5 +1,5 @@
 {% extends "base.html" %}{% block title %}WannyHotel - Chambres{% endblock %}{% block content %}
-<div class="page-header"><h1>🛏️ Plan des chambres</h1><p><a href="/chambres/types" class="btn btn-outline btn-sm">Gérer les types</a></p></div>
+<div class="page-header"><h1>🛏️ Plan des chambres</h1><p><a href="/room-types" class="btn btn-outline btn-sm">Gérer les types</a></p></div>
 <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
 <span class="badge-s green">🟢 Disponible</span><span class="badge-s" style="background:#fde8e8;color:#c53030">🔴 Occupée</span>
 <span class="badge-s orange">🟡 À nettoyer</span><span class="badge-s" style="background:#e0e0e0">⚫ Maintenance</span>
@@ -7,17 +7,20 @@
 </div>
 <div class="rooms-grid">{% for r in rooms %}
 <div class="room-card {% if r.status=='occupee' %}occupied{% elif r.cleaning_status=='a_nettoyer' %}dirty{% elif r.status=='maintenance' %}maintenance{% else %}available{% endif %}">
+{% if r.images %}
+<div style="height:80px;border-radius:8px 8px 0 0;background:url('/uploads/rooms/{{ r.images.split(',')[0] }}') center/cover;margin:-10px -10px 8px -10px"></div>
+{% endif %}
 <div class="room-num">{{ r.number }}</div>
-<div>{{ r.type_name or 'Standard' }}</div>
-{% if r.current_guest %}<div style="font-weight:600;margin-top:4px">{{ r.current_guest }}</div>{% endif %}
+<div>{{ r.type_name or 'Standard' }} — {{ '{:,.0f}'.format(r.base_price or 0) }} F</div>
+{% if r.current_guest %}<div style="font-weight:600;margin-top:4px">👤 {{ r.current_guest }}</div>{% endif %}
 {% if r.cleaning_status=='a_nettoyer' %}<div>🧹 À nettoyer</div>{% endif %}
 </div>{% endfor %}
-{% if not rooms %}<p style="text-align:center;color:#999;padding:30px;grid-column:1/-1">Aucune chambre. Ajoutez d'abord un <a href="/chambres/types">type de chambre</a>.</p>{% endif %}
+{% if not rooms %}<p style="text-align:center;color:#999;padding:30px;grid-column:1/-1">Aucune chambre. Ajoutez d'abord un <a href="/room-types">type de chambre</a>.</p>{% endif %}
 </div>
 <div class="modal-bg" id="addM"><div class="modal"><h3>🛏️ Ajouter une chambre</h3><form method="post" action="/chambres/add" enctype="multipart/form-data">
 <div class="form-row"><div class="form-group"><label>Numéro *</label><input type="text" name="number" required placeholder="101"></div>
 <div class="form-group"><label>Étage</label><input type="number" name="floor" value="1"></div></div>
 <div class="form-group"><label>Type</label><select name="room_type_id">{% for t in types %}<option value="{{ t.id }}">{{ t.name }} ({{ '{:,.0f}'.format(t.base_price) }} F)</option>{% endfor %}</select></div>
-<div class="form-group"><label>📸 Photos de la chambre</label><input type="file" name="images" multiple accept="image/*" style="padding:8px;border:1.5px dashed #ccc;border-radius:8px;width:100%;cursor:pointer;background:#fafafa"><div style="font-size:10px;color:#888;margin-top:3px">JPG, PNG, WEBP — visibles sur la page de réservation</div></div>
+<div class="form-group"><label>📸 Photos de la chambre</label><input type="file" name="images" multiple accept="image/*" style="padding:8px;border:1.5px dashed #ccc;border-radius:8px;width:100%;cursor:pointer;background:#fafafa"><div style="font-size:10px;color:#888;margin-top:3px">JPG, PNG, WEBP — La 1ère photo sera utilisée comme photo du type de chambre</div></div>
 <div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-gold">Ajouter</button></div></form></div></div>
 {% endblock %}

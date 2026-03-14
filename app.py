@@ -197,8 +197,9 @@ def room_types():
 @app.route('/chambres/add', methods=['POST'])
 @login_required
 def room_add():
+    rt_id = int(request.form['room_type_id']) if request.form.get('room_type_id') else None
     rid = db_insert('rooms', number=request.form['number'], floor=int(request.form.get('floor',0) or 0),
-        room_type_id=int(request.form['room_type_id']) if request.form.get('room_type_id') else None)
+        room_type_id=rt_id)
     # Handle images
     images = request.files.getlist('images')
     saved = []
@@ -211,7 +212,32 @@ def room_add():
                 saved.append(fname)
     if saved:
         db_update('rooms', rid, images=','.join(saved))
+        # Also set room_type image if not yet set
+        if rt_id:
+            conn = get_db()
+            rt = conn.execute("SELECT image FROM room_types WHERE id=?", (rt_id,)).fetchone()
+            if rt and not rt['image']:
+                conn.execute("UPDATE room_types SET image=? WHERE id=?", (saved[0], rt_id))
+                conn.commit()
+            conn.close()
     flash("Chambre ajoutée", "success"); return redirect('/chambres')
+
+@app.route('/room-types/<int:rtid>/image', methods=['POST'])
+@login_required
+def room_type_image(rtid):
+    """Upload image pour un type de chambre."""
+    if 'image' in request.files:
+        img = request.files['image']
+        if img and img.filename:
+            ext = os.path.splitext(img.filename)[1].lower()
+            if ext in ('.jpg', '.jpeg', '.png', '.webp'):
+                fname = f"type_{rtid}{ext}"
+                img.save(os.path.join(app.config['ROOMS_IMG'], fname))
+                conn = get_db()
+                conn.execute("UPDATE room_types SET image=? WHERE id=?", (fname, rtid))
+                conn.commit(); conn.close()
+                flash("Photo du type mise à jour", "success")
+    return redirect('/room-types')
 
 @app.route('/uploads/rooms/<path:filename>')
 def room_image(filename):

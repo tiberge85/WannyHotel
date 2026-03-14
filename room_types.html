@@ -1,14 +1,38 @@
 {% extends "base.html" %}{% block title %}WannyHotel - Types de chambres{% endblock %}{% block content %}
-<div class="page-header"><h1>🏷️ Types de chambres</h1></div>
-<div class="card"><div class="card-header"><h3>Types</h3><button class="btn btn-gold btn-sm" onclick="document.getElementById('addM').classList.add('active')">+ Type</button></div><div class="card-body">
-{% if types %}<div class="table-wrap"><table><thead><tr><th>Nom</th><th>Tarif/nuit</th><th>Capacité</th><th>Équipements</th></tr></thead>
-<tbody>{% for t in types %}<tr><td><strong>{{ t.name }}</strong></td><td>{{ '{:,.0f}'.format(t.base_price) }} F</td><td>{{ t.capacity }} pers.</td><td style="font-size:11px">{{ t.amenities or '-' }}</td></tr>{% endfor %}</tbody></table></div>
-{% else %}<p style="text-align:center;color:#999;padding:20px">Créez votre premier type</p>{% endif %}</div></div>
-<div class="modal-bg" id="addM"><div class="modal"><h3>Nouveau type</h3><form method="post">
-<div class="form-group"><label>Nom *</label><input type="text" name="name" required placeholder="Standard, Suite, VIP..."></div>
-<div class="form-row"><div class="form-group"><label>Tarif/nuit (F)</label><input type="number" name="base_price" step="1000" value="25000"></div>
-<div class="form-group"><label>Capacité</label><input type="number" name="capacity" value="2"></div></div>
+<div class="page-header"><h1>🏷️ Types de chambres</h1><a href="/chambres" class="btn btn-outline btn-sm">← Chambres</a></div>
+{% if types %}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:16px">
+{% for t in types %}
+<div class="card" style="overflow:hidden">
+    {% if t.image %}
+    <div style="height:140px;background:url('/uploads/rooms/{{ t.image }}') center/cover"></div>
+    {% else %}
+    <div style="height:140px;background:linear-gradient(135deg,#1a3a5c,#2a5a8c);display:flex;align-items:center;justify-content:center;color:#fff;font-size:40px">🛏️</div>
+    {% endif %}
+    <div class="card-body" style="padding:14px">
+        <h3 style="color:#1a3a5c;margin-bottom:4px">{{ t.name }}</h3>
+        <div style="font-size:20px;font-weight:800;color:#B8860B">{{ '{:,.0f}'.format(t.base_price) }} F<span style="font-size:11px;color:#888;font-weight:400">/nuit</span></div>
+        <div style="font-size:12px;color:#888;margin-top:4px">{{ t.capacity }} pers. · {{ t.amenities or 'Standard' }}</div>
+        {% if t.description %}<div style="font-size:11px;color:#666;margin-top:4px">{{ t.description }}</div>{% endif %}
+        <form method="post" action="/room-types/{{ t.id }}/image" enctype="multipart/form-data" style="margin-top:10px">
+            <label style="display:inline-block;padding:4px 10px;background:#f0f4f8;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;color:#1a3a5c">
+                📸 {% if t.image %}Changer{% else %}Ajouter{% endif %} photo
+                <input type="file" name="image" accept="image/*" onchange="this.form.submit()" style="display:none">
+            </label>
+        </form>
+    </div>
+</div>
+{% endfor %}
+</div>
+{% else %}<div class="card"><div class="card-body" style="text-align:center;color:#999;padding:30px">Créez votre premier type</div></div>{% endif %}
+
+<div class="card"><div class="card-header"><h3>+ Nouveau type</h3></div><div class="card-body">
+<form method="post">
+<div class="form-row"><div class="form-group"><label>Nom *</label><input type="text" name="name" required placeholder="Standard, Suite, VIP..."></div>
+<div class="form-group"><label>Tarif/nuit (F)</label><input type="number" name="base_price" step="1000" value="25000"></div></div>
+<div class="form-row"><div class="form-group"><label>Capacité</label><input type="number" name="capacity" value="2"></div>
+<div class="form-group"><label>Équipements</label><input type="text" name="amenities" placeholder="Wifi, TV, Clim, Minibar..."></div></div>
 <div class="form-group"><label>Description</label><input type="text" name="description"></div>
-<div class="form-group"><label>Équipements</label><input type="text" name="amenities" placeholder="Wifi, TV, Clim, Minibar..."></div>
-<div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-gold">Créer</button></div></form></div></div>
+<button type="submit" class="btn btn-gold">Créer le type</button>
+</form></div></div>
 {% endblock %}

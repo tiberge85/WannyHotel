@@ -245,9 +245,7 @@ def get_available_room_types(checkin, checkout):
     types = conn.execute("SELECT * FROM room_types ORDER BY base_price ASC").fetchall()
     result = []
     for t in types:
-        # Count total rooms of this type
         total = conn.execute("SELECT COUNT(*) FROM rooms WHERE room_type_id=?", (t['id'],)).fetchone()[0]
-        # Count rooms occupied during the period
         occupied = conn.execute("""SELECT COUNT(DISTINCT r.room_id) FROM reservations r
             JOIN rooms rm ON r.room_id=rm.id
             WHERE rm.room_type_id=? AND r.status IN ('confirmee','en_cours')
@@ -257,6 +255,11 @@ def get_available_room_types(checkin, checkout):
         d = dict(t)
         d['total_rooms'] = total
         d['available'] = available
+        # Fallback: if room_type has no image, use first room's image
+        if not d.get('image'):
+            room_img = conn.execute("SELECT images FROM rooms WHERE room_type_id=? AND images != '' AND images IS NOT NULL LIMIT 1", (t['id'],)).fetchone()
+            if room_img and room_img['images']:
+                d['image'] = room_img['images'].split(',')[0].strip()
         if total > 0:
             result.append(d)
     conn.close()
