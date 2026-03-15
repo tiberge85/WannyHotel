@@ -252,7 +252,7 @@ def room_add():
             conn.close()
     flash("Chambre ajoutée", "success"); return redirect('/chambres')
 
-@app.route('/room-types/<int:rtid>/image', methods=['POST'])
+@app.route('/chambres/types/<int:rtid>/image', methods=['POST'])
 @login_required
 def room_type_image(rtid):
     """Upload image pour un type de chambre."""
@@ -267,7 +267,7 @@ def room_type_image(rtid):
                 conn.execute("UPDATE room_types SET image=? WHERE id=?", (fname, rtid))
                 conn.commit(); conn.close()
                 flash("Photo du type mise à jour", "success")
-    return redirect('/room-types')
+    return redirect('/chambres/types')
 
 @app.route('/uploads/rooms/<path:filename>')
 def room_image(filename):

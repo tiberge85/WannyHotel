@@ -1,5 +1,5 @@
 {% extends "base.html" %}{% block title %}WannyHotel - Chambres{% endblock %}{% block content %}
-<div class="page-header"><h1>🛏️ Plan des chambres</h1><p><a href="/room-types" class="btn btn-outline btn-sm">Gérer les types</a></p></div>
+<div class="page-header"><h1>🛏️ Plan des chambres</h1><p><a href="/chambres/types" class="btn btn-outline btn-sm">Gérer les types</a></p></div>
 <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
 <span class="badge-s green">🟢 Disponible</span><span class="badge-s" style="background:#fde8e8;color:#c53030">🔴 Occupée</span>
 <span class="badge-s orange">🟡 À nettoyer</span><span class="badge-s" style="background:#e0e0e0">⚫ Maintenance</span>
@@ -15,7 +15,7 @@
 {% if r.current_guest %}<div style="font-weight:600;margin-top:4px">👤 {{ r.current_guest }}</div>{% endif %}
 {% if r.cleaning_status=='a_nettoyer' %}<div>🧹 À nettoyer</div>{% endif %}
 </div>{% endfor %}
-{% if not rooms %}<p style="text-align:center;color:#999;padding:30px;grid-column:1/-1">Aucune chambre. Ajoutez d'abord un <a href="/room-types">type de chambre</a>.</p>{% endif %}
+{% if not rooms %}<p style="text-align:center;color:#999;padding:30px;grid-column:1/-1">Aucune chambre. Ajoutez d'abord un <a href="/chambres/types">type de chambre</a>.</p>{% endif %}
 </div>
 <div class="modal-bg" id="addM"><div class="modal"><h3>🛏️ Ajouter une chambre</h3><form method="post" action="/chambres/add" enctype="multipart/form-data">
 <div class="form-row"><div class="form-group"><label>Numéro *</label><input type="text" name="number" required placeholder="101"></div>

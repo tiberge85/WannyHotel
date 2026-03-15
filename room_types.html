@@ -14,7 +14,7 @@
         <div style="font-size:20px;font-weight:800;color:#B8860B">{{ '{:,.0f}'.format(t.base_price) }} F<span style="font-size:11px;color:#888;font-weight:400">/nuit</span></div>
         <div style="font-size:12px;color:#888;margin-top:4px">{{ t.capacity }} pers. · {{ t.amenities or 'Standard' }}</div>
         {% if t.description %}<div style="font-size:11px;color:#666;margin-top:4px">{{ t.description }}</div>{% endif %}
-        <form method="post" action="/room-types/{{ t.id }}/image" enctype="multipart/form-data" style="margin-top:10px">
+        <form method="post" action="/chambres/types/{{ t.id }}/image" enctype="multipart/form-data" style="margin-top:10px">
             <label style="display:inline-block;padding:4px 10px;background:#f0f4f8;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;color:#1a3a5c">
                 📸 {% if t.image %}Changer{% else %}Ajouter{% endif %} photo
                 <input type="file" name="image" accept="image/*" onchange="this.form.submit()" style="display:none">
