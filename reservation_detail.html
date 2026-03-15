@@ -6,11 +6,12 @@
 <div class="stat-card"><div class="stat-icon green">✅</div><div><div class="stat-num">{{ '{:,.0f}'.format(total_paid) }}</div><div class="stat-label">Payé (F)</div></div></div>
 <div class="stat-card"><div class="stat-icon {% if balance > 0 %}red{% else %}green{% endif %}">{% if balance > 0 %}⚠️{% else %}✅{% endif %}</div><div><div class="stat-num">{{ '{:,.0f}'.format(balance) }}</div><div class="stat-label">Solde (F)</div></div></div>
 </div>
-<div style="display:flex;gap:8px;margin-bottom:14px">
+<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
 {% if res.status=='confirmee' %}<a href="/reservations/{{ res.id }}/checkin" class="btn btn-gold">📥 Check-in</a>{% endif %}
-{% if res.status=='en_cours' %}<a href="/reservations/{{ res.id }}/checkout" class="btn btn-primary">📤 Check-out</a>{% endif %}
+{% if res.status=='en_cours' %}<a href="/reservations/{{ res.id }}/checkout" class="btn btn-primary">📤 Check-out</a>
+<button class="btn btn-outline btn-sm" onclick="document.getElementById('prolongM').classList.add('active')">📅 Prolonger</button>{% endif %}
 <a href="/reservations/{{ res.id }}/edit" class="btn btn-outline btn-sm">✏️ Modifier</a>
-<a href="/invoice/{{ res.id }}" class="btn btn-outline btn-sm" target="_blank">🧾 Facture</a>
+<a href="/invoice/{{ res.id }}" class="btn btn-outline btn-sm" target="_blank">🧾 Facture {% if balance <= 0 and total_charges > 0 %}<span style="background:#2e7d32;color:#fff;padding:1px 6px;border-radius:8px;font-size:9px">PAYÉ</span>{% endif %}</a>
 <a href="/invoice/{{ res.id }}/pdf" class="btn btn-outline btn-sm">📥 PDF</a>
 <a href="/payment/{{ res.id }}" class="btn btn-outline btn-sm" target="_blank">💰 Paiement</a>
 <a href="/whatsapp/{{ res.id }}" class="btn btn-sm" style="background:#25D366;color:#fff" target="_blank">📱 WhatsApp</a>
@@ -44,4 +45,11 @@
 <div class="form-group"><label>Moyen</label><select name="method"><option>espece</option><option>carte</option><option>virement</option><option>mobile_money</option><option>cheque</option></select></div></div>
 <div class="form-group"><label>Référence</label><input type="text" name="reference"></div>
 <div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-gold">Valider</button></div></form></div></div>
+<!-- Prolongation Modal -->
+<div class="modal-bg" id="prolongM"><div class="modal"><h3>📅 Prolonger le séjour</h3>
+<p style="font-size:13px;color:#666;margin-bottom:12px">Départ actuel : <strong>{{ res.checkout_date }}</strong> · Tarif : {{ '{:,.0f}'.format(res.rate_per_night) }} F/nuit</p>
+<form method="post" action="/reservations/{{ res.id }}/prolonger">
+<div class="form-group"><label>Nouvelle date de départ *</label><input type="date" name="new_checkout" min="{{ res.checkout_date }}" required></div>
+<p style="font-size:11px;color:#888;margin:8px 0">Les nuitées supplémentaires seront automatiquement ajoutées aux charges de la réservation.</p>
+<div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-bg').classList.remove('active')">Annuler</button><button type="submit" class="btn btn-gold">📅 Prolonger</button></div></form></div></div>
 {% endblock %}

@@ -18,7 +18,13 @@
         .sidebar-nav a:hover{background:rgba(255,255,255,0.06);color:#fff}
         .sidebar-nav a.active{background:rgba(212,165,116,0.15);color:#d4a574;border-left-color:#d4a574}
         .sidebar-nav .sep{height:1px;background:rgba(255,255,255,0.06);margin:6px 14px}
-        .sidebar-nav .section{color:rgba(255,255,255,0.3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;padding:10px 18px 4px}
+        .sidebar-nav .section{color:rgba(255,255,255,0.3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;padding:10px 18px 4px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none}
+        .sidebar-nav .section:hover{color:rgba(255,255,255,0.6)}
+        .sidebar-nav .section .arrow{font-size:8px;transition:transform 0.2s}
+        .sidebar-nav .sec-items{overflow:hidden;transition:max-height 0.3s ease}
+        .sidebar-nav .sec-items.collapsed{max-height:0!important}
+        .notif-badge{background:#ef5350;color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;animation:pulse 2s infinite}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
         .badge{background:#d4a574;color:#1a1a2e;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;margin-left:auto}
         .sidebar-footer{padding:10px 16px;border-top:1px solid rgba(255,255,255,0.06)}.sidebar-footer a{color:rgba(255,255,255,0.4);text-decoration:none;font-size:12px}
         .main{flex:1;margin-left:250px;padding:22px 26px}
@@ -77,43 +83,54 @@
         <div class="sidebar-user"><div class="name">{{ current_user.full_name }}</div><div class="role">{{ current_user.role }}</div></div>
         <div class="sidebar-nav">
             <a href="/dashboard" class="{% if page=='dashboard' %}active{% endif %}">📊 Tableau de bord</a>
-            <div class="sep"></div>
-            <div class="section">Hébergement</div>
-            <a href="/reservations" class="{% if page=='reservations' %}active{% endif %}">📋 Réservations</a>
-<a href="/online-bookings" class="{% if page=='online' %}active{% endif %}">🌐 Résa. en ligne</a>
-            <a href="/chambres" class="{% if page=='chambres' %}active{% endif %}">🛏️ Chambres</a>
-            <a href="/planning" class="{% if page=='planning' %}active{% endif %}">📅 Planning {% if not check_feature('planning') %}🔒{% endif %}</a>
-            <a href="/guests" class="{% if page=='guests' %}active{% endif %}">👤 Clients</a>
-            <a href="/housekeeping" class="{% if page=='housekeeping' %}active{% endif %}">🧹 Ménage</a>
-            <div class="sep"></div>
-            <div class="section">Services</div>
-            <a href="/restaurant" class="{% if page=='restaurant' %}active{% endif %}">🍽️ Restaurant {% if not check_feature('restaurant') %}🔒{% endif %}</a>
-            <a href="/events" class="{% if page=='events' %}active{% endif %}">🎉 Événements</a>
-            <a href="/stock" class="{% if page=='stock' %}active{% endif %}">📦 Stock</a>
-            <a href="/personnel" class="{% if page=='personnel' %}active{% endif %}">👥 Personnel</a>
-            <div class="sep"></div>
-            <div class="section">Finance</div>
-            <a href="/rapports" class="{% if page=='rapports' %}active{% endif %}">📈 Rapports</a>
-            <a href="/stats" class="{% if page=='stats' %}active{% endif %}">📊 Statistiques {% if not check_feature('stats') %}🔒{% endif %}</a>
-            <a href="/night-audit" class="{% if page=='night_audit' %}active{% endif %}">🌙 Night Audit {% if not check_feature('night_audit') %}🔒{% endif %}</a>
-            <a href="/reviews" class="{% if page=='reviews' %}active{% endif %}">⭐ Avis clients</a>
-            <a href="/export/comptable" class="{% if page=='export' %}active{% endif %}">📥 Export comptable {% if not check_feature('export_comptable') %}🔒{% endif %}</a>
+            
+            <div class="section" onclick="toggleSec(this)">Hébergement <span class="arrow">▼</span></div>
+            <div class="sec-items">
+                <a href="/reservations" class="{% if page=='reservations' %}active{% endif %}">📋 Réservations</a>
+                <a href="/online-bookings" class="{% if page=='online' %}active{% endif %}">🌐 Résa. en ligne <span id="onlineBadge"></span></a>
+                <a href="/chambres" class="{% if page=='chambres' %}active{% endif %}">🛏️ Chambres</a>
+                <a href="/planning" class="{% if page=='planning' %}active{% endif %}">📅 Planning {% if not check_feature('planning') %}🔒{% endif %}</a>
+                <a href="/guests" class="{% if page=='guests' %}active{% endif %}">👤 Clients</a>
+                <a href="/housekeeping" class="{% if page=='housekeeping' %}active{% endif %}">🧹 Ménage</a>
+            </div>
+            
+            <div class="section" onclick="toggleSec(this)">Services <span class="arrow">▼</span></div>
+            <div class="sec-items">
+                <a href="/restaurant" class="{% if page=='restaurant' %}active{% endif %}">🍽️ Restaurant {% if not check_feature('restaurant') %}🔒{% endif %}</a>
+                <a href="/events" class="{% if page=='events' %}active{% endif %}">🎉 Événements</a>
+                <a href="/stock" class="{% if page=='stock' %}active{% endif %}">📦 Stock</a>
+                <a href="/personnel" class="{% if page=='personnel' %}active{% endif %}">👥 Personnel</a>
+            </div>
+            
+            <div class="section" onclick="toggleSec(this)">Finance <span class="arrow">▼</span></div>
+            <div class="sec-items">
+                <a href="/rapports" class="{% if page=='rapports' %}active{% endif %}">📈 Rapports</a>
+                <a href="/stats" class="{% if page=='stats' %}active{% endif %}">📊 Statistiques {% if not check_feature('stats') %}🔒{% endif %}</a>
+                <a href="/night-audit" class="{% if page=='night_audit' %}active{% endif %}">🌙 Night Audit {% if not check_feature('night_audit') %}🔒{% endif %}</a>
+                <a href="/reviews" class="{% if page=='reviews' %}active{% endif %}">⭐ Avis clients</a>
+                <a href="/export/comptable" class="{% if page=='export' %}active{% endif %}">📥 Export comptable {% if not check_feature('export_comptable') %}🔒{% endif %}</a>
+            </div>
+            
             {% if 'rh' in permissions or user_role in ('admin','directeur') %}
-            <div class="sep"></div>
-            <div class="section">Ressources Humaines</div>
-            <a href="/rh" class="{% if page=='rh' %}active{% endif %}">📊 Tableau de bord RH</a>
-            <a href="/rh/personnel" class="{% if page=='rh_personnel' %}active{% endif %}">👤 Personnel</a>
-            <a href="/rh/conges" class="{% if page=='rh_conges' %}active{% endif %}">🏖️ Congés</a>
-            <a href="/rh/paie" class="{% if page=='rh_paie' %}active{% endif %}">💵 Paie</a>
-            <a href="/rh/annonces" class="{% if page=='rh_annonces' %}active{% endif %}">📢 Annonces</a>
+            <div class="section" onclick="toggleSec(this)">Ressources Humaines <span class="arrow">▼</span></div>
+            <div class="sec-items">
+                <a href="/rh" class="{% if page=='rh' %}active{% endif %}">📊 Tableau de bord RH</a>
+                <a href="/rh/personnel" class="{% if page=='rh_personnel' %}active{% endif %}">👤 Personnel</a>
+                <a href="/rh/conges" class="{% if page=='rh_conges' %}active{% endif %}">🏖️ Congés</a>
+                <a href="/rh/paie" class="{% if page=='rh_paie' %}active{% endif %}">💵 Paie</a>
+                <a href="/rh/annonces" class="{% if page=='rh_annonces' %}active{% endif %}">📢 Annonces</a>
+            </div>
             {% endif %}
+            
             {% if current_user.role in ('admin','directeur') %}
-            <div class="sep"></div>
-            <a href="/admin" class="{% if page=='admin' %}active{% endif %}">⚙️ Administration</a>
-            <a href="/admin/theme" class="{% if page=='theme' %}active{% endif %}">🎨 Thème</a>
-            <a href="/admin/licence" class="{% if page=='licence' %}active{% endif %}">🔑 Licence <span style="font-size:9px;background:rgba(255,255,255,0.15);padding:1px 6px;border-radius:8px">{{ license.label }}</span></a>
-            <a href="/admin/smtp" class="{% if page=='smtp' %}active{% endif %}">📧 Email SMTP</a>
-            <a href="/admin/reset" class="{% if page=='reset' %}active{% endif %}">🔄 Réinitialiser</a>
+            <div class="section" onclick="toggleSec(this)">Administration <span class="arrow">▼</span></div>
+            <div class="sec-items">
+                <a href="/admin" class="{% if page=='admin' %}active{% endif %}">⚙️ Utilisateurs & Rôles</a>
+                <a href="/admin/theme" class="{% if page=='theme' %}active{% endif %}">🎨 Thème {% if not check_feature('theme') %}🔒{% endif %}</a>
+                <a href="/admin/licence" class="{% if page=='licence' %}active{% endif %}">🔑 Licence <span style="font-size:9px;background:rgba(255,255,255,0.15);padding:1px 6px;border-radius:8px">{{ license.label }}</span></a>
+                <a href="/admin/smtp" class="{% if page=='smtp' %}active{% endif %}">📧 Email SMTP</a>
+                <a href="/admin/reset" class="{% if page=='reset' %}active{% endif %}">🔄 Réinitialiser</a>
+            </div>
             {% endif %}
         </div>
         <div class="sidebar-footer">
@@ -126,5 +143,48 @@
         {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for cat, msg in messages %}<div class="flash {{ cat }}">{{ msg }}</div>{% endfor %}{% endif %}{% endwith %}
         {% block content %}{% endblock %}
     </div>
+<script>
+// Collapsible sidebar sections
+function toggleSec(el){
+    var items = el.nextElementSibling;
+    if(items && items.classList.contains('sec-items')){
+        items.classList.toggle('collapsed');
+        var arrow = el.querySelector('.arrow');
+        if(arrow) arrow.textContent = items.classList.contains('collapsed') ? '▶' : '▼';
+    }
+}
+// Set max-height for smooth animation
+document.querySelectorAll('.sec-items').forEach(function(el){el.style.maxHeight=el.scrollHeight+'px'});
+
+{% if current_user %}
+// Real-time notifications (polling every 8s)
+var _lastOnline = -1;
+function checkNotifs(){
+    fetch('/api/notifications').then(function(r){return r.json()}).then(function(d){
+        var badge = document.getElementById('onlineBadge');
+        if(badge){
+            if(d.online_pending > 0){
+                badge.innerHTML = '<span class="notif-badge">'+d.online_pending+'</span>';
+                if(_lastOnline >= 0 && d.online_pending > _lastOnline){
+                    // New reservation! Show browser notification
+                    if(Notification.permission === 'granted'){
+                        new Notification('🏨 Nouvelle réservation en ligne !', {body: d.online_pending+' réservation(s) en attente'});
+                    }
+                    // Flash title
+                    var orig = document.title;
+                    document.title = '🔔 Nouvelle réservation !';
+                    setTimeout(function(){document.title = orig}, 3000);
+                }
+            } else { badge.innerHTML = ''; }
+            _lastOnline = d.online_pending;
+        }
+    }).catch(function(){});
+}
+checkNotifs();
+setInterval(checkNotifs, 8000);
+// Request notification permission
+if('Notification' in window && Notification.permission === 'default'){Notification.requestPermission();}
+{% endif %}
+</script>
 </body>
 </html>

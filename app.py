@@ -344,17 +344,25 @@ def online_booking_confirm(bid):
             rid, ref = create_reservation(guest_id, room['id'], ob['checkin_date'], ob['checkout_date'],
                 rate, ob.get('adults', 1), ob.get('children', 0), 'online', ob.get('notes', ''), session['user_id'])
             db_update('online_bookings', bid, status='confirmee', processed_by=session['user_id'], reservation_id=rid)
+            # Create QR code for check-in
+            qr_token = secrets.token_hex(16)
+            db_insert('qr_checkins', reservation_id=rid, token=qr_token)
+            # Create pre-check-in
+            pc_token = secrets.token_hex(16)
+            db_insert('precheckin', reservation_id=rid, token=pc_token)
             # Send notification to guest
             token = create_notification(guest_id, rid, 'confirmation',
                 f"Votre réservation {ref} est confirmée ! Arrivée : {ob['checkin_date']}, Départ : {ob['checkout_date']}.")
-            # Send email
+            # Send email with QR code + pre-check-in
             if ob.get('guest_email'):
                 base_url = request.host_url.rstrip('/')
+                qr_url = f"{base_url}/checkin/scan/{qr_token}"
+                qr_img = f"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={qr_url}"
                 send_email_notification(ob['guest_email'],
-                    f"✅ Réservation {ref} confirmée — WannyHotel",
+                    f"✅ Réservation {ref} confirmée — {get_hotel_setting('hotel_name','WannyHotel')}",
                     f"""<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto">
                     <div style="background:linear-gradient(135deg,#B8860B,#DAA520);padding:20px;text-align:center;border-radius:12px 12px 0 0">
-                    <h1 style="color:#fff;margin:0;font-size:24px">WannyHotel</h1></div>
+                    <h1 style="color:#fff;margin:0;font-size:24px">{get_hotel_setting('hotel_name','WannyHotel')}</h1></div>
                     <div style="padding:24px;background:#fff;border:1px solid #eee">
                     <h2 style="color:#1a6b5a">✅ Réservation confirmée</h2>
                     <p>Bonjour <strong>{ob['guest_first_name']} {ob['guest_last_name']}</strong>,</p>
@@ -363,12 +371,19 @@ def online_booking_confirm(bid):
                     <tr><td style="padding:6px 0;color:#888">Arrivée</td><td style="padding:6px 0;font-weight:700">{ob['checkin_date']}</td></tr>
                     <tr><td style="padding:6px 0;color:#888">Départ</td><td style="padding:6px 0;font-weight:700">{ob['checkout_date']}</td></tr>
                     </table>
-                    <div style="text-align:center;margin:20px 0">
-                    <a href="{base_url}/notification/{token}" style="background:#B8860B;color:#fff;padding:12px 30px;border-radius:8px;text-decoration:none;font-weight:700">📋 Voir ma réservation</a>
+                    <div style="background:#f8faf9;border-radius:10px;padding:16px;text-align:center;margin:16px 0">
+                    <p style="font-weight:700;color:#1a3a5c;margin-bottom:8px">📱 Check-in rapide par QR Code</p>
+                    <p style="font-size:12px;color:#666;margin-bottom:10px">Présentez ce QR code à votre arrivée ou scannez-le pour confirmer votre check-in.</p>
+                    <img src="{qr_img}" alt="QR Check-in" style="width:160px;height:160px;border-radius:8px">
                     </div>
-                    <a href="{base_url}/payment/{rid}" style="display:block;text-align:center;color:#1a6b5a;margin-top:10px">💰 Payer en ligne</a>
+                    <div style="text-align:center;margin:16px 0">
+                    <a href="{base_url}/precheckin/{pc_token}" style="background:#1a3a5c;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px">📋 Compléter le pré-check-in</a>
                     </div>
-                    <div style="padding:12px;text-align:center;font-size:11px;color:#999">© 2026 WannyHotel · +225 07 47 68 20 27</div></div>""")
+                    <div style="text-align:center;margin:10px 0">
+                    <a href="{base_url}/payment/{rid}" style="background:#B8860B;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px">💰 Payer en ligne</a>
+                    </div>
+                    </div>
+                    <div style="padding:12px;text-align:center;font-size:11px;color:#999">© 2026 {get_hotel_setting('hotel_name','WannyHotel')} · +225 07 47 68 20 27</div></div>""")
             flash(f"Réservation {ref} confirmée ! Notification envoyée.", "success")
         else:
             flash("Aucune chambre disponible pour ces dates", "error")
@@ -466,6 +481,42 @@ def add_payment(rid):
     total = conn.execute("SELECT COALESCE(SUM(amount),0) FROM payments WHERE reservation_id=?", (rid,)).fetchone()[0]
     conn.execute("UPDATE reservations SET paid_amount=? WHERE id=?", (total, rid)); conn.commit(); conn.close()
     flash(f"Paiement de {amount:,.0f} F enregistré","success"); return redirect(f'/reservations/{rid}')
+
+@app.route('/reservations/<int:rid>/prolonger', methods=['POST'])
+@login_required
+def prolonger_sejour(rid):
+    """Prolonger le séjour — met à jour la date de départ et les charges."""
+    new_checkout = request.form['new_checkout']
+    conn = get_db()
+    res = conn.execute("SELECT * FROM reservations WHERE id=?", (rid,)).fetchone()
+    if not res:
+        conn.close(); flash("Réservation non trouvée","error"); return redirect('/reservations')
+    
+    old_checkout = res['checkout_date']
+    rate = res['rate_per_night']
+    
+    # Calculate extra nights
+    from datetime import datetime as _dt
+    old_dt = _dt.strptime(old_checkout, '%Y-%m-%d')
+    new_dt = _dt.strptime(new_checkout, '%Y-%m-%d')
+    extra_nights = (new_dt - old_dt).days
+    
+    if extra_nights <= 0:
+        conn.close(); flash("La nouvelle date doit être après la date de départ actuelle","error")
+        return redirect(f'/reservations/{rid}')
+    
+    # Update reservation
+    new_total_nights = res['nights'] + extra_nights
+    conn.execute("UPDATE reservations SET checkout_date=?, nights=? WHERE id=?", (new_checkout, new_total_nights, rid))
+    
+    # Add charge for extra nights
+    extra_total = extra_nights * rate
+    conn.execute("INSERT INTO charges (reservation_id, category, description, quantity, unit_price, total) VALUES (?,?,?,?,?,?)",
+                 (rid, 'hebergement', f'Prolongation ({extra_nights} nuit(s) supplémentaire(s))', extra_nights, rate, extra_total))
+    conn.commit(); conn.close()
+    
+    flash(f"Séjour prolongé de {extra_nights} nuit(s) jusqu'au {new_checkout} — {extra_total:,.0f} F ajoutés", "success")
+    return redirect(f'/reservations/{rid}')
 
 # ======================== CLIENTS ========================
 @app.route('/guests')
@@ -569,6 +620,18 @@ def event_add():
     flash("Événement créé","success"); return redirect('/events')
 
 # ======================== RAPPORTS ========================
+
+# ======================== API NOTIFICATIONS (TEMPS RÉEL) ========================
+@app.route('/api/notifications')
+@login_required
+def api_notifications():
+    conn = get_db()
+    online = conn.execute("SELECT COUNT(*) FROM online_bookings WHERE status='en_attente'").fetchone()[0]
+    hk = conn.execute("SELECT COUNT(*) FROM housekeeping WHERE status='a_faire'").fetchone()[0]
+    conn.close()
+    return {'online_pending': online, 'housekeeping_pending': hk}
+
+
 @app.route('/rapports')
 @login_required
 def rapports():
