@@ -1,0 +1,22 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WannyHotel — Check-in</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;background:linear-gradient(135deg,#0d2137,#1a4a6c);min-height:100vh;display:flex;align-items:center;justify-content:center}
+.box{background:#fff;border-radius:16px;padding:30px;width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.3);text-align:center}
+.box img{height:50px;margin-bottom:12px}h2{color:#1a3a5c;margin-bottom:14px}
+.info{background:#f8faf9;border-radius:10px;padding:14px;margin-bottom:16px;text-align:left;font-size:13px}
+.info .label{font-size:10px;color:#888;text-transform:uppercase}.info .val{font-weight:600;color:#1a3a5c}
+.btn{width:100%;padding:14px;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:#fff}
+</style></head><body>
+<div class="box"><img src="/static/logo_wannyhotel.png" alt="WannyHotel">
+<h2>✅ Confirmer votre arrivée</h2>
+<div class="info">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<div><div class="label">Client</div><div class="val">{{ res.first_name }} {{ res.last_name }}</div></div>
+<div><div class="label">Réf.</div><div class="val">{{ res.reference }}</div></div>
+<div><div class="label">Arrivée</div><div class="val">{{ res.checkin_date }}</div></div>
+<div><div class="label">Départ</div><div class="val">{{ res.checkout_date }}</div></div>
+</div></div>
+<form method="post" action="/checkin/scan/{{ token }}/confirm">
+<button type="submit" class="btn">🏨 Je confirme mon arrivée</button>
+</form>
+</div></body></html>

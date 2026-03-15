@@ -683,3 +683,158 @@ def get_rh_stats():
     except: s['masse_salariale'] = 0
     conn.close()
     return s
+
+
+# ======================== MIGRATIONS V4 ========================
+
+def migrate_v4():
+    conn = get_db()
+    conn.executescript('''
+        CREATE TABLE IF NOT EXISTS qr_checkins (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            reservation_id INTEGER, token TEXT UNIQUE,
+            guest_data_json TEXT, checked_in INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS night_audits (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            audit_date TEXT UNIQUE, rooms_occupied INTEGER DEFAULT 0,
+            rooms_available INTEGER DEFAULT 0, occupancy_rate REAL DEFAULT 0,
+            revenue_rooms REAL DEFAULT 0, revenue_restaurant REAL DEFAULT 0,
+            revenue_other REAL DEFAULT 0, revenue_total REAL DEFAULT 0,
+            checkins INTEGER DEFAULT 0, checkouts INTEGER DEFAULT 0,
+            no_shows INTEGER DEFAULT 0, notes TEXT,
+            created_by INTEGER, created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS precheckin (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            reservation_id INTEGER, token TEXT UNIQUE,
+            id_type TEXT, id_number TEXT, id_photo TEXT,
+            arrival_time TEXT, special_requests TEXT,
+            completed INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS loyalty_tiers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT, min_points INTEGER DEFAULT 0,
+            discount_percent REAL DEFAULT 0, benefits TEXT,
+            color TEXT DEFAULT '#B8860B'
+        );
+        CREATE TABLE IF NOT EXISTS hotel_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            key TEXT UNIQUE, value TEXT
+        );
+    ''')
+    # Loyalty tiers defaults
+    for name, pts, disc, color, benefits in [
+        ('Bronze', 0, 0, '#CD7F32', 'Accueil personnalisé'),
+        ('Silver', 500, 5, '#C0C0C0', 'Late checkout, -5% sur tarif'),
+        ('Gold', 1500, 10, '#FFD700', 'Surclassement, -10%, petit-déj offert'),
+        ('Platinum', 5000, 15, '#E5E4E2', 'Suite offerte, -15%, spa gratuit')
+    ]:
+        try: conn.execute("INSERT OR IGNORE INTO loyalty_tiers (name, min_points, discount_percent, color, benefits) VALUES (?,?,?,?,?)",
+                         (name, pts, disc, color, benefits))
+        except: pass
+    conn.commit(); conn.close()
+
+
+def run_night_audit(user_id):
+    """Exécute l'audit de nuit et retourne le résumé."""
+    conn = get_db()
+    today = datetime.now().strftime('%Y-%m-%d')
+    
+    # Check if already done
+    existing = conn.execute("SELECT id FROM night_audits WHERE audit_date=?", (today,)).fetchone()
+    if existing:
+        conn.close()
+        return None, "Audit déjà effectué pour aujourd'hui"
+    
+    rooms_total = conn.execute("SELECT COUNT(*) FROM rooms").fetchone()[0]
+    rooms_occ = conn.execute("SELECT COUNT(*) FROM rooms WHERE status='occupee'").fetchone()[0]
+    rooms_avail = conn.execute("SELECT COUNT(*) FROM rooms WHERE status='disponible'").fetchone()[0]
+    occ_rate = round(rooms_occ * 100 / max(rooms_total, 1), 1)
+    
+    rev_rooms = conn.execute("""SELECT COALESCE(SUM(total),0) FROM charges 
+        WHERE category='hebergement' AND date(created_at)=?""", (today,)).fetchone()[0]
+    rev_resto = conn.execute("""SELECT COALESCE(SUM(total),0) FROM restaurant_orders 
+        WHERE date(created_at)=?""", (today,)).fetchone()[0]
+    rev_other = conn.execute("""SELECT COALESCE(SUM(total),0) FROM charges 
+        WHERE category NOT IN ('hebergement','restaurant') AND date(created_at)=?""", (today,)).fetchone()[0]
+    
+    checkins = conn.execute("""SELECT COUNT(*) FROM reservations 
+        WHERE status='en_cours' AND checkin_date=?""", (today,)).fetchone()[0]
+    checkouts = conn.execute("""SELECT COUNT(*) FROM reservations 
+        WHERE status='terminee' AND checkout_date=?""", (today,)).fetchone()[0]
+    
+    conn.execute("""INSERT INTO night_audits 
+        (audit_date, rooms_occupied, rooms_available, occupancy_rate,
+         revenue_rooms, revenue_restaurant, revenue_other, revenue_total,
+         checkins, checkouts, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+        (today, rooms_occ, rooms_avail, occ_rate,
+         rev_rooms, rev_resto, rev_other, rev_rooms + rev_resto + rev_other,
+         checkins, checkouts, user_id))
+    conn.commit()
+    
+    audit = conn.execute("SELECT * FROM night_audits WHERE audit_date=?", (today,)).fetchone()
+    conn.close()
+    return dict(audit), "OK"
+
+
+def get_guest_loyalty(guest_id):
+    """Retourne le niveau fidélité d'un client."""
+    conn = get_db()
+    points = conn.execute("SELECT COALESCE(SUM(points),0) FROM loyalty_points WHERE guest_id=?", (guest_id,)).fetchone()[0]
+    tiers = conn.execute("SELECT * FROM loyalty_tiers ORDER BY min_points DESC").fetchall()
+    conn.close()
+    current_tier = {'name': 'Bronze', 'color': '#CD7F32', 'discount_percent': 0, 'benefits': ''}
+    for t in tiers:
+        if points >= t['min_points']:
+            current_tier = dict(t)
+            break
+    return {'points': points, 'tier': current_tier}
+
+
+def get_hotel_setting(key, default=''):
+    conn = get_db()
+    r = conn.execute("SELECT value FROM hotel_settings WHERE key=?", (key,)).fetchone()
+    conn.close()
+    return r['value'] if r else default
+
+def set_hotel_setting(key, value):
+    conn = get_db()
+    conn.execute("INSERT OR REPLACE INTO hotel_settings (key, value) VALUES (?,?)", (key, value))
+    conn.commit(); conn.close()
+
+
+def get_advanced_stats():
+    """Statistiques avancées pour le rapport."""
+    conn = get_db()
+    s = {}
+    # Monthly revenue (12 months)
+    s['monthly_revenue'] = [dict(r) for r in conn.execute("""
+        SELECT strftime('%Y-%m', created_at) as month, SUM(amount) as total
+        FROM payments GROUP BY month ORDER BY month DESC LIMIT 12""").fetchall()]
+    # Occupancy by day of week
+    s['occ_by_day'] = [dict(r) for r in conn.execute("""
+        SELECT CASE CAST(strftime('%w', checkin_date) AS INTEGER)
+            WHEN 0 THEN 'Dim' WHEN 1 THEN 'Lun' WHEN 2 THEN 'Mar' WHEN 3 THEN 'Mer'
+            WHEN 4 THEN 'Jeu' WHEN 5 THEN 'Ven' WHEN 6 THEN 'Sam' END as day,
+            COUNT(*) as count FROM reservations WHERE status IN ('en_cours','terminee')
+            GROUP BY strftime('%w', checkin_date) ORDER BY strftime('%w', checkin_date)""").fetchall()]
+    # Revenue by room type
+    s['rev_by_type'] = [dict(r) for r in conn.execute("""
+        SELECT rt.name, COALESCE(SUM(c.total),0) as revenue
+        FROM charges c JOIN reservations r ON c.reservation_id=r.id
+        JOIN rooms rm ON r.room_id=rm.id JOIN room_types rt ON rm.room_type_id=rt.id
+        GROUP BY rt.name ORDER BY revenue DESC""").fetchall()]
+    # Source de réservation
+    s['by_source'] = [dict(r) for r in conn.execute("""
+        SELECT source, COUNT(*) as count FROM reservations GROUP BY source ORDER BY count DESC""").fetchall()]
+    # Average stay
+    s['avg_stay'] = conn.execute("SELECT AVG(nights) FROM reservations WHERE nights > 0").fetchone()[0] or 0
+    # Total revenue
+    s['total_revenue'] = conn.execute("SELECT COALESCE(SUM(amount),0) FROM payments").fetchone()[0]
+    # Night audits
+    s['audits'] = [dict(r) for r in conn.execute("SELECT * FROM night_audits ORDER BY audit_date DESC LIMIT 30").fetchall()]
+    conn.close()
+    return s

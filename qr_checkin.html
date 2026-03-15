@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% block title %}WannyHotel - QR Check-in{% endblock %}{% block content %}
+<div class="page-header"><h1>📱 QR Code Check-in</h1></div>
+<div class="card" style="max-width:450px;margin:0 auto;text-align:center"><div class="card-body" style="padding:30px">
+<p style="font-size:14px;color:#888;margin-bottom:16px">Imprimez ou envoyez ce QR code au client. Il pourra scanner pour effectuer son check-in automatiquement.</p>
+<div style="background:#fff;border:3px solid #eee;border-radius:12px;padding:20px;display:inline-block;margin-bottom:16px">
+<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ qr_url|urlencode }}" alt="QR Code" style="width:200px;height:200px">
+</div>
+<p style="font-size:11px;color:#999;word-break:break-all;margin-bottom:16px">{{ qr_url }}</p>
+<div style="display:flex;gap:8px;justify-content:center">
+<button class="btn btn-gold" onclick="window.print()">🖨️ Imprimer</button>
+<a href="{{ qr_url }}" class="btn btn-outline" target="_blank">🔗 Tester le lien</a>
+</div>
+</div></div>
+{% endblock %}

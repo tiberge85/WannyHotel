@@ -94,7 +94,10 @@
             <div class="sep"></div>
             <div class="section">Finance</div>
             <a href="/rapports" class="{% if page=='rapports' %}active{% endif %}">📈 Rapports</a>
+            <a href="/stats" class="{% if page=='stats' %}active{% endif %}">📊 Statistiques</a>
+            <a href="/night-audit" class="{% if page=='night_audit' %}active{% endif %}">🌙 Night Audit</a>
             <a href="/reviews" class="{% if page=='reviews' %}active{% endif %}">⭐ Avis clients</a>
+            <a href="/export/comptable" class="btn btn-outline btn-sm" style="margin:4px 12px;font-size:11px">📥 Export comptable</a>
             {% if 'rh' in permissions or user_role in ('admin','directeur') %}
             <div class="sep"></div>
             <div class="section">Ressources Humaines</div>
@@ -107,6 +110,7 @@
             {% if current_user.role in ('admin','directeur') %}
             <div class="sep"></div>
             <a href="/admin" class="{% if page=='admin' %}active{% endif %}">⚙️ Administration</a>
+            <a href="/admin/theme" class="{% if page=='theme' %}active{% endif %}">🎨 Thème</a>
             <a href="/admin/smtp" class="{% if page=='smtp' %}active{% endif %}">📧 Email SMTP</a>
             <a href="/admin/reset" class="{% if page=='reset' %}active{% endif %}">🔄 Réinitialiser</a>
             {% endif %}

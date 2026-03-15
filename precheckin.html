@@ -1,0 +1,23 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WannyHotel — Pré-check-in</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;background:#f0f2f5;min-height:100vh}
+.header{background:linear-gradient(135deg,#0d2137,#1a4a6c);padding:20px;text-align:center;color:#fff}.header img{height:40px}
+.container{max-width:500px;margin:20px auto;padding:0 16px}
+.card{background:#fff;border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,0.08);overflow:hidden;margin-bottom:16px}
+.card-body{padding:20px}
+.fg{margin-bottom:12px}.fg label{font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:3px}
+.fg input,.fg select,.fg textarea{width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px}
+.btn{width:100%;padding:14px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#B8860B,#DAA520);color:#fff}
+.info{background:#f8faf9;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px}
+</style></head><body>
+<div class="header"><img src="/static/logo_wannyhotel.png" alt="WannyHotel"><h2 style="margin-top:8px">Pré-check-in en ligne</h2></div>
+<div class="container">
+<div class="info"><strong>{{ res.first_name }} {{ res.last_name }}</strong> — {{ res.reference }}<br>{{ res.checkin_date }} → {{ res.checkout_date }}</div>
+<div class="card"><div class="card-body">
+<form method="post">
+<div class="fg"><label>Type de pièce d'identité</label><select name="id_type"><option>CNI</option><option>Passeport</option><option>Permis de conduire</option><option>Carte consulaire</option></select></div>
+<div class="fg"><label>Numéro de la pièce</label><input type="text" name="id_number" required placeholder="N° de votre pièce d'identité"></div>
+<div class="fg"><label>Heure d'arrivée estimée</label><input type="time" name="arrival_time" value="14:00"></div>
+<div class="fg"><label>Demandes spéciales</label><textarea name="special_requests" rows="3" placeholder="Lit bébé, étage élevé, chambre calme..."></textarea></div>
+<button type="submit" class="btn">✅ Compléter le pré-check-in</button>
+</form></div></div></div></body></html>

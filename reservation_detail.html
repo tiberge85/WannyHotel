@@ -14,6 +14,9 @@
 <a href="/invoice/{{ res.id }}/pdf" class="btn btn-outline btn-sm">📥 PDF</a>
 <a href="/payment/{{ res.id }}" class="btn btn-outline btn-sm" target="_blank">💰 Paiement</a>
 <a href="/whatsapp/{{ res.id }}" class="btn btn-sm" style="background:#25D366;color:#fff" target="_blank">📱 WhatsApp</a>
+{% if res.status=='confirmee' %}<a href="/checkin/qr/{{ res.id }}" class="btn btn-outline btn-sm">📱 QR Check-in</a>
+<a href="/precheckin/{{ res.id }}/send" class="btn btn-outline btn-sm">📋 Pré-check-in</a>{% endif %}
+{% if res.guest_id %}<a href="/loyalty/{{ res.guest_id }}" class="btn btn-outline btn-sm">⭐ Fidélité</a>{% endif %}
 <button class="btn btn-outline" onclick="document.getElementById('chargeM').classList.add('active')">+ Charge</button>
 <button class="btn btn-outline" onclick="document.getElementById('payM').classList.add('active')">💳 Paiement</button>
 </div>

@@ -1,0 +1,35 @@
+{% extends "base.html" %}{% block title %}WannyHotel - Night Audit{% endblock %}{% block content %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<div class="page-header"><h1>🌙 Night Audit</h1>
+<form method="post" style="display:inline"><button type="submit" class="btn btn-gold btn-sm" onclick="return confirm('Lancer la clôture de journée ?')">🌙 Lancer l'audit</button></form></div>
+
+{% if audits %}
+{% set last = audits[0] %}
+<div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+    <div class="stat-card" style="border-left:4px solid #1a3a5c"><div class="stat-icon teal">🛏️</div><div class="stat-info"><div class="stat-num">{{ last.occupancy_rate }}%</div><div class="stat-label">Occupation</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #2e7d32"><div class="stat-icon green">💰</div><div class="stat-info"><div class="stat-num">{{ '{:,.0f}'.format(last.revenue_total) }}</div><div class="stat-label">Revenus du jour</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #e8672a"><div class="stat-icon orange">📥</div><div class="stat-info"><div class="stat-num">{{ last.checkins }}</div><div class="stat-label">Check-ins</div></div></div>
+    <div class="stat-card" style="border-left:4px solid #7b1fa2"><div class="stat-icon purple">📤</div><div class="stat-info"><div class="stat-num">{{ last.checkouts }}</div><div class="stat-label">Check-outs</div></div></div>
+</div>
+<div class="card" style="margin-bottom:14px"><div class="card-body" style="height:200px"><canvas id="cAudit"></canvas></div></div>
+<div class="card"><div class="card-header"><h3>Historique des audits</h3></div><div class="card-body">
+<div class="table-wrap"><table>
+<thead><tr><th>Date</th><th>Occupation</th><th>Rev. Chambres</th><th>Rev. Restaurant</th><th>Rev. Total</th><th>In</th><th>Out</th></tr></thead>
+<tbody>{% for a in audits %}<tr>
+<td><strong>{{ a.audit_date }}</strong></td><td>{{ a.occupancy_rate }}%</td>
+<td style="text-align:right">{{ '{:,.0f}'.format(a.revenue_rooms) }}</td>
+<td style="text-align:right">{{ '{:,.0f}'.format(a.revenue_restaurant) }}</td>
+<td style="text-align:right;font-weight:700">{{ '{:,.0f}'.format(a.revenue_total) }}</td>
+<td>{{ a.checkins }}</td><td>{{ a.checkouts }}</td>
+</tr>{% endfor %}</tbody></table></div></div></div>
+<script>
+new Chart(document.getElementById('cAudit'),{type:'bar',data:{
+labels:[{% for a in audits[:14]|reverse %}'{{ a.audit_date[5:] }}',{% endfor %}],
+datasets:[{label:'Revenus',data:[{% for a in audits[:14]|reverse %}{{ a.revenue_total }},{% endfor %}],backgroundColor:'#1a3a5c',borderRadius:4}]},
+options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+</script>
+{% else %}
+<div class="card"><div class="card-body" style="text-align:center;color:#999;padding:40px">
+Aucun audit. Lancez votre premier audit de nuit pour clôturer la journée.
+</div></div>{% endif %}
+{% endblock %}

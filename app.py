@@ -33,6 +33,9 @@ from models import (migrate_permissions, init_default_permissions, get_role_perm
                     migrate_rh, get_rh_employees, get_rh_employee, get_rh_stats)
 migrate_permissions()
 migrate_rh()
+from models import (migrate_v4, run_night_audit, get_guest_loyalty, 
+                    get_hotel_setting, set_hotel_setting, get_advanced_stats)
+migrate_v4()
 
 import smtplib
 from email.mime.text import MIMEText
@@ -139,7 +142,10 @@ def inject_globals():
     perms = get_role_perms(u['role']) if u else []
     return {'current_user': u, 'now': datetime.now().strftime('%Y-%m-%d'),
             'permissions': perms, 'user_role': u['role'] if u else '',
-            'ROLE_LABELS': ROLE_LABELS}
+            'ROLE_LABELS': ROLE_LABELS,
+            'hotel_name': get_hotel_setting('hotel_name', 'WannyHotel'),
+            'theme_color': get_hotel_setting('theme_color', '#1a3a5c'),
+            'theme_accent': get_hotel_setting('theme_accent', '#B8860B')}
 
 @app.route('/robots.txt')
 def robots(): return "User-agent: *\nAllow: /\n", 200, {'Content-Type':'text/plain'}
@@ -1256,6 +1262,193 @@ def whatsapp_notify(res_id):
     import urllib.parse
     wa_url = f"https://wa.me/{guest_tel}?text={urllib.parse.quote(msg)}"
     return redirect(wa_url)
+
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5001)
+
+
+# ======================== QR CODE CHECK-IN ========================
+
+@app.route('/checkin/qr/<int:res_id>')
+@login_required
+def generate_qr(res_id):
+    """Génère le QR code de check-in pour une réservation."""
+    token = secrets.token_hex(16)
+    db_insert('qr_checkins', reservation_id=res_id, token=token)
+    base_url = request.host_url.rstrip('/')
+    qr_url = f"{base_url}/checkin/scan/{token}"
+    return render_template('qr_checkin.html', page='reservations', res_id=res_id, qr_url=qr_url, token=token)
+
+@app.route('/checkin/scan/<token>')
+def qr_scan(token):
+    """Page publique de check-in par QR."""
+    conn = get_db()
+    qr = conn.execute("SELECT * FROM qr_checkins WHERE token=?", (token,)).fetchone()
+    if not qr: return "<h1>QR invalide</h1>", 404
+    if qr['checked_in']:
+        conn.close()
+        return render_template('qr_done.html', message="Check-in déjà effectué !")
+    res = conn.execute("SELECT r.*, g.first_name, g.last_name FROM reservations r LEFT JOIN guests g ON r.guest_id=g.id WHERE r.id=?", (qr['reservation_id'],)).fetchone()
+    conn.close()
+    if not res: return "<h1>Réservation non trouvée</h1>", 404
+    return render_template('qr_scan.html', res=dict(res), token=token)
+
+@app.route('/checkin/scan/<token>/confirm', methods=['POST'])
+def qr_confirm(token):
+    conn = get_db()
+    qr = conn.execute("SELECT * FROM qr_checkins WHERE token=?", (token,)).fetchone()
+    if not qr or qr['checked_in']:
+        conn.close()
+        return render_template('qr_done.html', message="Check-in déjà effectué ou lien invalide")
+    conn.execute("UPDATE qr_checkins SET checked_in=1 WHERE token=?", (token,))
+    conn.execute("UPDATE reservations SET status='en_cours' WHERE id=?", (qr['reservation_id'],))
+    conn.execute("UPDATE rooms SET status='occupee' WHERE id=(SELECT room_id FROM reservations WHERE id=?)", (qr['reservation_id'],))
+    conn.commit(); conn.close()
+    return render_template('qr_done.html', message="Check-in réussi ! Bienvenue !")
+
+
+# ======================== NIGHT AUDIT ========================
+
+@app.route('/night-audit', methods=['GET','POST'])
+@login_required
+def night_audit():
+    if request.method == 'POST':
+        audit, msg = run_night_audit(session['user_id'])
+        if audit:
+            flash(f"Audit de nuit terminé — Revenus: {audit['revenue_total']:,.0f} F", "success")
+        else:
+            flash(msg, "info")
+        return redirect('/night-audit')
+    conn = get_db()
+    audits = [dict(r) for r in conn.execute("SELECT * FROM night_audits ORDER BY audit_date DESC LIMIT 30").fetchall()]
+    conn.close()
+    return render_template('night_audit.html', page='night_audit', audits=audits)
+
+
+# ======================== PRÉ-CHECK-IN EN LIGNE ========================
+
+@app.route('/precheckin/<int:res_id>/send')
+@login_required
+def precheckin_send(res_id):
+    """Envoie le lien de pré-check-in au client."""
+    token = secrets.token_hex(16)
+    db_insert('precheckin', reservation_id=res_id, token=token)
+    res_data, _, _ = get_invoice_data(res_id)
+    if res_data and res_data.get('email'):
+        base_url = request.host_url.rstrip('/')
+        send_email_notification(res_data['email'],
+            f"Pré-check-in — {res_data['reference']} — WannyHotel",
+            f"""<div style="font-family:Arial;max-width:500px;margin:0 auto">
+            <div style="background:{get_hotel_setting('theme_color','#1a3a5c')};padding:20px;text-align:center;border-radius:12px 12px 0 0">
+            <h1 style="color:#fff;margin:0">{get_hotel_setting('hotel_name','WannyHotel')}</h1></div>
+            <div style="padding:24px;background:#fff;border:1px solid #eee">
+            <h2>Pré-check-in en ligne</h2>
+            <p>Bonjour {res_data.get('first_name','')},</p>
+            <p>Complétez votre pré-check-in avant votre arrivée pour un accueil plus rapide.</p>
+            <a href="{base_url}/precheckin/{token}" style="display:inline-block;background:#B8860B;color:#fff;padding:12px 30px;border-radius:8px;text-decoration:none;font-weight:700">Compléter le pré-check-in →</a>
+            </div></div>""")
+    flash(f"Lien de pré-check-in envoyé", "success")
+    return redirect(f'/reservations/{res_id}')
+
+@app.route('/precheckin/<token>', methods=['GET','POST'])
+def precheckin_form(token):
+    conn = get_db()
+    pc = conn.execute("SELECT * FROM precheckin WHERE token=?", (token,)).fetchone()
+    if not pc: return "<h1>Lien invalide</h1>", 404
+    res = conn.execute("SELECT r.*, g.first_name, g.last_name FROM reservations r LEFT JOIN guests g ON r.guest_id=g.id WHERE r.id=?", (pc['reservation_id'],)).fetchone()
+    conn.close()
+    if request.method == 'POST':
+        conn = get_db()
+        conn.execute("UPDATE precheckin SET id_type=?, id_number=?, arrival_time=?, special_requests=?, completed=1 WHERE token=?",
+            (request.form.get('id_type',''), request.form.get('id_number',''),
+             request.form.get('arrival_time',''), request.form.get('special_requests',''), token))
+        conn.commit(); conn.close()
+        return render_template('qr_done.html', message="Pré-check-in complété ! À bientôt !")
+    return render_template('precheckin.html', res=dict(res) if res else {}, token=token)
+
+
+# ======================== PROGRAMME FIDÉLITÉ ========================
+
+@app.route('/loyalty/<int:guest_id>')
+@login_required
+def guest_loyalty(guest_id):
+    loyalty = get_guest_loyalty(guest_id)
+    conn = get_db()
+    guest = conn.execute("SELECT * FROM guests WHERE id=?", (guest_id,)).fetchone()
+    history = [dict(r) for r in conn.execute("SELECT * FROM loyalty_points WHERE guest_id=? ORDER BY created_at DESC", (guest_id,)).fetchall()]
+    tiers = [dict(r) for r in conn.execute("SELECT * FROM loyalty_tiers ORDER BY min_points ASC").fetchall()]
+    conn.close()
+    return render_template('loyalty.html', page='guests', guest=dict(guest) if guest else {},
+                          loyalty=loyalty, history=history, tiers=tiers)
+
+@app.route('/loyalty/<int:guest_id>/add', methods=['POST'])
+@login_required
+def loyalty_add(guest_id):
+    points = int(request.form.get('points', 0))
+    action = request.form.get('action', 'manual')
+    db_insert('loyalty_points', guest_id=guest_id, points=points, action=action)
+    flash(f"+{points} points ajoutés", "success")
+    return redirect(f'/loyalty/{guest_id}')
+
+
+# ======================== THÈME PERSONNALISABLE ========================
+
+@app.route('/admin/theme', methods=['GET','POST'])
+@login_required
+def admin_theme():
+    if request.method == 'POST':
+        for key in ['hotel_name', 'theme_color', 'theme_accent', 'hotel_address',
+                     'hotel_phone', 'hotel_email', 'hotel_rc', 'hotel_cnps']:
+            if request.form.get(key):
+                set_hotel_setting(key, request.form[key])
+        flash("Thème et paramètres sauvegardés", "success")
+        return redirect('/admin/theme')
+    settings = {}
+    for key in ['hotel_name', 'theme_color', 'theme_accent', 'hotel_address',
+                 'hotel_phone', 'hotel_email', 'hotel_rc', 'hotel_cnps']:
+        settings[key] = get_hotel_setting(key, '')
+    return render_template('admin_theme.html', page='admin', settings=settings)
+
+
+# ======================== EXPORT COMPTABLE ========================
+
+@app.route('/export/comptable')
+@login_required
+def export_comptable():
+    """Export SYSCOHADA au format CSV."""
+    import csv, io
+    conn = get_db()
+    payments = conn.execute("""SELECT p.*, r.reference, g.first_name||' '||g.last_name as client
+        FROM payments p LEFT JOIN reservations r ON p.reservation_id=r.id 
+        LEFT JOIN guests g ON r.guest_id=g.id ORDER BY p.created_at""").fetchall()
+    conn.close()
+    
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=';')
+    writer.writerow(['Date', 'N° Pièce', 'Libellé', 'Débit', 'Crédit', 'Compte', 'Client'])
+    for p in payments:
+        writer.writerow([
+            p['created_at'][:10], p['reference'] or '', 
+            f"Encaissement {p['method'] or ''}", '', f"{p['amount']:.0f}",
+            '411000', p['client'] or ''
+        ])
+    
+    output.seek(0)
+    return output.getvalue(), 200, {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': f'attachment; filename=export_comptable_{datetime.now().strftime("%Y%m%d")}.csv'
+    }
+
+
+# ======================== STATISTIQUES AVANCÉES ========================
+
+@app.route('/stats')
+@login_required
+def advanced_stats():
+    stats = get_advanced_stats()
+    return render_template('stats.html', page='stats', s=stats)
+
 
 
 if __name__ == "__main__":

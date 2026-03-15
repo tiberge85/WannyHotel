@@ -1,0 +1,58 @@
+{% extends "base.html" %}{% block title %}WannyHotel - Statistiques{% endblock %}{% block content %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<div class="page-header"><h1>📊 Statistiques avancées</h1>
+<a href="/export/comptable" class="btn btn-outline btn-sm">📥 Export comptable CSV</a></div>
+
+<div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+    <div class="stat-card"><div class="stat-icon teal">💰</div><div class="stat-info"><div class="stat-num">{{ '{:,.0f}'.format(s.total_revenue) }}</div><div class="stat-label">Revenus totaux (F)</div></div></div>
+    <div class="stat-card"><div class="stat-icon orange">🛏️</div><div class="stat-info"><div class="stat-num">{{ '%.1f'|format(s.avg_stay) }}</div><div class="stat-label">Durée moy. séjour (nuits)</div></div></div>
+    <div class="stat-card"><div class="stat-icon green">📋</div><div class="stat-info"><div class="stat-num">{{ s.audits|length }}</div><div class="stat-label">Night audits</div></div></div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+<div class="card"><div class="card-header"><h3>💰 Revenus mensuels</h3></div><div class="card-body" style="height:220px"><canvas id="cRev"></canvas></div></div>
+<div class="card"><div class="card-header"><h3>📅 Réservations par jour</h3></div><div class="card-body" style="height:220px"><canvas id="cDay"></canvas></div></div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+<div class="card"><div class="card-header"><h3>🏷️ Revenus par type de chambre</h3></div><div class="card-body" style="height:200px"><canvas id="cType"></canvas></div></div>
+<div class="card"><div class="card-header"><h3>📊 Sources de réservation</h3></div><div class="card-body" style="height:200px"><canvas id="cSrc"></canvas></div></div>
+</div>
+
+{% if s.audits %}
+<div class="card"><div class="card-header"><h3>🌙 Évolution occupation (Night Audit)</h3></div><div class="card-body" style="height:200px"><canvas id="cOccH"></canvas></div></div>
+{% endif %}
+
+<script>
+// Monthly revenue
+new Chart(document.getElementById('cRev'),{type:'bar',data:{
+labels:[{% for m in s.monthly_revenue|reverse %}'{{ m.month }}',{% endfor %}],
+datasets:[{label:'Revenus',data:[{% for m in s.monthly_revenue|reverse %}{{ m.total or 0 }},{% endfor %}],backgroundColor:'#1a3a5c',borderRadius:6}]},
+options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+
+// By day of week
+new Chart(document.getElementById('cDay'),{type:'bar',data:{
+labels:[{% for d in s.occ_by_day %}'{{ d.day }}',{% endfor %}],
+datasets:[{data:[{% for d in s.occ_by_day %}{{ d.count }},{% endfor %}],backgroundColor:['#ef5350','#42a5f5','#42a5f5','#42a5f5','#42a5f5','#ff9800','#ff9800'],borderRadius:6}]},
+options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+
+// By room type
+new Chart(document.getElementById('cType'),{type:'doughnut',data:{
+labels:[{% for t in s.rev_by_type %}'{{ t.name }}',{% endfor %}],
+datasets:[{data:[{% for t in s.rev_by_type %}{{ t.revenue }},{% endfor %}],backgroundColor:['#1a3a5c','#e8672a','#2e7d32','#7b1fa2','#ff9800']}]},
+options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10}}}}}});
+
+// Source
+new Chart(document.getElementById('cSrc'),{type:'pie',data:{
+labels:[{% for src in s.by_source %}'{{ src.source or "direct" }}',{% endfor %}],
+datasets:[{data:[{% for src in s.by_source %}{{ src.count }},{% endfor %}],backgroundColor:['#1a3a5c','#e8672a','#2e7d32','#42a5f5','#ff9800']}]},
+options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10}}}}}});
+
+{% if s.audits %}
+new Chart(document.getElementById('cOccH'),{type:'line',data:{
+labels:[{% for a in s.audits[:14]|reverse %}'{{ a.audit_date[5:] }}',{% endfor %}],
+datasets:[{label:'Occupation %',data:[{% for a in s.audits[:14]|reverse %}{{ a.occupancy_rate }},{% endfor %}],borderColor:'#1a3a5c',backgroundColor:'rgba(26,58,92,0.1)',fill:true,tension:0.4}]},
+options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100}}}});
+{% endif %}
+</script>
+{% endblock %}
