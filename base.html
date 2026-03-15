@@ -97,7 +97,7 @@
             <a href="/stats" class="{% if page=='stats' %}active{% endif %}">📊 Statistiques {% if not check_feature('stats') %}🔒{% endif %}</a>
             <a href="/night-audit" class="{% if page=='night_audit' %}active{% endif %}">🌙 Night Audit {% if not check_feature('night_audit') %}🔒{% endif %}</a>
             <a href="/reviews" class="{% if page=='reviews' %}active{% endif %}">⭐ Avis clients</a>
-            <a href="/export/comptable" class="btn btn-outline btn-sm" style="margin:4px 12px;font-size:11px">📥 Export comptable</a>
+            <a href="/export/comptable" class="{% if page=='export' %}active{% endif %}">📥 Export comptable {% if not check_feature('export_comptable') %}🔒{% endif %}</a>
             {% if 'rh' in permissions or user_role in ('admin','directeur') %}
             <div class="sep"></div>
             <div class="section">Ressources Humaines</div>

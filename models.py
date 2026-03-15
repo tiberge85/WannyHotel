@@ -1,7 +1,8 @@
 import os, sqlite3, hashlib, secrets
 from datetime import datetime, timedelta
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+PERSISTENT_DIR = os.environ.get('PERSISTENT_DIR', os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(PERSISTENT_DIR, 'data')
 os.makedirs(DATA_DIR, exist_ok=True)
 DB_PATH = os.path.join(DATA_DIR, 'hotel.db')
 
@@ -888,14 +889,45 @@ LICENSE_FEATURES = {
 def get_license():
     """Retourne la licence active."""
     key = get_hotel_setting('license_key', '')
-    tier = get_hotel_setting('license_tier', 'starter')
+    tier = get_hotel_setting('license_tier', '')
+    trial_start = get_hotel_setting('trial_start', '')
+    
+    # First use: start 72h trial
+    if not tier and not trial_start:
+        set_hotel_setting('trial_start', datetime.now().isoformat())
+        set_hotel_setting('license_tier', 'trial')
+        tier = 'trial'
+        trial_start = datetime.now().isoformat()
+    
+    # Check trial expiration
+    if tier == 'trial' and trial_start:
+        try:
+            start = datetime.fromisoformat(trial_start)
+            remaining = timedelta(hours=72) - (datetime.now() - start)
+            if remaining.total_seconds() <= 0:
+                # Trial expired → downgrade to starter
+                set_hotel_setting('license_tier', 'starter')
+                tier = 'starter'
+            else:
+                hours_left = int(remaining.total_seconds() // 3600)
+                return {
+                    'key': '', 'tier': 'trial',
+                    'config': LICENSE_FEATURES['enterprise'],  # All features during trial
+                    'label': f'Essai gratuit ({hours_left}h restantes)',
+                    'is_trial': True, 'hours_left': hours_left,
+                    'trial_expired': False
+                }
+        except:
+            tier = 'starter'
+    
     if tier not in LICENSE_FEATURES:
         tier = 'starter'
     return {
-        'key': key,
-        'tier': tier,
+        'key': key, 'tier': tier,
         'config': LICENSE_FEATURES[tier],
-        'label': LICENSE_FEATURES[tier]['label']
+        'label': LICENSE_FEATURES[tier]['label'],
+        'is_trial': False, 'hours_left': 0,
+        'trial_expired': tier == 'starter' and trial_start != ''
     }
 
 def check_feature(feature):
@@ -923,25 +955,43 @@ def check_user_limit():
 
 def activate_license(key):
     """Active une licence par clé. Retourne le tier ou None."""
-    # Clés de démonstration intégrées
+    import hashlib as _hl
+    key = key.upper().strip()
+    
+    # Demo keys
     demo_keys = {
         'WANNY-STARTER-2026': 'starter',
         'WANNY-PRO-2026': 'pro',
         'WANNY-BUSINESS-2026': 'business',
         'WANNY-ENTERPRISE-2026': 'enterprise',
     }
-    tier = demo_keys.get(key.upper().strip())
+    tier = demo_keys.get(key)
     if tier:
-        set_hotel_setting('license_key', key.upper().strip())
+        set_hotel_setting('license_key', key)
         set_hotel_setting('license_tier', tier)
         return tier
-    # Clé personnalisée (format: WH-TIER-XXXXX)
-    parts = key.upper().strip().split('-')
-    if len(parts) >= 3 and parts[0] == 'WH':
+    
+    # Generated keys: WH-{TIER}-{CODE}-{CHECK}
+    parts = key.split('-')
+    if len(parts) == 4 and parts[0] == 'WH':
+        tier_map = {'S': 'starter', 'P': 'pro', 'B': 'business', 'E': 'enterprise'}
+        tier_code = parts[1]
+        code = parts[2]
+        check = parts[3]
+        expected = _hl.md5(f"WH-{tier_code}-{code}".encode()).hexdigest()[:4].upper()
+        if check == expected and tier_code in tier_map:
+            tier = tier_map[tier_code]
+            set_hotel_setting('license_key', key)
+            set_hotel_setting('license_tier', tier)
+            return tier
+    
+    # Simple format: WH-{TIER}-{CODE} (backward compat)
+    if len(parts) == 3 and parts[0] == 'WH':
         tier_map = {'S': 'starter', 'P': 'pro', 'B': 'business', 'E': 'enterprise'}
         tier = tier_map.get(parts[1])
         if tier:
-            set_hotel_setting('license_key', key.upper().strip())
+            set_hotel_setting('license_key', key)
             set_hotel_setting('license_tier', tier)
             return tier
+    
     return None

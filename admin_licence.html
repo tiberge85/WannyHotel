@@ -27,6 +27,23 @@
 <div class="page-header"><h1>🔑 Gestion de licence</h1></div>
 
 <!-- Current license -->
+{% if lic.is_trial %}
+<div style="background:linear-gradient(135deg,#ff9800,#f57f17);border-radius:14px;padding:20px 24px;color:#fff;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+    <div>
+        <h2 style="margin:0">⏳ Période d'essai — {{ lic.hours_left }}h restantes</h2>
+        <p style="opacity:0.8;font-size:13px;margin-top:4px">Toutes les fonctionnalités sont débloquées. Activez une licence avant l'expiration.</p>
+    </div>
+    <div style="font-size:48px">⏰</div>
+</div>
+{% elif lic.trial_expired %}
+<div style="background:#fde8e8;border:2px solid #ef5350;border-radius:14px;padding:16px 20px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+    <div>
+        <h3 style="color:#c53030;margin:0">⚠️ Période d'essai terminée</h3>
+        <p style="font-size:13px;color:#666;margin-top:4px">Certaines fonctionnalités sont désormais verrouillées. Activez une licence pour les débloquer.</p>
+    </div>
+    <div style="font-size:36px">🔒</div>
+</div>
+{% endif %}
 <div class="lic-current">
     <div>
         <h2>{{ lic.label }} <span class="lic-badge">{{ lic.tier }}</span></h2>

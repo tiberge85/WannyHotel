@@ -7,7 +7,10 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__, template_folder='.', static_folder='static', static_url_path='/static')
 app.secret_key = os.environ.get('SECRET_KEY', 'wh-secret-2026-hotel')
-app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+
+# PERSISTENT_DIR: sur Render, pointer vers un Render Disk pour garder les données entre déploiements
+PERSISTENT_DIR = os.environ.get('PERSISTENT_DIR', os.path.dirname(os.path.abspath(__file__)))
+app.config['UPLOAD_FOLDER'] = os.path.join(PERSISTENT_DIR, 'uploads')
 app.config['ROOMS_IMG'] = os.path.join(app.config['UPLOAD_FOLDER'], 'rooms')
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
