@@ -197,6 +197,10 @@ def logout(): session.clear(); return redirect('/')
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    # First login → show guide
+    if not session.get('guide_seen'):
+        session['guide_seen'] = True
+        return redirect('/guide')
     stats = get_dashboard_stats()
     occ_data = get_occupancy_data()
     return render_template('dashboard.html', page='dashboard', stats=stats, occ_data=occ_data)
@@ -1297,6 +1301,15 @@ def whatsapp_notify(res_id):
 
 if __name__ == "__main__":
     app.run(debug=True, port=5001)
+
+
+# ======================== GUIDE D'UTILISATION ========================
+
+@app.route('/guide')
+@login_required
+def guide():
+    lic = get_license()
+    return render_template('guide.html', page='guide', lic=lic)
 
 
 # ======================== QR CODE CHECK-IN ========================

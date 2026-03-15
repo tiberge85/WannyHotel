@@ -1,0 +1,233 @@
+{% extends "base.html" %}{% block title %}WannyHotel - Guide{% endblock %}{% block content %}
+<style>
+.guide-hero{background:linear-gradient(135deg,#0d2137,#1a4a6c);border-radius:16px;padding:36px;color:#fff;text-align:center;margin-bottom:24px;position:relative;overflow:hidden}
+.guide-hero::after{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:rgba(184,134,11,0.15);border-radius:50%}
+.guide-hero::before{content:'';position:absolute;bottom:-20px;left:-20px;width:80px;height:80px;background:rgba(184,134,11,0.1);border-radius:50%}
+.guide-hero h1{font-size:28px;font-weight:800;margin-bottom:6px;position:relative;z-index:1}
+.guide-hero p{opacity:0.7;font-size:14px;position:relative;z-index:1}
+.guide-hero .trial-badge{display:inline-block;background:rgba(255,255,255,0.15);padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;margin-top:10px}
+
+.steps{display:flex;justify-content:center;gap:6px;margin-bottom:24px;flex-wrap:wrap}
+.step-dot{width:32px;height:32px;border-radius:50%;background:#e0e0e0;color:#888;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.3s}
+.step-dot.active{background:#B8860B;color:#fff;transform:scale(1.15)}
+.step-dot.done{background:#2e7d32;color:#fff}
+
+.guide-panels{position:relative}
+.guide-panel{display:none;animation:fadeIn 0.4s ease}
+.guide-panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+.mod-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.mod-card{background:#fff;border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,0.06);overflow:hidden;transition:transform 0.2s}
+.mod-card:hover{transform:translateY(-3px)}
+.mod-top{padding:20px;text-align:center;color:#fff;position:relative}
+.mod-top .icon{font-size:36px;margin-bottom:6px}.mod-top h3{font-size:15px;font-weight:700}
+.mod-body{padding:16px}.mod-body p{font-size:12px;color:#666;line-height:1.6;margin-bottom:8px}
+.mod-body ul{font-size:12px;color:#555;padding-left:16px;margin-bottom:10px;line-height:1.7}
+.mod-body a.mod-btn{display:inline-block;padding:7px 16px;border-radius:6px;text-decoration:none;font-size:12px;font-weight:600;color:#fff}
+.mod-body .lock{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;background:#f0f0f0;color:#888}
+
+.tip-box{background:#fff8e1;border:1px solid #ffe082;border-radius:10px;padding:14px 18px;margin:14px 0;font-size:13px;line-height:1.6}
+.tip-box strong{color:#B8860B}
+
+.nav-btns{display:flex;justify-content:space-between;margin-top:20px;padding-top:16px;border-top:1px solid #eee}
+.nav-btns .btn{padding:10px 24px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;border:none}
+.btn-prev{background:#f0f0f0;color:#555}.btn-next{background:linear-gradient(135deg,#B8860B,#DAA520);color:#fff}
+.btn-finish{background:linear-gradient(135deg,#2e7d32,#43a047);color:#fff}
+</style>
+
+<div class="guide-hero">
+    <h1>🎓 Bienvenue sur {{ hotel_name }} !</h1>
+    <p>Découvrez votre système de gestion hôtelière en quelques étapes</p>
+    {% if lic.is_trial %}<div class="trial-badge">⏳ Essai gratuit — {{ lic.hours_left }}h restantes · Toutes fonctionnalités débloquées</div>{% endif %}
+</div>
+
+<div class="steps" id="stepIndicator">
+    <div class="step-dot active" onclick="showStep(0)">1</div>
+    <div class="step-dot" onclick="showStep(1)">2</div>
+    <div class="step-dot" onclick="showStep(2)">3</div>
+    <div class="step-dot" onclick="showStep(3)">4</div>
+    <div class="step-dot" onclick="showStep(4)">5</div>
+    <div class="step-dot" onclick="showStep(5)">6</div>
+</div>
+
+<div class="guide-panels" id="panels">
+
+<!-- STEP 1: Vue d'ensemble -->
+<div class="guide-panel active">
+    <h2 style="color:#1a3a5c;margin-bottom:14px">📋 Étape 1 — Vue d'ensemble</h2>
+    <p style="font-size:14px;color:#555;line-height:1.7;margin-bottom:16px">
+        WannyHotel est un <strong>PMS (Property Management System)</strong> complet pour gérer votre hôtel, résidence meublée ou maison d'hôtes. Il couvre l'ensemble des opérations quotidiennes : réservation, accueil, ménage, restauration, facturation et analyse.
+    </p>
+    <div class="mod-grid">
+        <div class="mod-card"><div class="mod-top" style="background:linear-gradient(135deg,#1a3a5c,#2a5a8c)"><div class="icon">📊</div><h3>Tableau de bord</h3></div>
+        <div class="mod-body"><p>Vue en temps réel de votre hôtel : taux d'occupation, revenus, chambres disponibles, réservations en cours.</p>
+        <ul><li>Graphiques d'occupation sur 7 jours</li><li>KPIs : RevPAR, ADR, taux d'occupation</li><li>Dernières réservations</li></ul></div></div>
+        
+        <div class="mod-card"><div class="mod-top" style="background:linear-gradient(135deg,#B8860B,#DAA520)"><div class="icon">🛏️</div><h3>Chambres</h3></div>
+        <div class="mod-body"><p>Gérez vos chambres avec une vue visuelle colorée par statut.</p>
+        <ul><li>🟢 Disponible · 🔴 Occupée · 🟡 À nettoyer</li><li>Types de chambres avec tarifs et photos</li><li>Ajout de photos visibles sur la réservation en ligne</li></ul></div></div>
+        
+        <div class="mod-card"><div class="mod-top" style="background:linear-gradient(135deg,#2e7d32,#43a047)"><div class="icon">📋</div><h3>Réservations</h3></div>
+        <div class="mod-body"><p>Cycle complet : réservation → check-in → séjour → check-out.</p>
+        <ul><li>Réservation en ligne (page publique)</li><li>Espace client avec compte</li><li>Check-in / check-out automatisé</li><li>Charges et paiements par réservation</li></ul></div></div>
+    </div>
+    
+    <div class="tip-box">💡 <strong>Premier réflexe :</strong> Allez dans <a href="/chambres/types" style="color:#B8860B">Types de chambres</a> pour créer vos catégories (Standard, Suite, VIP...), puis dans <a href="/chambres" style="color:#B8860B">Chambres</a> pour ajouter vos chambres avec des photos.</div>
+</div>
+
+<!-- STEP 2: Réservations & Clients -->
+<div class="guide-panel">
+    <h2 style="color:#1a3a5c;margin-bottom:14px">📝 Étape 2 — Réservations & Clients</h2>
+    
+    <div class="mod-grid">
+        <div class="mod-card"><div class="mod-top" style="background:linear-gradient(135deg,#e8672a,#d45a20)"><div class="icon">🌐</div><h3>Réservation en ligne</h3></div>
+        <div class="mod-body"><p>Vos clients réservent directement depuis votre site, 24h/24.</p>
+        <ul><li>Page publique avec photos et disponibilités</li><li>Le client choisit ses dates, voit les chambres disponibles</li><li>La réception confirme ou refuse</li><li>Notification email automatique au client</li></ul>
+        <a href="/booking" class="mod-btn" style="background:#e8672a" target="_blank">Voir la page →</a></div></div>
+        
+        <div class="mod-card"><div class="mod-top" style="background:linear-gradient(135deg,#7b1fa2,#9c27b0)"><div class="icon">👤</div><h3>Espace Client</h3></div>
+        <div class="mod-body"><p>Les clients créent un compte pour suivre leurs réservations.</p>
+        <ul><li>Inscription et connexion</li><li>Historique des séjours</li><li>Notifications de confirmation</li><li>Accès aux factures et paiements</li></ul></div></div>
+        
+        <div class="mod-card"><div class="mod-top" style="background:linear-gradient(135deg,#1565c0,#1976d2)"><div class="icon">💰</div><h3>Paiements Mobile Money</h3></div>
+        <div class="mod-body"><p>Intégration native des paiements africains.</p>
+        <ul><li>🟠 Orange Money</li><li>🟡 MTN MoMo</li><li>🔵 Wave</li><li>Page de paiement sécurisée par réservation</li></ul></div></div>
+    </div>
+    
+    <div class="tip-box">💡 <strong>Workflow :</strong> Client réserve en ligne → Réception confirme → Client reçoit email + lien de paiement → Check-in (manuel ou QR code) → Séjour → Check-out → Facture PDF automatique.</div>
+</div>
+
+<!-- STEP 3: Services -->
+<div class="guide-panel">
+    <h2 style="color:#1a3a5c;margin-bottom:14px">🍽️ Étape 3 — Services de l'hôtel</h2>
+    
+    <div class="mod-grid">
+        <div class="mod-card"><div class="mod-top" style="background:linear-gradient(135deg,#c53030,#e53935)"><div class="icon">🍽️</div><h3>Restaurant / Bar</h3></div>
+        <div class="mod-body"><p>Gérez les commandes du restaurant avec transfert sur chambre.</p>
+        <ul><li>Menu configurable (plats, boissons, desserts)</li><li>Commandes par table ou par chambre</li><li>TVA automatique (18%)</li><li>Transfert de la note sur la facture du séjour</li></ul>
+        {% if check_feature('restaurant') %}<a href="/restaurant" class="mod-btn" style="background:#c53030">Ouvrir →</a>{% else %}<span class="lock">🔒 Pro</span>{% endif %}</div></div>
+        
+        <div class="mod-card"><div class="mod-top" style="background:linear-gradient(135deg,#00838f,#00acc1)"><div class="icon">🧹</div><h3>Ménage</h3></div>
+        <div class="mod-body"><p>Suivi des tâches de ménage en temps réel.</p>
+        <ul><li>Tâches auto-créées au check-out</li><li>Validation → chambre redevient disponible</li><li>Historique par chambre</li></ul>
+        <a href="/housekeeping" class="mod-btn" style="background:#00838f">Ouvrir →</a></div></div>
+        
+        <div class="mod-card"><div class="mod-top" style="background:linear-gradient(135deg,#5c6bc0,#7986cb)"><div class="icon">🎉</div><h3>Événements</h3></div>
+        <div class="mod-body"><p>Salles de conférence et événements.</p>
+        <ul><li>Réservation de salles</li><li>Nombre de personnes et tarif</li><li>Planning des événements</li></ul>
+        <a href="/events" class="mod-btn" style="background:#5c6bc0">Ouvrir →</a></div></div>
+    </div>
+
+    <div class="mod-grid" style="margin-top:14px">
+        <div class="mod-card"><div class="mod-top" style="background:linear-gradient(135deg,#8d6e63,#a1887f)"><div class="icon">📦</div><h3>Stock</h3></div>
+        <div class="mod-body"><p>Linge, produits d'entretien, minibar, fournitures.</p>
+        <ul><li>Entrées / sorties de stock</li><li>Alertes stock bas</li><li>Historique des mouvements</li></ul></div></div>
+        
+        <div class="mod-card"><div class="mod-top" style="background:linear-gradient(135deg,#37474f,#546e7a)"><div class="icon">📅</div><h3>Planning visuel</h3></div>
+        <div class="mod-body"><p>Vue d'ensemble des réservations par chambre.</p>
+        <ul><li>Barres colorées par statut</li><li>Nom du client et dates au survol</li></ul>
+        {% if check_feature('planning') %}<a href="/planning" class="mod-btn" style="background:#37474f">Ouvrir →</a>{% else %}<span class="lock">🔒 Business</span>{% endif %}</div></div>
+    </div>
+</div>
+
+<!-- STEP 4: Communication & Fidélité -->
+<div class="guide-panel">
+    <h2 style="color:#1a3a5c;margin-bottom:14px">📱 Étape 4 — Communication & Fidélité</h2>
+    
+    <div class="mod-grid">
+        <div class="mod-card"><div class="mod-top" style="background:linear-gradient(135deg,#25D366,#128C7E)"><div class="icon">📱</div><h3>WhatsApp</h3></div>
+        <div class="mod-body"><p>Envoyez les confirmations et factures par WhatsApp en un clic.</p>
+        <ul><li>Message pré-formaté avec détails de la réservation</li><li>Liens vers la facture et le paiement</li><li>Ouvre WhatsApp directement</li></ul></div></div>
+        
+        <div class="mod-card"><div class="mod-top" style="background:linear-gradient(135deg,#B8860B,#DAA520)"><div class="icon">⭐</div><h3>Programme fidélité</h3></div>
+        <div class="mod-body"><p>4 niveaux de fidélité pour récompenser vos clients réguliers.</p>
+        <ul><li>🥉 Bronze → 🥈 Silver (-5%) → 🥇 Gold (-10%) → 💎 Platinum (-15%)</li><li>Points par séjour, restaurant, parrainage</li><li>Historique par client</li></ul>
+        {% if check_feature('loyalty') %}<a href="/reviews" class="mod-btn" style="background:#B8860B">Voir les avis →</a>{% else %}<span class="lock">🔒 Pro</span>{% endif %}</div></div>
+        
+        <div class="mod-card"><div class="mod-top" style="background:linear-gradient(135deg,#1a3a5c,#2a5a8c)"><div class="icon">📱</div><h3>QR Check-in & Pré-check-in</h3></div>
+        <div class="mod-body"><p>Accueil rapide grâce au digital.</p>
+        <ul><li><strong>QR Check-in :</strong> Le client scanne un QR code à l'arrivée</li><li><strong>Pré-check-in :</strong> Le client remplit ses infos (pièce d'identité, heure d'arrivée) avant le séjour</li></ul>
+        {% if check_feature('qr_checkin') %}<span style="color:#2e7d32;font-size:12px;font-weight:600">✅ Disponible</span>{% else %}<span class="lock">🔒 Pro</span>{% endif %}</div></div>
+    </div>
+    
+    <div class="tip-box">💡 <strong>Email automatique :</strong> Configurez votre SMTP dans <a href="/admin/smtp" style="color:#B8860B">Admin → Email SMTP</a> (Gmail recommandé) pour que les confirmations et factures soient envoyées automatiquement aux clients.</div>
+</div>
+
+<!-- STEP 5: RH & Finance -->
+<div class="guide-panel">
+    <h2 style="color:#1a3a5c;margin-bottom:14px">💼 Étape 5 — RH, Finance & Analyse</h2>
+    
+    <div class="mod-grid">
+        <div class="mod-card"><div class="mod-top" style="background:linear-gradient(135deg,#2e7d32,#43a047)"><div class="icon">👥</div><h3>Ressources Humaines</h3></div>
+        <div class="mod-body"><p>Module RH complet pour gérer votre personnel.</p>
+        <ul><li>Fiches employés (photo, CNPS, contrat, urgence)</li><li>Gestion des congés avec approbation</li><li>Bulletins de paie format Côte d'Ivoire</li><li>Annonces internes</li></ul>
+        {% if check_feature('rh') %}<a href="/rh" class="mod-btn" style="background:#2e7d32">Ouvrir →</a>{% else %}<span class="lock">🔒 Pro</span>{% endif %}</div></div>
+        
+        <div class="mod-card"><div class="mod-top" style="background:linear-gradient(135deg,#f57f17,#ff9800)"><div class="icon">🌙</div><h3>Night Audit</h3></div>
+        <div class="mod-body"><p>Clôture de journée automatisée.</p>
+        <ul><li>Revenus du jour (chambres, restaurant, autres)</li><li>Taux d'occupation du jour</li><li>Check-ins / check-outs</li><li>Historique avec graphiques</li></ul>
+        {% if check_feature('night_audit') %}<a href="/night-audit" class="mod-btn" style="background:#f57f17">Ouvrir →</a>{% else %}<span class="lock">🔒 Pro</span>{% endif %}</div></div>
+        
+        <div class="mod-card"><div class="mod-top" style="background:linear-gradient(135deg,#7b1fa2,#9c27b0)"><div class="icon">📊</div><h3>Statistiques avancées</h3></div>
+        <div class="mod-body"><p>Analysez la performance de votre hôtel.</p>
+        <ul><li>Revenus mensuels sur 12 mois</li><li>Occupation par jour de la semaine</li><li>Revenus par type de chambre</li><li>Sources de réservation</li><li>Export comptable CSV (SYSCOHADA)</li></ul>
+        {% if check_feature('stats') %}<a href="/stats" class="mod-btn" style="background:#7b1fa2">Ouvrir →</a>{% else %}<span class="lock">🔒 Business</span>{% endif %}</div></div>
+    </div>
+</div>
+
+<!-- STEP 6: Admin & Licence -->
+<div class="guide-panel">
+    <h2 style="color:#1a3a5c;margin-bottom:14px">⚙️ Étape 6 — Administration & Licence</h2>
+    
+    <div class="mod-grid">
+        <div class="mod-card"><div class="mod-top" style="background:linear-gradient(135deg,#37474f,#546e7a)"><div class="icon">⚙️</div><h3>Administration</h3></div>
+        <div class="mod-body"><p>Gérez les accès et la sécurité de votre système.</p>
+        <ul><li>7 rôles : Admin, Directeur, Réceptionniste, Restaurant, Comptable, Ménage, Technicien de surface</li><li>Permissions personnalisables par rôle</li><li>Suppression de comptes</li><li>Logs d'activité complets</li></ul>
+        <a href="/admin" class="mod-btn" style="background:#37474f">Ouvrir →</a></div></div>
+        
+        <div class="mod-card"><div class="mod-top" style="background:linear-gradient(135deg,#B8860B,#DAA520)"><div class="icon">🎨</div><h3>Personnalisation</h3></div>
+        <div class="mod-body"><p>Adaptez le logiciel à votre hôtel.</p>
+        <ul><li>Nom, adresse, téléphone, email de l'hôtel</li><li>N° RC et N° CNPS</li><li>Couleurs personnalisables</li><li>Logo (sur factures et page publique)</li></ul>
+        {% if check_feature('theme') %}<a href="/admin/theme" class="mod-btn" style="background:#B8860B">Personnaliser →</a>{% else %}<span class="lock">🔒 Business</span>{% endif %}</div></div>
+        
+        <div class="mod-card"><div class="mod-top" style="background:linear-gradient(135deg,#1a3a5c,#0d2137)"><div class="icon">🔑</div><h3>Licence</h3></div>
+        <div class="mod-body"><p>Gérez votre abonnement et débloquez des fonctionnalités.</p>
+        <ul><li><strong>Starter :</strong> 15 chambres, fonctions de base</li><li><strong>Pro :</strong> 50 chambres + Restaurant, RH, Night Audit</li><li><strong>Business :</strong> 200 chambres + Stats, Export, Thème</li><li><strong>Enterprise :</strong> Illimité</li></ul>
+        <a href="/admin/licence" class="mod-btn" style="background:#1a3a5c">Gérer ma licence →</a></div></div>
+    </div>
+    
+    <div class="tip-box">💡 <strong>Pour démarrer :</strong><br>
+    1️⃣ Créez vos <a href="/chambres/types" style="color:#B8860B">types de chambres</a> avec photos et tarifs<br>
+    2️⃣ Ajoutez vos <a href="/chambres" style="color:#B8860B">chambres</a><br>
+    3️⃣ Configurez l'<a href="/admin/smtp" style="color:#B8860B">email SMTP</a> pour les notifications<br>
+    4️⃣ Créez les <a href="/admin" style="color:#B8860B">comptes utilisateurs</a> pour votre équipe<br>
+    5️⃣ Partagez le lien de <a href="/booking" style="color:#B8860B">réservation en ligne</a> avec vos clients !
+    </div>
+</div>
+
+</div><!-- /panels -->
+
+<div class="nav-btns" id="navBtns">
+    <button class="btn btn-prev" id="prevBtn" onclick="prevStep()" style="visibility:hidden">← Précédent</button>
+    <span id="stepLabel" style="font-size:13px;color:#888">Étape 1 / 6</span>
+    <button class="btn btn-next" id="nextBtn" onclick="nextStep()">Suivant →</button>
+</div>
+
+<script>
+var current = 0, total = 6;
+function showStep(n) {
+    current = n;
+    document.querySelectorAll('.guide-panel').forEach(function(p,i){p.classList.toggle('active',i===n)});
+    document.querySelectorAll('.step-dot').forEach(function(d,i){d.classList.remove('active','done');if(i<n)d.classList.add('done');if(i===n)d.classList.add('active')});
+    document.getElementById('stepLabel').textContent = 'Étape '+(n+1)+' / '+total;
+    document.getElementById('prevBtn').style.visibility = n===0?'hidden':'visible';
+    var nb = document.getElementById('nextBtn');
+    if(n===total-1){nb.textContent='✅ Commencer';nb.className='btn btn-finish';nb.onclick=function(){window.location='/dashboard'};}
+    else{nb.textContent='Suivant →';nb.className='btn btn-next';nb.onclick=nextStep;}
+    window.scrollTo({top:0,behavior:'smooth'});
+}
+function nextStep(){if(current<total-1)showStep(current+1);else window.location='/dashboard';}
+function prevStep(){if(current>0)showStep(current-1);}
+</script>
+{% endblock %}

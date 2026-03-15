@@ -116,7 +116,10 @@
             <a href="/admin/reset" class="{% if page=='reset' %}active{% endif %}">🔄 Réinitialiser</a>
             {% endif %}
         </div>
-        <div class="sidebar-footer"><a href="/logout">🚪 Déconnexion</a></div>
+        <div class="sidebar-footer">
+            <a href="/guide">🎓 Guide</a>
+            <a href="/logout">🚪 Déconnexion</a>
+        </div>
     </nav>
     {% endif %}
     <div class="main" {% if not current_user %}style="margin-left:0"{% endif %}>
