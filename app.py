@@ -1479,6 +1479,25 @@ def precheckin_form(token):
 
 # ======================== PROGRAMME FIDÉLITÉ ========================
 
+@app.route('/loyalty')
+@login_required
+@feature_required("loyalty")
+def loyalty_dashboard():
+    """Page principale fidélité — tous les clients avec leurs points."""
+    conn = get_db()
+    guests = conn.execute("SELECT * FROM guests ORDER BY last_name").fetchall()
+    tiers = [dict(r) for r in conn.execute("SELECT * FROM loyalty_tiers ORDER BY min_points ASC").fetchall()]
+    conn.close()
+    clients = []
+    for g in guests:
+        loy = get_guest_loyalty(g['id'])
+        d = dict(g)
+        d['points'] = loy['points']
+        d['tier'] = loy['tier']
+        clients.append(d)
+    clients.sort(key=lambda x: x['points'], reverse=True)
+    return render_template('loyalty_dashboard.html', page='loyalty', clients=clients, tiers=tiers)
+
 @app.route('/loyalty/<int:guest_id>')
 @login_required
 @feature_required("loyalty")
@@ -1489,7 +1508,7 @@ def guest_loyalty(guest_id):
     history = [dict(r) for r in conn.execute("SELECT * FROM loyalty_points WHERE guest_id=? ORDER BY created_at DESC", (guest_id,)).fetchall()]
     tiers = [dict(r) for r in conn.execute("SELECT * FROM loyalty_tiers ORDER BY min_points ASC").fetchall()]
     conn.close()
-    return render_template('loyalty.html', page='guests', guest=dict(guest) if guest else {},
+    return render_template('loyalty.html', page='loyalty', guest=dict(guest) if guest else {},
                           loyalty=loyalty, history=history, tiers=tiers)
 
 @app.route('/loyalty/<int:guest_id>/add', methods=['POST'])

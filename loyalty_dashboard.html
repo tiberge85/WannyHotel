@@ -1,0 +1,44 @@
+{% extends "base.html" %}{% block title %}WannyHotel - Programme Fidélité{% endblock %}{% block content %}
+<div class="page-header"><h1>⭐ Programme Fidélité</h1></div>
+
+<!-- Tiers overview -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+{% for t in tiers %}
+<div style="text-align:center;padding:18px;border-radius:12px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,0.06)">
+    <div style="width:50px;height:50px;border-radius:50%;background:{{ t.color }};margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff">⭐</div>
+    <div style="font-size:16px;font-weight:800;color:{{ t.color }}">{{ t.name }}</div>
+    <div style="font-size:11px;color:#888">{{ t.min_points }}+ points</div>
+    <div style="font-size:12px;color:#2e7d32;font-weight:600;margin-top:2px">{% if t.discount_percent %}-{{ t.discount_percent|int }}%{% else %}—{% endif %}</div>
+    <div style="font-size:10px;color:#666;margin-top:4px">{{ t.benefits }}</div>
+</div>
+{% endfor %}
+</div>
+
+<!-- How it works -->
+<div class="card" style="margin-bottom:16px;border-left:4px solid #B8860B"><div class="card-body" style="padding:14px">
+<h3 style="color:#B8860B;font-size:14px;margin-bottom:6px">💡 Comment ça marche</h3>
+<div style="font-size:13px;color:#555;line-height:1.7">
+Les clients accumulent des <strong>points fidélité</strong> à chaque interaction avec l'hôtel. Plus ils ont de points, plus leur niveau augmente, et plus ils bénéficient de réductions et d'avantages. <br>
+<strong>Comment gagner des points :</strong> séjour (+100 pts), restaurant (+50 pts), avis client (+50 pts), parrainage (+200 pts), anniversaire (+100 pts).
+</div></div></div>
+
+<!-- Clients list -->
+<div class="card"><div class="card-header"><h3>👤 Clients — {{ clients|length }} inscrits</h3></div><div class="card-body">
+{% if clients %}
+<div class="table-wrap"><table>
+<thead><tr><th></th><th>Client</th><th>Contact</th><th style="text-align:center">Points</th><th style="text-align:center">Niveau</th><th style="text-align:center">Réduction</th><th></th></tr></thead>
+<tbody>{% for c in clients %}<tr>
+<td><div style="width:32px;height:32px;border-radius:50%;background:{{ c.tier.color }};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">{{ c.first_name[:1] }}{{ c.last_name[:1] }}</div></td>
+<td><strong>{{ c.first_name }} {{ c.last_name }}</strong></td>
+<td style="font-size:11px">{{ c.tel or '' }}<br>{{ c.email or '' }}</td>
+<td style="text-align:center;font-size:16px;font-weight:800;color:#B8860B">{{ c.points }}</td>
+<td style="text-align:center"><span style="background:{{ c.tier.color }}20;color:{{ c.tier.color }};padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;border:1px solid {{ c.tier.color }}">{{ c.tier.name }}</span></td>
+<td style="text-align:center;font-weight:600;color:#2e7d32">{% if c.tier.discount_percent %}-{{ c.tier.discount_percent|int }}%{% else %}—{% endif %}</td>
+<td><a href="/loyalty/{{ c.id }}" class="btn btn-outline btn-sm">Voir →</a></td>
+</tr>{% endfor %}</tbody>
+</table></div>
+{% else %}
+<p style="text-align:center;color:#999;padding:30px">Aucun client pour le moment. Les clients sont créés automatiquement lors des réservations.</p>
+{% endif %}
+</div></div>
+{% endblock %}
