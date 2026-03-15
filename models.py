@@ -74,7 +74,7 @@ def init_db():
             action TEXT, detail TEXT, ip TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
     ''')
     salt = secrets.token_hex(16)
-    pw = hashlib.sha256((salt + 'admin2026').encode()).hexdigest()
+    pw = hashlib.pbkdf2_hmac('sha256', 'admin2026'.encode(), salt.encode(), 100000).hex()
     try: conn.execute("INSERT INTO users (username,password_hash,salt,full_name,role) VALUES (?,?,?,?,?)",
                       ('admin',pw,salt,'Administrateur','admin'))
     except: pass
@@ -83,16 +83,44 @@ def init_db():
         except: pass
     conn.commit(); conn.close()
 
+def _check_password(stored_hash, salt, password):
+    """Vérifie le mot de passe — supporte PBKDF2 et ancien SHA256."""
+    # PBKDF2 (nouveau)
+    if hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), 100000).hex() == stored_hash:
+        return True
+    # Fallback: ancien SHA256 simple
+    if hashlib.sha256((salt + password).encode()).hexdigest() == stored_hash:
+        return True
+    return False
+
+def _hash_password(password):
+    """Hash sécurisé PBKDF2-SHA256 avec 100 000 itérations."""
+    salt = secrets.token_hex(16)
+    pw = hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), 100000).hex()
+    return pw, salt
+
+def _upgrade_password(table, user_id, password):
+    """Met à jour un ancien hash SHA256 vers PBKDF2."""
+    pw, salt = _hash_password(password)
+    conn = get_db()
+    conn.execute(f"UPDATE {table} SET password_hash=?, salt=? WHERE id=?", (pw, salt, user_id))
+    conn.commit(); conn.close()
+
 def authenticate(username, password):
     conn = get_db()
     u = conn.execute("SELECT * FROM users WHERE username=? AND active=1", (username,)).fetchone()
     conn.close()
-    if u and hashlib.sha256((u['salt']+password).encode()).hexdigest() == u['password_hash']: return dict(u)
+    if u and _check_password(u['password_hash'], u['salt'], password):
+        # Auto-upgrade old sha256 to PBKDF2
+        old_check = hashlib.sha256((u['salt']+password).encode()).hexdigest()
+        if old_check == u['password_hash']:
+            _upgrade_password('users', u['id'], password)
+        return dict(u)
     return None
 
 def create_user(username, password, full_name, role='receptionniste'):
-    conn = get_db(); salt = secrets.token_hex(16)
-    pw = hashlib.sha256((salt+password).encode()).hexdigest()
+    conn = get_db()
+    pw, salt = _hash_password(password)
     try: conn.execute("INSERT INTO users (username,password_hash,salt,full_name,role) VALUES (?,?,?,?,?)",
                       (username,pw,salt,full_name,role)); conn.commit()
     except: pass
@@ -378,9 +406,7 @@ def migrate_db_v3():
 
 def create_guest_account(email, password, first_name, last_name, tel=''):
     conn = get_db()
-    salt = secrets.token_hex(16)
-    pw = hashlib.sha256((salt + password).encode()).hexdigest()
-    # Create guest first
+    pw, salt = _hash_password(password)
     try:
         conn.execute("INSERT INTO guests (first_name, last_name, tel, email) VALUES (?,?,?,?)",
                      (first_name, last_name, tel, email))
@@ -400,7 +426,10 @@ def authenticate_guest(email, password):
     conn = get_db()
     u = conn.execute("SELECT ga.*, g.first_name, g.last_name, g.tel FROM guest_accounts ga LEFT JOIN guests g ON ga.guest_id=g.id WHERE ga.email=? AND ga.active=1", (email,)).fetchone()
     conn.close()
-    if u and hashlib.sha256((u['salt'] + password).encode()).hexdigest() == u['password_hash']:
+    if u and _check_password(u['password_hash'], u['salt'], password):
+        old_check = hashlib.sha256((u['salt'] + password).encode()).hexdigest()
+        if old_check == u['password_hash']:
+            _upgrade_password('guest_accounts', u['id'], password)
         return dict(u)
     return None
 

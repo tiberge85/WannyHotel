@@ -97,25 +97,54 @@ DEFAULT_PERMS = {
 }
 init_default_permissions(DEFAULT_PERMS)
 
+# ======================== SESSION SECURITY ========================
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('RENDER', '') != ''
+app.config['PERMANENT_SESSION_LIFETIME'] = 1800
+
 # ======================== SECURITY MIDDLEWARE ========================
 
-import hashlib as _hl, time as _time
-_rate_limits = {}  # IP -> [timestamps]
+import hashlib as _hl, time as _time, re as _re
+import secrets
+_rate_limits = {}
+_login_attempts = {}
+
+def _is_locked(ip):
+    if ip in _login_attempts:
+        info = _login_attempts[ip]
+        if info.get('locked_until', 0) > _time.time():
+            return True, int(info['locked_until'] - _time.time())
+        if info['count'] >= 5:
+            _login_attempts[ip] = {'count': 0, 'locked_until': 0}
+    return False, 0
+
+def _record_failed_login(ip):
+    if ip not in _login_attempts: _login_attempts[ip] = {'count': 0, 'locked_until': 0}
+    _login_attempts[ip]['count'] += 1
+    if _login_attempts[ip]['count'] >= 5:
+        _login_attempts[ip]['locked_until'] = _time.time() + 300
+
+def _clear_login_attempts(ip):
+    _login_attempts.pop(ip, None)
+
+def _sanitize(value, max_len=500):
+    if not isinstance(value, str): return value
+    return value.strip()[:max_len].replace('\x00', '')
 
 @app.before_request
 def security_checks():
-    """Rate limiting + session timeout + CSRF check."""
     ip = request.remote_addr or '0.0.0.0'
     now = _time.time()
-    
-    # Rate limiting: 120 requests/min per IP
     if ip not in _rate_limits: _rate_limits[ip] = []
     _rate_limits[ip] = [t for t in _rate_limits[ip] if now - t < 60]
     if len(_rate_limits[ip]) > 120:
         return "Trop de requêtes. Réessayez dans 1 minute.", 429
     _rate_limits[ip].append(now)
-    
-    # Session timeout (30 min)
+    locked, remaining = _is_locked(ip)
+    if locked and request.endpoint in ('login', 'client_login'):
+        flash(f"Trop de tentatives. Réessayez dans {remaining}s.", "error")
+        return redirect('/')
     if 'user_id' in session:
         last = session.get('last_active', '')
         try:
@@ -123,31 +152,23 @@ def security_checks():
                 session.clear(); flash("Session expirée", "info"); return redirect('/login')
         except: pass
         session['last_active'] = datetime.now().isoformat()
-    
-    # CSRF: generate token for forms
     if 'csrf_token' not in session:
-        session['csrf_token'] = secrets.token_hex(16)
-    
-    # CSRF check on POST (skip public booking + login)
-    if request.method == 'POST' and request.endpoint not in ('login', 'public_booking', None):
-        token = request.form.get('csrf_token', '')
-        if token != session.get('csrf_token', ''):
-            # Silently regenerate — don't break existing forms without token
-            pass
+        session['csrf_token'] = secrets.token_hex(32)
 
 @app.after_request
 def security_headers(response):
-    """Add security headers to every response."""
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     response.headers['X-XSS-Protection'] = '1; mode=block'
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
     response.headers['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=(self)'
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com https://*.qrserver.com; font-src 'self'; connect-src 'self'"
     if request.is_secure:
         response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    if 'user_id' in session or 'guest_id' in session:
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
     return response
-
-import secrets
 
 def login_required(f):
     @wraps(f)
@@ -197,12 +218,19 @@ def welcome():
 @app.route('/login', methods=['GET','POST'])
 def login():
     if request.method == 'POST':
-        u = authenticate(request.form['username'], request.form['password'])
+        ip = request.remote_addr or '0.0.0.0'
+        u = authenticate(_sanitize(request.form.get('username','')), request.form.get('password',''))
         if u:
+            _clear_login_attempts(ip)
             session['user_id'] = u['id']
-            log_activity(u['id'], u['full_name'], 'Connexion', '', request.remote_addr)
+            log_activity(u['id'], u['full_name'], 'Connexion', '', ip)
             return redirect('/dashboard')
-        flash("Identifiants incorrects", "error")
+        _record_failed_login(ip)
+        locked, remaining = _is_locked(ip)
+        if locked:
+            flash(f"Trop de tentatives. Compte bloqué {remaining}s.", "error")
+        else:
+            flash("Identifiants incorrects", "error")
     return render_template('login.html')
 
 @app.route('/logout')
@@ -940,8 +968,10 @@ def client_register():
 @app.route('/client/login', methods=['GET','POST'])
 def client_login():
     if request.method == 'POST':
-        user = authenticate_guest(request.form['email'], request.form['password'])
+        ip = request.remote_addr or '0.0.0.0'
+        user = authenticate_guest(_sanitize(request.form.get('email','')), request.form.get('password',''))
         if user:
+            _clear_login_attempts(ip)
             session['guest_user_id'] = user['id']
             session['guest_id'] = user['guest_id']
             session['guest_name'] = f"{user['first_name']} {user['last_name']}"
@@ -949,6 +979,7 @@ def client_login():
             session['guest_tel'] = user.get('tel', '')
             flash(f"Bienvenue {user['first_name']} !", "success")
             return redirect('/client/dashboard')
+        _record_failed_login(ip)
         flash("Email ou mot de passe incorrect", "error")
     return render_template('client_login.html')
 
