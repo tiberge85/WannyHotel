@@ -1,48 +1,204 @@
 <!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>WannyHotel - Mon espace</title>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;background:#f0f2f5;color:#333}
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;background:#f0f2f5;color:#333}
 .navbar{background:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
-.navbar img{height:32px}.nav-right{display:flex;gap:12px;align-items:center;font-size:13px}
-.nav-right a{text-decoration:none;color:#1a3a5c;font-weight:500}.btn-sm{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;display:inline-block}
-.btn-gold{background:#B8860B;color:#fff}.btn-outline{border:1.5px solid #ddd;color:#666}
-.container{max-width:800px;margin:20px auto;padding:0 16px}
-.welcome{background:linear-gradient(135deg,#B8860B,#DAA520);border-radius:14px;padding:24px;color:#fff;margin-bottom:20px}
-.welcome h1{font-size:22px;margin-bottom:4px}.welcome p{opacity:0.8;font-size:13px}
-.card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);overflow:hidden;margin-bottom:16px}
-.card-header{padding:14px 18px;border-bottom:1px solid #eee;font-weight:700;color:#1a3a5c;display:flex;align-items:center;justify-content:space-between}
+.navbar img{height:36px}.nav-right{display:flex;gap:12px;align-items:center;font-size:13px}
+.nav-right a{text-decoration:none;color:#1a3a5c;font-weight:500}
+.btn{padding:8px 18px;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:4px;cursor:pointer;border:none}
+.btn-gold{background:linear-gradient(135deg,#B8860B,#DAA520);color:#fff}.btn-teal{background:#1a3a5c;color:#fff}
+.btn-outline{background:#fff;border:1.5px solid #ddd;color:#666}.btn-green{background:#2e7d32;color:#fff}
+.btn-sm{padding:5px 12px;font-size:11px}
+.container{max-width:850px;margin:20px auto;padding:0 16px}
+.welcome{background:linear-gradient(135deg,#0d2137,#1a4a6c);border-radius:16px;padding:28px;color:#fff;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
+.welcome h1{font-size:24px;font-weight:800;margin-bottom:4px}.welcome p{opacity:0.7;font-size:13px}
+.welcome .avatar{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:24px}
+.tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid #eee;padding-bottom:0}
+.tab{padding:10px 18px;cursor:pointer;font-size:13px;font-weight:600;color:#888;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.2s}
+.tab.active{color:#1a3a5c;border-bottom-color:#B8860B}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.06);overflow:hidden;margin-bottom:16px}
+.card-header{padding:14px 18px;border-bottom:1px solid #eee;font-weight:700;color:#1a3a5c;font-size:14px;display:flex;align-items:center;justify-content:space-between}
 .card-body{padding:18px}
-.res-card{border:1px solid #eee;border-radius:10px;padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
-.res-info h3{font-size:14px;color:#1a3a5c;margin-bottom:2px}.res-info p{font-size:12px;color:#888}
-.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600}
-.badge.confirmee{background:#e3f2fd;color:#1565c0}.badge.en_cours{background:#e8f5e9;color:#2e7d32}.badge.terminee{background:#f0f0f0;color:#555}
-.notif-item{padding:10px;border-bottom:1px solid #f0f0f0;font-size:13px;display:flex;gap:10px;align-items:center}
-.notif-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}.notif-dot.confirmation{background:#2e7d32}.notif-dot.facture{background:#B8860B}
-.flash{padding:10px;border-radius:8px;margin-bottom:12px;font-size:13px;text-align:center}.flash.success{background:#e8f5e9;color:#2e7d32}
-@media(max-width:600px){.res-card{flex-direction:column;align-items:flex-start}}
+.res-card{border:1.5px solid #eee;border-radius:12px;padding:16px;margin-bottom:12px;transition:border-color 0.2s}
+.res-card:hover{border-color:#B8860B}
+.res-top{display:flex;justify-content:space-between;align-items:start;margin-bottom:10px}
+.res-ref{font-size:16px;font-weight:800;color:#1a3a5c}.res-status{font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px}
+.res-status.confirmee{background:#e3f2fd;color:#1565c0}.res-status.en_cours{background:#e8f5e9;color:#2e7d32}
+.res-status.terminee{background:#f0f0f0;color:#555}.res-status.en_attente{background:#fff3e0;color:#e8672a}
+.res-details{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:12px;margin-bottom:10px}
+.res-details .label{color:#888;font-size:10px}.res-details .val{font-weight:600;color:#333}
+.res-pay{display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid #f0f0f0}
+.res-pay .amount{font-size:18px;font-weight:800}.paid{color:#2e7d32}.unpaid{color:#c53030}
+.pay-stamp{padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700}
+.pay-stamp.ok{background:#e8f5e9;color:#2e7d32}.pay-stamp.ko{background:#fde8e8;color:#c53030}
+.pay-history{margin-top:8px;font-size:11px;color:#666}
+.pay-history table{width:100%;font-size:11px;border-collapse:collapse}
+.pay-history td{padding:4px 6px;border-bottom:1px solid #f0f0f0}
+.notif-item{padding:12px;border-bottom:1px solid #f0f0f0;font-size:13px;display:flex;gap:10px;align-items:center}
+.notif-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.notif-dot.confirmation{background:#2e7d32}.notif-dot.payment{background:#B8860B}.notif-dot.info{background:#1565c0}
+.book-form{padding:20px}.form-row{display:flex;gap:10px;margin-bottom:10px}.form-row .fg{flex:1}
+.fg label{font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px}
+.fg input,.fg select,.fg textarea{width:100%;padding:9px;border:1.5px solid #ddd;border-radius:8px;font-size:13px}
+.pending-card{background:#fff8e1;border:1.5px solid #ffe082;border-radius:10px;padding:12px;margin-bottom:8px;font-size:13px}
+.flash{padding:12px;border-radius:10px;margin-bottom:14px;font-size:13px;text-align:center}
+.flash.success{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7}
+.flash.error{background:#fde8e8;color:#c53030;border:1px solid #ef9a9a}
+@media(max-width:600px){.res-details{grid-template-columns:1fr 1fr}.form-row{flex-direction:column;gap:0}.welcome{flex-direction:column;text-align:center;gap:12px}}
 </style></head><body>
-<nav class="navbar"><img src="/static/logo_wannyhotel.png" alt="WannyHotel">
-<div class="nav-right"><span>👤 {{ guest_name }}</span><a href="/booking" class="btn-sm btn-gold">+ Réserver</a><a href="/client/logout" class="btn-sm btn-outline">Déconnexion</a></div></nav>
+
+<nav class="navbar">
+    <img src="/static/logo_wannyhotel.png" alt="WannyHotel">
+    <div class="nav-right">
+        <span style="font-weight:600">👤 {{ guest_name }}</span>
+        <a href="/client/logout" class="btn btn-outline btn-sm">Déconnexion</a>
+    </div>
+</nav>
+
 <div class="container">
-{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for c,m in messages %}<div class="flash {{ c }}">{{ m }}</div>{% endfor %}{% endif %}{% endwith %}
-<div class="welcome"><h1>Bienvenue, {{ guest_name }} !</h1><p>Gérez vos réservations et consultez vos factures</p></div>
+{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}
+{% for c,m in messages %}<div class="flash {{ c }}">{{ m }}</div>{% endfor %}
+{% endif %}{% endwith %}
 
-{% if notifications %}
-<div class="card"><div class="card-header">🔔 Notifications</div><div class="card-body">
-{% for n in notifications[:5] %}
-<div class="notif-item"><div class="notif-dot {{ n.type }}"></div>
-<div style="flex:1">{{ n.message }}<br><span style="font-size:10px;color:#999">{{ n.created_at[:16] }}</span></div>
-<a href="/notification/{{ n.token }}" class="btn-sm btn-outline">Voir</a></div>
-{% endfor %}</div></div>{% endif %}
+<div class="welcome">
+    <div>
+        <h1>Bienvenue, {{ guest_name.split(' ')[0] }} !</h1>
+        <p>{{ reservations|length }} réservation(s) · {% if notifications %}{{ notifications|length }} notification(s){% else %}Aucune notification{% endif %}</p>
+    </div>
+    <div class="avatar">👤</div>
+</div>
 
-<div class="card"><div class="card-header">📋 Mes réservations <a href="/booking" class="btn-sm btn-gold">+ Nouvelle</a></div><div class="card-body">
+<!-- Tabs -->
+<div class="tabs">
+    <div class="tab active" onclick="showTab('reservations')">📋 Mes réservations</div>
+    <div class="tab" onclick="showTab('notifications')">🔔 Notifications {% if notifications %}<span style="background:#ef5350;color:#fff;padding:1px 6px;border-radius:10px;font-size:10px">{{ notifications|length }}</span>{% endif %}</div>
+    <div class="tab" onclick="showTab('booking')">➕ Réserver</div>
+</div>
+
+<!-- TAB: Reservations -->
+<div class="tab-panel active" id="tab-reservations">
+
+{% if pending %}
+<div class="card" style="border-left:4px solid #ff9800"><div class="card-header">⏳ Demandes en attente</div><div class="card-body">
+{% for p in pending %}
+<div class="pending-card">
+    <strong>{{ p.type_name or 'Chambre' }}</strong> · {{ p.checkin_date }} → {{ p.checkout_date }} · {{ p.adults }} adulte(s)
+    <br><span style="font-size:11px;color:#888">Envoyée le {{ p.created_at[:16] if p.created_at else '' }} — En attente de confirmation</span>
+</div>
+{% endfor %}
+</div></div>
+{% endif %}
+
 {% for r in reservations %}
 <div class="res-card">
-<div class="res-info"><h3>{{ r.reference }} — Chambre {{ r.room_number or '?' }}</h3>
-<p>{{ r.checkin_date }} → {{ r.checkout_date }} · {{ r.nights }} nuit(s) · {{ '{:,.0f}'.format(r.total_amount) }} F</p></div>
-<div style="display:flex;gap:6px;align-items:center">
-<span class="badge {{ r.status }}">{{ r.status }}</span>
-<a href="/invoice/{{ r.id }}" class="btn-sm btn-outline" target="_blank">🧾</a>
-{% if r.status in ('confirmee','en_cours') %}<a href="/payment/{{ r.id }}" class="btn-sm btn-gold">💰</a>{% endif %}
+    <div class="res-top">
+        <div class="res-ref">{{ r.reference }}</div>
+        <span class="res-status {{ r.status }}">{{ r.status }}</span>
+    </div>
+    <div class="res-details">
+        <div><div class="label">Chambre</div><div class="val">{{ r.room_number or '?' }} · {{ r.room_type_name or '' }}</div></div>
+        <div><div class="label">Arrivée</div><div class="val">{{ r.checkin_date }}</div></div>
+        <div><div class="label">Départ</div><div class="val">{{ r.checkout_date }}</div></div>
+        <div><div class="label">Nuitées</div><div class="val">{{ r.nights }}</div></div>
+        <div><div class="label">Tarif/nuit</div><div class="val">{{ '{:,.0f}'.format(r.rate_per_night) }} F</div></div>
+        <div><div class="label">Total charges</div><div class="val">{{ '{:,.0f}'.format(r.total_charges) }} F</div></div>
+    </div>
+    <div class="res-pay">
+        <div>
+            {% if r.is_paid %}
+            <span class="pay-stamp ok">✅ PAYÉ</span>
+            {% elif r.total_paid > 0 %}
+            <span class="pay-stamp ko">Reste: {{ '{:,.0f}'.format(r.balance) }} F</span>
+            {% else %}
+            <span class="pay-stamp ko">Non payé</span>
+            {% endif %}
+            <span style="font-size:12px;color:#888;margin-left:8px">Payé: {{ '{:,.0f}'.format(r.total_paid) }} F</span>
+        </div>
+        <div style="display:flex;gap:6px">
+            <a href="/invoice/{{ r.id }}" class="btn btn-outline btn-sm" target="_blank">🧾 Facture</a>
+            {% if not r.is_paid and r.status in ('confirmee','en_cours') %}
+            <a href="/payment/{{ r.id }}" class="btn btn-gold btn-sm" target="_blank">💰 Payer</a>
+            {% endif %}
+        </div>
+    </div>
+    {% if r.payments %}
+    <div class="pay-history" style="margin-top:10px">
+        <strong>Historique des paiements :</strong>
+        <table>{% for p in r.payments %}<tr>
+            <td>{{ p.created_at[:16] }}</td>
+            <td style="font-weight:600;color:#2e7d32">{{ '{:,.0f}'.format(p.amount) }} F</td>
+            <td>{{ p.method }}</td>
+            <td style="color:#999">{{ p.reference or '' }}</td>
+        </tr>{% endfor %}</table>
+    </div>
+    {% endif %}
+</div>
+{% else %}
+<div class="card"><div class="card-body" style="text-align:center;padding:40px;color:#999">
+    <div style="font-size:40px;margin-bottom:10px">🏨</div>
+    <p>Aucune réservation pour le moment.</p>
+    <button class="btn btn-gold" style="margin-top:12px" onclick="showTab('booking')">➕ Faire ma première réservation</button>
 </div></div>
-{% else %}<p style="text-align:center;color:#999;padding:20px">Aucune réservation.<br><a href="/booking" style="color:#B8860B">Réserver maintenant →</a></p>{% endfor %}
-</div></div></div></body></html>
+{% endfor %}
+</div>
+
+<!-- TAB: Notifications -->
+<div class="tab-panel" id="tab-notifications">
+<div class="card"><div class="card-header">🔔 Notifications</div><div class="card-body">
+{% if notifications %}
+{% for n in notifications %}
+<div class="notif-item">
+    <div class="notif-dot {{ n.type or 'info' }}"></div>
+    <div style="flex:1">
+        <div>{{ n.message }}</div>
+        <div style="font-size:10px;color:#999;margin-top:2px">{{ n.created_at[:16] if n.created_at else '' }}</div>
+    </div>
+    {% if n.token %}<a href="/notification/{{ n.token }}" class="btn btn-outline btn-sm">Voir →</a>{% endif %}
+</div>
+{% endfor %}
+{% else %}
+<p style="text-align:center;color:#999;padding:30px">Aucune notification pour le moment. Vous serez notifié dès qu'une réservation sera confirmée.</p>
+{% endif %}
+</div></div>
+</div>
+
+<!-- TAB: New Booking -->
+<div class="tab-panel" id="tab-booking">
+<div class="card"><div class="card-header">➕ Nouvelle réservation</div>
+<div class="book-form">
+<form method="post" action="/client/book">
+    <div class="form-row">
+        <div class="fg"><label>Type de chambre *</label>
+            <select name="room_type_id" required>
+                <option value="">— Choisir —</option>
+                {% for t in types %}<option value="{{ t.id }}">{{ t.name }} — {{ '{:,.0f}'.format(t.base_price) }} F/nuit</option>{% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="fg"><label>Arrivée *</label><input type="date" name="checkin_date" required></div>
+        <div class="fg"><label>Départ *</label><input type="date" name="checkout_date" required></div>
+    </div>
+    <div class="form-row">
+        <div class="fg"><label>Adultes</label><input type="number" name="adults" value="1" min="1" max="6"></div>
+        <div class="fg"><label>Enfants</label><input type="number" name="children" value="0" min="0" max="4"></div>
+    </div>
+    <div class="fg" style="margin-bottom:14px"><label>Demandes spéciales</label><textarea name="notes" rows="2" placeholder="Lit bébé, étage élevé, vue piscine..."></textarea></div>
+    <button type="submit" class="btn btn-gold" style="width:100%;padding:14px;font-size:15px;justify-content:center">📩 Envoyer ma demande</button>
+    <p style="font-size:11px;color:#888;text-align:center;margin-top:8px">Votre demande sera traitée par la réception. Vous recevrez un email de confirmation.</p>
+</form>
+</div></div>
+</div>
+
+</div><!-- container -->
+
+<script>
+function showTab(name){
+    document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active')});
+    document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
+    document.getElementById('tab-'+name).classList.add('active');
+    event.target.classList.add('active');
+}
+</script>
+</body></html>

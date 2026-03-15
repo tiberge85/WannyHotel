@@ -303,17 +303,32 @@ def photo_image(filename):
 def public_booking():
     """Page publique de réservation en ligne — pas de login requis."""
     if request.method == 'POST':
+        # If client is logged in, use their info
+        if session.get('guest_id'):
+            name_parts = session.get('guest_name', '').split(' ', 1)
+            first = request.form.get('first_name') or (name_parts[0] if name_parts else '')
+            last = request.form.get('last_name') or (name_parts[1] if len(name_parts) > 1 else '')
+            email = request.form.get('email') or session.get('guest_email', '')
+            tel = request.form.get('tel') or session.get('guest_tel', '')
+        else:
+            first = request.form['first_name']
+            last = request.form['last_name']
+            email = request.form.get('email', '')
+            tel = request.form.get('tel', '')
+        
         db_insert('online_bookings',
-            guest_first_name=request.form['first_name'],
-            guest_last_name=request.form['last_name'],
-            guest_tel=request.form.get('tel', ''),
-            guest_email=request.form.get('email', ''),
+            guest_first_name=first, guest_last_name=last,
+            guest_tel=tel, guest_email=email,
             room_type_id=int(request.form['room_type_id']) if request.form.get('room_type_id') else None,
             checkin_date=request.form['checkin_date'],
             checkout_date=request.form['checkout_date'],
             adults=int(request.form.get('adults', 1) or 1),
             children=int(request.form.get('children', 0) or 0),
             notes=request.form.get('notes', ''))
+        
+        if session.get('guest_id'):
+            flash("✅ Demande envoyée ! Suivez-la dans votre espace client.", "success")
+            return redirect('/client/dashboard')
         flash("Votre demande de réservation a été envoyée ! Nous vous contacterons pour confirmer.", "success")
         return redirect(url_for('public_booking'))
     
@@ -346,9 +361,18 @@ def online_booking_confirm(bid):
     """Confirmer une réservation en ligne → créer la vraie réservation."""
     ob = db_get('online_bookings', bid)
     if ob and ob['status'] == 'en_attente':
-        # Create guest
-        guest_id = db_insert('guests', first_name=ob['guest_first_name'], last_name=ob['guest_last_name'],
-            tel=ob.get('guest_tel', ''), email=ob.get('guest_email', ''))
+        # Check if guest already exists (by email)
+        conn = get_db()
+        existing = None
+        if ob.get('guest_email'):
+            existing = conn.execute("SELECT id FROM guests WHERE email=?", (ob['guest_email'],)).fetchone()
+        conn.close()
+        
+        if existing:
+            guest_id = existing['id']
+        else:
+            guest_id = db_insert('guests', first_name=ob['guest_first_name'], last_name=ob['guest_last_name'],
+                tel=ob.get('guest_tel', ''), email=ob.get('guest_email', ''))
         # Find available room
         conn = get_db()
         room = conn.execute("""SELECT r.id FROM rooms r WHERE r.room_type_id=? AND r.status='disponible'
@@ -921,6 +945,8 @@ def client_login():
             session['guest_user_id'] = user['id']
             session['guest_id'] = user['guest_id']
             session['guest_name'] = f"{user['first_name']} {user['last_name']}"
+            session['guest_email'] = user['email']
+            session['guest_tel'] = user.get('tel', '')
             flash(f"Bienvenue {user['first_name']} !", "success")
             return redirect('/client/dashboard')
         flash("Email ou mot de passe incorrect", "error")
@@ -928,7 +954,7 @@ def client_login():
 
 @app.route('/client/logout')
 def client_logout():
-    for k in ['guest_user_id','guest_id','guest_name']: session.pop(k, None)
+    for k in ['guest_user_id','guest_id','guest_name','guest_email','guest_tel']: session.pop(k, None)
     flash("Déconnexion réussie", "success"); return redirect('/booking')
 
 @app.route('/client/dashboard')
@@ -936,23 +962,48 @@ def client_dashboard():
     if 'guest_id' not in session: return redirect('/client/login')
     reservations = get_guest_reservations(session['guest_id'])
     notifications = get_guest_notifications(session['guest_id'])
+    # Calculate payment status for each reservation
+    conn = get_db()
+    for r in reservations:
+        charges = conn.execute("SELECT COALESCE(SUM(total),0) FROM charges WHERE reservation_id=?", (r['id'],)).fetchone()[0]
+        paid = conn.execute("SELECT COALESCE(SUM(amount),0) FROM payments WHERE reservation_id=?", (r['id'],)).fetchone()[0]
+        r['total_charges'] = charges
+        r['total_paid'] = paid
+        r['balance'] = charges - paid
+        r['is_paid'] = paid >= charges and charges > 0
+        # Payment history
+        r['payments'] = [dict(p) for p in conn.execute("SELECT * FROM payments WHERE reservation_id=? ORDER BY created_at DESC", (r['id'],)).fetchall()]
+    # Online bookings pending
+    pending = conn.execute("""SELECT ob.*, rt.name as type_name FROM online_bookings ob 
+        LEFT JOIN room_types rt ON ob.room_type_id=rt.id
+        WHERE ob.guest_email=? AND ob.status='en_attente' ORDER BY ob.created_at DESC""",
+        (session.get('guest_email',''),)).fetchall()
+    # Room types for booking form
+    types = conn.execute("SELECT * FROM room_types ORDER BY base_price").fetchall()
+    conn.close()
     return render_template('client_dashboard.html', reservations=reservations, notifications=notifications,
-                          guest_name=session.get('guest_name',''))
+                          guest_name=session.get('guest_name',''), pending=[dict(p) for p in pending],
+                          types=[dict(t) for t in types])
 
 @app.route('/client/book', methods=['POST'])
 def client_book():
     if 'guest_id' not in session: return redirect('/client/login')
+    # Get guest info from session
+    name_parts = session.get('guest_name', '').split(' ', 1)
+    first = name_parts[0] if name_parts else ''
+    last = name_parts[1] if len(name_parts) > 1 else ''
+    
     db_insert('online_bookings',
-        guest_first_name=session.get('guest_name','').split(' ')[0],
-        guest_last_name=' '.join(session.get('guest_name','').split(' ')[1:]),
-        guest_tel='', guest_email='',
+        guest_first_name=first, guest_last_name=last,
+        guest_tel=session.get('guest_tel', ''),
+        guest_email=session.get('guest_email', ''),
         room_type_id=int(request.form['room_type_id']) if request.form.get('room_type_id') else None,
         checkin_date=request.form['checkin_date'],
         checkout_date=request.form['checkout_date'],
         adults=int(request.form.get('adults',1) or 1),
         children=int(request.form.get('children',0) or 0),
         notes=request.form.get('notes',''))
-    flash("Demande de réservation envoyée ! Vous serez notifié dès la confirmation.", "success")
+    flash("✅ Demande de réservation envoyée ! Vous serez notifié dès la confirmation.", "success")
     return redirect('/client/dashboard')
 
 

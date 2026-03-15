@@ -40,7 +40,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
 <nav class="navbar">
     <img src="/static/logo_wannyhotel.png" alt="WannyHotel">
-    <div class="nav-links"><a href="/client/login">👤 Espace Client</a><a href="/booking">Réserver</a><a href="/login" class="btn-nav">Staff</a></div>
+    <div class="nav-links">
+        {% if session.get('guest_id') %}
+        <a href="/client/dashboard" style="font-weight:700;color:#B8860B">👤 {{ session.get('guest_name','Mon espace') }}</a>
+        {% else %}
+        <a href="/client/login">👤 Espace Client</a>
+        <a href="/client/register">📝 Créer un compte</a>
+        {% endif %}
+        <a href="/booking">Réserver</a><a href="/login" class="btn-nav">Staff</a>
+    </div>
 </nav>
 
 <div class="hero"><h1>Réservez votre <span>séjour</span></h1><p>Hôtel · Résidence meublée · Conférences</p></div>
