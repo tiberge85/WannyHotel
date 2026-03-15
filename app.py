@@ -34,7 +34,9 @@ from models import (migrate_permissions, init_default_permissions, get_role_perm
 migrate_permissions()
 migrate_rh()
 from models import (migrate_v4, run_night_audit, get_guest_loyalty, 
-                    get_hotel_setting, set_hotel_setting, get_advanced_stats)
+                    get_hotel_setting, set_hotel_setting, get_advanced_stats,
+                    get_license, check_feature, check_room_limit, check_user_limit,
+                    activate_license, LICENSE_FEATURES)
 migrate_v4()
 
 import smtplib
@@ -136,16 +138,31 @@ def login_required(f):
         return f(*a,**kw)
     return dec
 
+def feature_required(feature_name):
+    """Décorateur qui vérifie si la fonctionnalité est débloquée dans la licence."""
+    def decorator(f):
+        @wraps(f)
+        def dec(*a, **kw):
+            if not check_feature(feature_name):
+                lic = get_license()
+                flash(f"🔒 Fonctionnalité non disponible avec la licence {lic['label']}. Passez au niveau supérieur.", "error")
+                return redirect('/admin/licence')
+            return f(*a, **kw)
+        return dec
+    return decorator
+
 @app.context_processor
 def inject_globals():
     u = get_user(session['user_id']) if 'user_id' in session else None
     perms = get_role_perms(u['role']) if u else []
+    lic = get_license()
     return {'current_user': u, 'now': datetime.now().strftime('%Y-%m-%d'),
             'permissions': perms, 'user_role': u['role'] if u else '',
             'ROLE_LABELS': ROLE_LABELS,
             'hotel_name': get_hotel_setting('hotel_name', 'WannyHotel'),
             'theme_color': get_hotel_setting('theme_color', '#1a3a5c'),
-            'theme_accent': get_hotel_setting('theme_accent', '#B8860B')}
+            'theme_accent': get_hotel_setting('theme_accent', '#B8860B'),
+            'license': lic, 'check_feature': check_feature}
 
 @app.route('/robots.txt')
 def robots(): return "User-agent: *\nAllow: /\n", 200, {'Content-Type':'text/plain'}
@@ -203,6 +220,10 @@ def room_types():
 @app.route('/chambres/add', methods=['POST'])
 @login_required
 def room_add():
+    ok, max_rooms, current = check_room_limit()
+    if not ok:
+        flash(f"🔒 Limite de {max_rooms} chambres atteinte (licence {get_license()['label']}). Passez au niveau supérieur.", "error")
+        return redirect('/admin/licence')
     rt_id = int(request.form['room_type_id']) if request.form.get('room_type_id') else None
     rid = db_insert('rooms', number=request.form['number'], floor=int(request.form.get('floor',0) or 0),
         room_type_id=rt_id)
@@ -568,6 +589,10 @@ def admin_page():
 @app.route('/admin/user/add', methods=['POST'])
 @login_required
 def admin_user_add():
+    ok, max_users, current = check_user_limit()
+    if not ok:
+        flash(f"🔒 Limite de {max_users} utilisateurs atteinte (licence {get_license()['label']}). Passez au niveau supérieur.", "error")
+        return redirect('/admin/licence')
     create_user(request.form['username'], request.form['password'], request.form['full_name'], request.form.get('role','receptionniste'))
     flash("Utilisateur créé","success"); return redirect('/admin')
 
@@ -602,6 +627,7 @@ def admin_permissions_save():
 
 @app.route('/rh')
 @login_required
+@feature_required("rh")
 def rh_dashboard():
     stats = get_rh_stats()
     employees = get_rh_employees('actif')
@@ -1137,6 +1163,7 @@ def admin_reset():
 
 @app.route('/restaurant')
 @login_required
+@feature_required("restaurant")
 def restaurant():
     conn = get_db()
     orders = conn.execute("""SELECT * FROM restaurant_orders ORDER BY created_at DESC LIMIT 30""").fetchall()
@@ -1199,6 +1226,7 @@ def restaurant_order():
 
 @app.route('/planning')
 @login_required
+@feature_required("planning")
 def planning():
     conn = get_db()
     rooms = conn.execute("SELECT r.*, rt.name as type_name FROM rooms r LEFT JOIN room_types rt ON r.room_type_id=rt.id ORDER BY r.number").fetchall()
@@ -1272,6 +1300,7 @@ if __name__ == "__main__":
 
 @app.route('/checkin/qr/<int:res_id>')
 @login_required
+@feature_required("qr_checkin")
 def generate_qr(res_id):
     """Génère le QR code de check-in pour une réservation."""
     token = secrets.token_hex(16)
@@ -1312,6 +1341,7 @@ def qr_confirm(token):
 
 @app.route('/night-audit', methods=['GET','POST'])
 @login_required
+@feature_required("night_audit")
 def night_audit():
     if request.method == 'POST':
         audit, msg = run_night_audit(session['user_id'])
@@ -1372,6 +1402,7 @@ def precheckin_form(token):
 
 @app.route('/loyalty/<int:guest_id>')
 @login_required
+@feature_required("loyalty")
 def guest_loyalty(guest_id):
     loyalty = get_guest_loyalty(guest_id)
     conn = get_db()
@@ -1396,6 +1427,7 @@ def loyalty_add(guest_id):
 
 @app.route('/admin/theme', methods=['GET','POST'])
 @login_required
+@feature_required("theme")
 def admin_theme():
     if request.method == 'POST':
         for key in ['hotel_name', 'theme_color', 'theme_accent', 'hotel_address',
@@ -1415,6 +1447,7 @@ def admin_theme():
 
 @app.route('/export/comptable')
 @login_required
+@feature_required("export_comptable")
 def export_comptable():
     """Export SYSCOHADA au format CSV."""
     import csv, io
@@ -1445,10 +1478,35 @@ def export_comptable():
 
 @app.route('/stats')
 @login_required
+@feature_required("stats")
 def advanced_stats():
     stats = get_advanced_stats()
     return render_template('stats.html', page='stats', s=stats)
 
+
+# ======================== LICENCE MANAGEMENT ========================
+
+@app.route('/admin/licence', methods=['GET','POST'])
+@login_required
+def admin_licence():
+    u = get_user(session['user_id'])
+    if not u or u['role'] not in ('admin','directeur'):
+        flash("Non autorisé","error"); return redirect('/dashboard')
+    if request.method == 'POST':
+        key = request.form.get('license_key', '').strip()
+        tier = activate_license(key)
+        if tier:
+            flash(f"✅ Licence {LICENSE_FEATURES[tier]['label']} activée !", "success")
+        else:
+            flash("❌ Clé de licence invalide", "error")
+        return redirect('/admin/licence')
+    lic = get_license()
+    ok_rooms, max_rooms, cur_rooms = check_room_limit()
+    ok_users, max_users, cur_users = check_user_limit()
+    return render_template('admin_licence.html', page='admin', lic=lic,
+                          all_tiers=LICENSE_FEATURES,
+                          cur_rooms=cur_rooms, max_rooms=max_rooms,
+                          cur_users=cur_users, max_users=max_users)
 
 
 if __name__ == "__main__":

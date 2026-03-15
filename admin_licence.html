@@ -1,0 +1,108 @@
+{% extends "base.html" %}{% block title %}WannyHotel - Licence{% endblock %}{% block content %}
+<style>
+.lic-current{background:linear-gradient(135deg,#0d2137,#1a4a6c);border-radius:14px;padding:24px;color:#fff;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
+.lic-current h2{font-size:22px;margin-bottom:4px}.lic-badge{background:rgba(255,255,255,0.2);padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700}
+.lic-meters{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.lic-meter{background:rgba(255,255,255,0.1);border-radius:8px;padding:10px}
+.lic-meter .label{font-size:10px;opacity:0.7}.lic-meter .bar{height:6px;background:rgba(255,255,255,0.2);border-radius:3px;margin-top:4px;overflow:hidden}
+.lic-meter .bar .fill{height:100%;border-radius:3px;transition:width 0.5s}
+.lic-meter .val{font-size:12px;font-weight:700;margin-top:2px}
+.tiers-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.tier-card{background:#fff;border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,0.06);overflow:hidden;position:relative;transition:transform 0.2s}
+.tier-card:hover{transform:translateY(-3px)}
+.tier-card.active{border:3px solid #B8860B}
+.tier-top{padding:18px;text-align:center}
+.tier-name{font-size:18px;font-weight:800;margin-bottom:2px}
+.tier-price{font-size:22px;font-weight:800;color:#B8860B;margin:4px 0}
+.tier-price small{font-size:11px;font-weight:400;color:#888}
+.tier-body{padding:14px;font-size:12px;border-top:1px solid #f0f0f0}
+.tier-feature{padding:3px 0;display:flex;align-items:center;gap:6px}
+.tier-feature.ok{color:#2e7d32}.tier-feature.no{color:#ccc;text-decoration:line-through}
+.tier-limit{font-size:11px;color:#888;margin-top:6px;padding-top:6px;border-top:1px solid #f0f0f0}
+.activate-box{background:#fff;border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,0.06);padding:20px;max-width:500px}
+.activate-box h3{color:#1a3a5c;margin-bottom:12px}
+@media(max-width:900px){.tiers-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.tiers-grid{grid-template-columns:1fr}}
+</style>
+<div class="page-header"><h1>🔑 Gestion de licence</h1></div>
+
+<!-- Current license -->
+<div class="lic-current">
+    <div>
+        <h2>{{ lic.label }} <span class="lic-badge">{{ lic.tier }}</span></h2>
+        {% if lic.key %}<div style="font-size:11px;opacity:0.6">Clé: {{ lic.key }}</div>{% endif %}
+        <div class="lic-meters">
+            <div class="lic-meter">
+                <div class="label">Chambres</div>
+                <div class="bar"><div class="fill" style="width:{{ (cur_rooms*100//(max_rooms or 1)) }}%;background:{% if cur_rooms >= max_rooms %}#ef5350{% elif cur_rooms >= max_rooms*0.8 %}#ff9800{% else %}#2e7d32{% endif %}"></div></div>
+                <div class="val">{{ cur_rooms }} / {{ max_rooms }}</div>
+            </div>
+            <div class="lic-meter">
+                <div class="label">Utilisateurs</div>
+                <div class="bar"><div class="fill" style="width:{{ (cur_users*100//(max_users or 1)) }}%;background:{% if cur_users >= max_users %}#ef5350{% else %}#2e7d32{% endif %}"></div></div>
+                <div class="val">{{ cur_users }} / {{ max_users }}</div>
+            </div>
+        </div>
+    </div>
+    <div style="font-size:48px">🔑</div>
+</div>
+
+<!-- Tiers comparison -->
+<h3 style="color:#1a3a5c;margin-bottom:12px">📊 Comparer les offres</h3>
+<div class="tiers-grid">
+{% for key, tier in all_tiers.items() %}
+<div class="tier-card {% if lic.tier == key %}active{% endif %}">
+    <div class="tier-top" style="background:{% if key=='starter' %}#f8faf9{% elif key=='pro' %}#e3f2fd{% elif key=='business' %}#fff8e1{% else %}#f3e5f5{% endif %}">
+        <div class="tier-name">{{ tier.label }}</div>
+        <div class="tier-price">{{ tier.price }}<br><small>/mois</small></div>
+        {% if lic.tier == key %}<span style="background:#2e7d32;color:#fff;padding:2px 10px;border-radius:10px;font-size:10px;font-weight:700">ACTIF</span>{% endif %}
+    </div>
+    <div class="tier-body">
+        <div class="tier-feature ok">✅ {{ tier.max_rooms }} chambres max</div>
+        <div class="tier-feature ok">✅ {{ tier.max_users }} utilisateurs</div>
+        <div class="tier-feature ok">✅ Réservations en ligne</div>
+        <div class="tier-feature ok">✅ Mobile Money</div>
+        <div class="tier-feature ok">✅ Factures PDF</div>
+        {% if key in ('pro','business','enterprise') %}
+        <div class="tier-feature ok">✅ Restaurant / Bar</div>
+        <div class="tier-feature ok">✅ Module RH</div>
+        <div class="tier-feature ok">✅ Night Audit</div>
+        <div class="tier-feature ok">✅ QR Check-in</div>
+        <div class="tier-feature ok">✅ Programme fidélité</div>
+        {% else %}
+        <div class="tier-feature no">🔒 Restaurant / Bar</div>
+        <div class="tier-feature no">🔒 Module RH</div>
+        <div class="tier-feature no">🔒 Night Audit</div>
+        {% endif %}
+        {% if key in ('business','enterprise') %}
+        <div class="tier-feature ok">✅ Statistiques avancées</div>
+        <div class="tier-feature ok">✅ Export comptable</div>
+        <div class="tier-feature ok">✅ Thème personnalisable</div>
+        <div class="tier-feature ok">✅ Planning visuel</div>
+        {% elif key == 'pro' %}
+        <div class="tier-feature no">🔒 Statistiques avancées</div>
+        <div class="tier-feature no">🔒 Export comptable</div>
+        {% endif %}
+        {% if key == 'enterprise' %}
+        <div class="tier-feature ok">✅ Multi-sites</div>
+        <div class="tier-feature ok">✅ API</div>
+        <div class="tier-feature ok">✅ Support dédié</div>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+</div>
+
+<!-- Activate -->
+<div class="activate-box">
+    <h3>🔑 Activer une licence</h3>
+    <form method="post" style="display:flex;gap:8px">
+        <input type="text" name="license_key" required placeholder="Ex: WANNY-PRO-2026 ou WH-B-XXXXX" 
+               style="flex:1;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;font-family:monospace">
+        <button type="submit" class="btn btn-gold">Activer</button>
+    </form>
+    <div style="font-size:11px;color:#888;margin-top:8px">
+        Contactez +225 07 47 68 20 27 pour obtenir une clé de licence.
+    </div>
+</div>
+{% endblock %}

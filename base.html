@@ -82,20 +82,20 @@
             <a href="/reservations" class="{% if page=='reservations' %}active{% endif %}">📋 Réservations</a>
 <a href="/online-bookings" class="{% if page=='online' %}active{% endif %}">🌐 Résa. en ligne</a>
             <a href="/chambres" class="{% if page=='chambres' %}active{% endif %}">🛏️ Chambres</a>
-            <a href="/planning" class="{% if page=='planning' %}active{% endif %}">📅 Planning</a>
+            <a href="/planning" class="{% if page=='planning' %}active{% endif %}">📅 Planning {% if not check_feature('planning') %}🔒{% endif %}</a>
             <a href="/guests" class="{% if page=='guests' %}active{% endif %}">👤 Clients</a>
             <a href="/housekeeping" class="{% if page=='housekeeping' %}active{% endif %}">🧹 Ménage</a>
             <div class="sep"></div>
             <div class="section">Services</div>
-            <a href="/restaurant" class="{% if page=='restaurant' %}active{% endif %}">🍽️ Restaurant / Bar</a>
+            <a href="/restaurant" class="{% if page=='restaurant' %}active{% endif %}">🍽️ Restaurant {% if not check_feature('restaurant') %}🔒{% endif %}</a>
             <a href="/events" class="{% if page=='events' %}active{% endif %}">🎉 Événements</a>
             <a href="/stock" class="{% if page=='stock' %}active{% endif %}">📦 Stock</a>
             <a href="/personnel" class="{% if page=='personnel' %}active{% endif %}">👥 Personnel</a>
             <div class="sep"></div>
             <div class="section">Finance</div>
             <a href="/rapports" class="{% if page=='rapports' %}active{% endif %}">📈 Rapports</a>
-            <a href="/stats" class="{% if page=='stats' %}active{% endif %}">📊 Statistiques</a>
-            <a href="/night-audit" class="{% if page=='night_audit' %}active{% endif %}">🌙 Night Audit</a>
+            <a href="/stats" class="{% if page=='stats' %}active{% endif %}">📊 Statistiques {% if not check_feature('stats') %}🔒{% endif %}</a>
+            <a href="/night-audit" class="{% if page=='night_audit' %}active{% endif %}">🌙 Night Audit {% if not check_feature('night_audit') %}🔒{% endif %}</a>
             <a href="/reviews" class="{% if page=='reviews' %}active{% endif %}">⭐ Avis clients</a>
             <a href="/export/comptable" class="btn btn-outline btn-sm" style="margin:4px 12px;font-size:11px">📥 Export comptable</a>
             {% if 'rh' in permissions or user_role in ('admin','directeur') %}
@@ -111,6 +111,7 @@
             <div class="sep"></div>
             <a href="/admin" class="{% if page=='admin' %}active{% endif %}">⚙️ Administration</a>
             <a href="/admin/theme" class="{% if page=='theme' %}active{% endif %}">🎨 Thème</a>
+            <a href="/admin/licence" class="{% if page=='licence' %}active{% endif %}">🔑 Licence <span style="font-size:9px;background:rgba(255,255,255,0.15);padding:1px 6px;border-radius:8px">{{ license.label }}</span></a>
             <a href="/admin/smtp" class="{% if page=='smtp' %}active{% endif %}">📧 Email SMTP</a>
             <a href="/admin/reset" class="{% if page=='reset' %}active{% endif %}">🔄 Réinitialiser</a>
             {% endif %}

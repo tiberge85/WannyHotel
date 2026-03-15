@@ -46,8 +46,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <div class="hero"><h1>Réservez votre <span>séjour</span></h1><p>Hôtel · Résidence meublée · Conférences</p></div>
 
 <div class="container">
-    {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for c,m in messages %}<div class="flash {{ c }}">{{ m }}</div>{% endfor %}{% endif %}{% endwith %}
-    
     <div class="search-bar">
         <form method="get" class="search-row">
             <div class="fg"><label>Arrivée</label><input type="date" name="checkin" value="{{ checkin }}" required></div>
@@ -55,6 +53,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
             <div style="flex:0"><button type="submit" class="btn btn-orange" style="margin-top:16px">🔍 Vérifier</button></div>
         </form>
     </div>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}
+    <div style="margin-top:20px">
+    {% for c,m in messages %}
+    <div class="flash {{ c }}" style="border-radius:10px;padding:16px 20px;font-size:14px;{% if c == 'success' %}background:#e8f5e9;color:#2e7d32;border-left:4px solid #2e7d32{% else %}background:#fff3e0;color:#e8672a;border-left:4px solid #e8672a{% endif %}">
+        {% if c == 'success' %}✅{% else %}ℹ️{% endif %} {{ m }}
+    </div>
+    {% endfor %}
+    </div>
+    {% endif %}{% endwith %}
     
     {% if room_types %}
     <div class="rooms-grid">

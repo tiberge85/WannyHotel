@@ -838,3 +838,110 @@ def get_advanced_stats():
     s['audits'] = [dict(r) for r in conn.execute("SELECT * FROM night_audits ORDER BY audit_date DESC LIMIT 30").fetchall()]
     conn.close()
     return s
+
+
+# ======================== LICENCE SYSTEM ========================
+
+LICENSE_FEATURES = {
+    'starter': {
+        'label': 'Starter',
+        'max_rooms': 15,
+        'max_users': 3,
+        'features': ['dashboard', 'reservations', 'chambres', 'guests', 'housekeeping',
+                     'stock', 'events', 'rapports', 'payment_mobile', 'booking_online',
+                     'invoice', 'notification'],
+        'price': '19 900 F/mois'
+    },
+    'pro': {
+        'label': 'Pro',
+        'max_rooms': 50,
+        'max_users': 10,
+        'features': ['dashboard', 'reservations', 'chambres', 'guests', 'housekeeping',
+                     'stock', 'events', 'rapports', 'payment_mobile', 'booking_online',
+                     'invoice', 'notification',
+                     'restaurant', 'rh', 'night_audit', 'qr_checkin',
+                     'loyalty', 'whatsapp', 'precheckin'],
+        'price': '49 900 F/mois'
+    },
+    'business': {
+        'label': 'Business',
+        'max_rooms': 200,
+        'max_users': 50,
+        'features': ['dashboard', 'reservations', 'chambres', 'guests', 'housekeeping',
+                     'stock', 'events', 'rapports', 'payment_mobile', 'booking_online',
+                     'invoice', 'notification',
+                     'restaurant', 'rh', 'night_audit', 'qr_checkin',
+                     'loyalty', 'whatsapp', 'precheckin',
+                     'stats', 'export_comptable', 'theme', 'planning',
+                     'reviews', 'multi_users'],
+        'price': '99 900 F/mois'
+    },
+    'enterprise': {
+        'label': 'Enterprise',
+        'max_rooms': 99999,
+        'max_users': 99999,
+        'features': '__all__',
+        'price': 'Sur devis'
+    }
+}
+
+def get_license():
+    """Retourne la licence active."""
+    key = get_hotel_setting('license_key', '')
+    tier = get_hotel_setting('license_tier', 'starter')
+    if tier not in LICENSE_FEATURES:
+        tier = 'starter'
+    return {
+        'key': key,
+        'tier': tier,
+        'config': LICENSE_FEATURES[tier],
+        'label': LICENSE_FEATURES[tier]['label']
+    }
+
+def check_feature(feature):
+    """Vérifie si une fonctionnalité est disponible dans la licence."""
+    lic = get_license()
+    if lic['config']['features'] == '__all__':
+        return True
+    return feature in lic['config']['features']
+
+def check_room_limit():
+    """Vérifie si la limite de chambres est atteinte."""
+    lic = get_license()
+    conn = get_db()
+    count = conn.execute("SELECT COUNT(*) FROM rooms").fetchone()[0]
+    conn.close()
+    return count < lic['config']['max_rooms'], lic['config']['max_rooms'], count
+
+def check_user_limit():
+    """Vérifie si la limite d'utilisateurs est atteinte."""
+    lic = get_license()
+    conn = get_db()
+    count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+    conn.close()
+    return count < lic['config']['max_users'], lic['config']['max_users'], count
+
+def activate_license(key):
+    """Active une licence par clé. Retourne le tier ou None."""
+    # Clés de démonstration intégrées
+    demo_keys = {
+        'WANNY-STARTER-2026': 'starter',
+        'WANNY-PRO-2026': 'pro',
+        'WANNY-BUSINESS-2026': 'business',
+        'WANNY-ENTERPRISE-2026': 'enterprise',
+    }
+    tier = demo_keys.get(key.upper().strip())
+    if tier:
+        set_hotel_setting('license_key', key.upper().strip())
+        set_hotel_setting('license_tier', tier)
+        return tier
+    # Clé personnalisée (format: WH-TIER-XXXXX)
+    parts = key.upper().strip().split('-')
+    if len(parts) >= 3 and parts[0] == 'WH':
+        tier_map = {'S': 'starter', 'P': 'pro', 'B': 'business', 'E': 'enterprise'}
+        tier = tier_map.get(parts[1])
+        if tier:
+            set_hotel_setting('license_key', key.upper().strip())
+            set_hotel_setting('license_tier', tier)
+            return tier
+    return None
