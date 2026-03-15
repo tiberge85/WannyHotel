@@ -8,14 +8,29 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__, template_folder='.', static_folder='static', static_url_path='/static')
 app.secret_key = os.environ.get('SECRET_KEY', 'wh-secret-2026-hotel')
 
-# PERSISTENT_DIR: sur Render, pointer vers un Render Disk pour garder les données entre déploiements
-PERSISTENT_DIR = os.environ.get('PERSISTENT_DIR', os.path.dirname(os.path.abspath(__file__)))
+# ======================== PERSISTENCE ========================
+# Sur Render: ajouter un Disk monté sur /data + variable PERSISTENT_DIR=/data
+# Sans Disk, les données sont PERDUES à chaque redéploiement !
+PERSISTENT_DIR = os.environ.get('PERSISTENT_DIR', '')
+if not PERSISTENT_DIR:
+    PERSISTENT_DIR = os.path.dirname(os.path.abspath(__file__))
+    print("⚠️  PERSISTENT_DIR non configuré ! Les données seront perdues au redéploiement.")
+    print("   → Sur Render: Settings > Disks > Add Disk (mount: /data)")
+    print("   → Environment > Add: PERSISTENT_DIR = /data")
+else:
+    print(f"✅ Données persistantes dans: {PERSISTENT_DIR}")
+
 app.config['UPLOAD_FOLDER'] = os.path.join(PERSISTENT_DIR, 'uploads')
 app.config['ROOMS_IMG'] = os.path.join(app.config['UPLOAD_FOLDER'], 'rooms')
+app.config['PHOTOS_DIR'] = os.path.join(app.config['UPLOAD_FOLDER'], 'photos')
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['ROOMS_IMG'], exist_ok=True)
+os.makedirs(app.config['PHOTOS_DIR'], exist_ok=True)
 os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static'), exist_ok=True)
+
+print(f"📂 DB: {os.path.join(PERSISTENT_DIR, 'data', 'hotel.db')}")
+print(f"📂 Uploads: {app.config['UPLOAD_FOLDER']}")
 
 # Copy logos to static
 import shutil
@@ -276,6 +291,10 @@ def room_type_image(rtid):
 @app.route('/uploads/rooms/<path:filename>')
 def room_image(filename):
     return send_from_directory(app.config['ROOMS_IMG'], filename)
+
+@app.route('/uploads/photos/<path:filename>')
+def photo_image(filename):
+    return send_from_directory(app.config['PHOTOS_DIR'], filename)
 
 
 # ======================== RÉSERVATION EN LIGNE (PUBLIC) ========================
