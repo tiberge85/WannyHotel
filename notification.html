@@ -13,10 +13,13 @@
 .btn{display:inline-block;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;text-align:center}
 .btn-gold{background:linear-gradient(135deg,#B8860B,#DAA520);color:#fff}.btn-teal{background:#1a6b5a;color:#fff}.btn-outline{border:1.5px solid #ddd;color:#666}
 .actions{display:flex;gap:8px;margin-top:14px;justify-content:center;flex-wrap:wrap}
-table{width:100%;font-size:12px;border-collapse:collapse}th{background:#1a6b5a;color:#fff;padding:6px 8px;text-align:left}td{padding:6px 8px;border-bottom:1px solid #eee}
+table{width:100%;font-size:12px;border-collapse:collapse}th{background:#333;color:#fff;padding:6px 8px;text-align:left}td{padding:6px 8px;border-bottom:1px solid #eee}
 .footer{text-align:center;padding:16px;font-size:10px;color:#999}
 </style></head><body>
-<div class="header"><img src="/static/logo_wannyhotel.png" alt="WannyHotel"></div>
+<div class="header">
+    <img src="/static/logo_wannyhotel.png" alt="WannyHotel">
+    <div style="margin-top:8px"><a href="/client/dashboard" style="color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px">← Retour à mon espace</a></div>
+</div>
 <div class="container">
 <div class="notif-msg {% if notif.type == 'facture' %}facture{% endif %}">
 {% if notif.type == 'confirmation' %}✅ {{ notif.message }}{% elif notif.type == 'facture' %}🧾 {{ notif.message }}{% else %}📢 {{ notif.message }}{% endif %}
@@ -48,7 +51,8 @@ table{width:100%;font-size:12px;border-collapse:collapse}th{background:#1a6b5a;c
 <div class="actions">
 {% if balance > 0 %}<a href="/payment/{{ res.id }}" class="btn btn-gold">💰 Payer en ligne</a>{% endif %}
 <a href="/invoice/{{ res.id }}" class="btn btn-teal">🧾 Voir la facture</a>
-<a href="/invoice/{{ res.id }}/pdf" class="btn btn-outline">📥 Télécharger PDF</a>
+<a href="/invoice/{{ res.id }}/pdf" class="btn btn-outline">📥 PDF</a>
+<a href="/client/dashboard" class="btn btn-outline">← Mon espace</a>
 </div>
 {% endif %}
 </div>

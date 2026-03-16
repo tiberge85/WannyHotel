@@ -1024,3 +1024,39 @@ def activate_license(key):
             return tier
     
     return None
+
+
+# ======================== CLIENT PORTAL V2 ========================
+
+def migrate_client_v2():
+    conn = get_db()
+    for col, typ in [('photo', 'TEXT'), ('address', 'TEXT'), ('birth_date', 'TEXT'), ('gender', 'TEXT')]:
+        try: conn.execute(f"ALTER TABLE guests ADD COLUMN {col} {typ} DEFAULT ''")
+        except: pass
+    conn.commit(); conn.close()
+
+def mark_notification_read(notif_id):
+    conn = get_db()
+    conn.execute("UPDATE notifications SET read=1 WHERE id=?", (notif_id,))
+    conn.commit(); conn.close()
+
+def get_guest_unread_count(guest_id):
+    conn = get_db()
+    count = conn.execute("SELECT COUNT(*) FROM notifications WHERE guest_id=? AND read=0", (guest_id,)).fetchone()[0]
+    conn.close()
+    return count
+
+def get_client_stats(guest_id):
+    conn = get_db()
+    s = {}
+    s['total_reservations'] = conn.execute("SELECT COUNT(*) FROM reservations WHERE guest_id=?", (guest_id,)).fetchone()[0]
+    s['active'] = conn.execute("SELECT COUNT(*) FROM reservations WHERE guest_id=? AND status='en_cours'", (guest_id,)).fetchone()[0]
+    s['total_nights'] = conn.execute("SELECT COALESCE(SUM(nights),0) FROM reservations WHERE guest_id=?", (guest_id,)).fetchone()[0]
+    s['total_spent'] = conn.execute("""SELECT COALESCE(SUM(p.amount),0) FROM payments p 
+        JOIN reservations r ON p.reservation_id=r.id WHERE r.guest_id=?""", (guest_id,)).fetchone()[0]
+    s['total_charges'] = conn.execute("""SELECT COALESCE(SUM(c.total),0) FROM charges c 
+        JOIN reservations r ON c.reservation_id=r.id WHERE r.guest_id=?""", (guest_id,)).fetchone()[0]
+    s['balance'] = s['total_charges'] - s['total_spent']
+    s['unread_notifs'] = conn.execute("SELECT COUNT(*) FROM notifications WHERE guest_id=? AND read=0", (guest_id,)).fetchone()[0]
+    conn.close()
+    return s

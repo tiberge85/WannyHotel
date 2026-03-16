@@ -54,8 +54,10 @@ migrate_rh()
 from models import (migrate_v4, run_night_audit, get_guest_loyalty, 
                     get_hotel_setting, set_hotel_setting, get_advanced_stats,
                     get_license, check_feature, check_room_limit, check_user_limit,
-                    activate_license, LICENSE_FEATURES)
+                    activate_license, LICENSE_FEATURES,
+                    migrate_client_v2, mark_notification_read, get_guest_unread_count, get_client_stats)
 migrate_v4()
+migrate_client_v2()
 
 import smtplib
 from email.mime.text import MIMEText
@@ -991,10 +993,17 @@ def client_logout():
 @app.route('/client/dashboard')
 def client_dashboard():
     if 'guest_id' not in session: return redirect('/client/login')
-    reservations = get_guest_reservations(session['guest_id'])
-    notifications = get_guest_notifications(session['guest_id'])
-    # Calculate payment status for each reservation
+    gid = session['guest_id']
+    reservations = get_guest_reservations(gid)
+    notifications = get_guest_notifications(gid)
+    stats = get_client_stats(gid)
+    loyalty = get_guest_loyalty(gid)
+    
+    # Get guest profile
     conn = get_db()
+    guest = conn.execute("SELECT * FROM guests WHERE id=?", (gid,)).fetchone()
+    guest = dict(guest) if guest else {}
+    
     for r in reservations:
         charges = conn.execute("SELECT COALESCE(SUM(total),0) FROM charges WHERE reservation_id=?", (r['id'],)).fetchone()[0]
         paid = conn.execute("SELECT COALESCE(SUM(amount),0) FROM payments WHERE reservation_id=?", (r['id'],)).fetchone()[0]
@@ -1002,19 +1011,50 @@ def client_dashboard():
         r['total_paid'] = paid
         r['balance'] = charges - paid
         r['is_paid'] = paid >= charges and charges > 0
-        # Payment history
         r['payments'] = [dict(p) for p in conn.execute("SELECT * FROM payments WHERE reservation_id=? ORDER BY created_at DESC", (r['id'],)).fetchall()]
-    # Online bookings pending
-    pending = conn.execute("""SELECT ob.*, rt.name as type_name FROM online_bookings ob 
+    
+    pending = [dict(p) for p in conn.execute("""SELECT ob.*, rt.name as type_name FROM online_bookings ob 
         LEFT JOIN room_types rt ON ob.room_type_id=rt.id
         WHERE ob.guest_email=? AND ob.status='en_attente' ORDER BY ob.created_at DESC""",
-        (session.get('guest_email',''),)).fetchall()
-    # Room types for booking form
-    types = conn.execute("SELECT * FROM room_types ORDER BY base_price").fetchall()
+        (session.get('guest_email',''),)).fetchall()]
+    types = [dict(t) for t in conn.execute("SELECT * FROM room_types ORDER BY base_price").fetchall()]
+    
+    # Unread count
+    unread = get_guest_unread_count(gid)
     conn.close()
+    
     return render_template('client_dashboard.html', reservations=reservations, notifications=notifications,
-                          guest_name=session.get('guest_name',''), pending=[dict(p) for p in pending],
-                          types=[dict(t) for t in types])
+                          guest_name=session.get('guest_name',''), pending=pending,
+                          types=types, stats=stats, loyalty=loyalty, guest=guest, unread=unread)
+
+@app.route('/client/profile', methods=['GET','POST'])
+def client_profile():
+    if 'guest_id' not in session: return redirect('/client/login')
+    gid = session['guest_id']
+    if request.method == 'POST':
+        conn = get_db()
+        for field in ['first_name','last_name','tel','email','address','birth_date','gender','nationality']:
+            val = request.form.get(field, '')
+            if val: conn.execute(f"UPDATE guests SET {field}=? WHERE id=?", (val, gid))
+        conn.commit(); conn.close()
+        # Update session name
+        session['guest_name'] = f"{request.form.get('first_name','')} {request.form.get('last_name','')}"
+        # Photo
+        if 'photo' in request.files and request.files['photo'].filename:
+            f = request.files['photo']
+            ext = os.path.splitext(f.filename)[1].lower()
+            if ext in ('.jpg','.jpeg','.png','.webp'):
+                fname = f"guest_{gid}{ext}"
+                f.save(os.path.join(app.config['PHOTOS_DIR'], fname))
+                conn = get_db()
+                conn.execute("UPDATE guests SET photo=? WHERE id=?", (fname, gid))
+                conn.commit(); conn.close()
+        flash("Profil mis à jour !", "success")
+        return redirect('/client/dashboard')
+    conn = get_db()
+    guest = dict(conn.execute("SELECT * FROM guests WHERE id=?", (gid,)).fetchone() or {})
+    conn.close()
+    return render_template('client_profile.html', guest=guest, guest_name=session.get('guest_name',''))
 
 @app.route('/client/book', methods=['POST'])
 def client_book():
@@ -1134,6 +1174,8 @@ def notification_page(token):
     notif = get_notification_by_token(token)
     if not notif:
         return "<h1>Notification non trouvée</h1><a href='/'>Accueil</a>", 404
+    # Mark as read
+    mark_notification_read(notif['id'])
     res_data, charges, payments = get_invoice_data(notif['reservation_id'])
     total_charges = sum(c['total'] for c in charges)
     total_paid = sum(p['amount'] for p in payments)
