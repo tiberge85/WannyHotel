@@ -9,10 +9,10 @@
 .inv-meta{display:flex;justify-content:space-between;margin-bottom:18px;font-size:13px}
 .client-box{background:#f8faf9;border-radius:8px;padding:14px;margin-bottom:16px;font-size:13px}
 table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px}
-th{background:#1a6b5a;color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid #eee}
+th{background:#333;color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid #eee}
 .totals{text-align:right;font-size:14px;margin-bottom:16px}.totals div{margin-bottom:4px}
 .totals .big{font-size:18px;font-weight:800}
-.pay-table{margin-bottom:16px}.pay-table th{background:#f8faf9;color:#1a3a5c;font-size:12px}
+.pay-table{margin-bottom:16px}.pay-table th{background:#f0f0f0;color:#333;font-size:12px;font-weight:700}
 .pay-table td{font-size:12px}
 .stamp{position:absolute;top:180px;right:30px;transform:rotate(-15deg);border:5px solid;border-radius:14px;padding:10px 24px;font-size:32px;font-weight:900;text-transform:uppercase;opacity:0.15;pointer-events:none}
 .stamp.paid{border-color:#2e7d32;color:#2e7d32}
@@ -20,7 +20,7 @@ th{background:#1a6b5a;color:#fff;padding:8px 12px;text-align:left}td{padding:8px
 .inv-footer{border-top:2px solid #eee;padding-top:14px;text-align:center;font-size:11px;color:#888}
 .print-bar{max-width:700px;margin:10px auto;display:flex;gap:8px;justify-content:center}
 .btn{padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;display:inline-block;cursor:pointer;border:none}
-.btn-gold{background:#B8860B;color:#fff}.btn-teal{background:#1a6b5a;color:#fff}.btn-outline{background:#fff;border:1.5px solid #ddd;color:#666}
+.btn-gold{background:#B8860B;color:#fff}.btn-teal{background:#333;color:#fff}.btn-outline{background:#fff;border:1.5px solid #ddd;color:#666}
 @media print{.print-bar{display:none}body{background:#fff}.invoice{box-shadow:none;margin:0;border-radius:0}.stamp{opacity:0.3!important}}
 </style></head><body>
 <div class="print-bar">
@@ -34,7 +34,7 @@ th{background:#1a6b5a;color:#fff;padding:8px 12px;text-align:left}td{padding:8px
 <div class="inv-header"><div><h1>FACTURE</h1><div style="font-size:12px;opacity:0.8">{{ res.reference }}</div></div><img src="/static/logo_wannyhotel.png" alt="Logo"></div>
 <div class="inv-body">
 <div class="inv-meta">
-<div><strong>{{ hotel_name }}</strong><br>Abidjan, Côte d'Ivoire<br>+225 07 47 68 20 27</div>
+<div><strong>{{ hotel_name }}</strong><br>Abidjan, Côte d'Ivoire<br>📞 +225 07 47 68 20 27</div>
 <div style="text-align:right"><strong>Date :</strong> {{ now }}<br><strong>Réf :</strong> {{ res.reference }}<br>{% if balance <= 0 %}<span style="background:#e8f5e9;color:#2e7d32;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:700">✅ PAYÉ</span>{% else %}<span style="background:#fde8e8;color:#c53030;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:700">Solde: {{ '{:,.0f}'.format(balance) }} F</span>{% endif %}</div>
 </div>
 
@@ -51,13 +51,13 @@ th{background:#1a6b5a;color:#fff;padding:8px 12px;text-align:left}td{padding:8px
 <strong>Séjour :</strong> {{ res.checkin_date }} → {{ res.checkout_date }} ({{ res.nights }} nuit(s))
 </div>
 
-<h3 style="font-size:13px;color:#1a3a5c;margin-bottom:6px">📋 Détail des charges</h3>
+<h3 style="font-size:13px;color:#333;margin-bottom:6px">📋 Détail des charges</h3>
 <table><thead><tr><th>Description</th><th>Qté</th><th style="text-align:right">Prix unit.</th><th style="text-align:right">Total</th></tr></thead>
 <tbody>{% for c in charges %}<tr><td>{{ c.description or c.category }}</td><td>{{ c.quantity }}</td><td style="text-align:right">{{ '{:,.0f}'.format(c.unit_price) }}</td><td style="text-align:right">{{ '{:,.0f}'.format(c.total) }}</td></tr>{% endfor %}</tbody>
 </table>
 
 {% if payments %}
-<h3 style="font-size:13px;color:#1a3a5c;margin-bottom:6px">💰 Historique des paiements</h3>
+<h3 style="font-size:13px;color:#333;margin-bottom:6px">💰 Historique des paiements</h3>
 <table class="pay-table"><thead><tr><th>Date</th><th>Montant</th><th>Mode</th><th>Référence</th></tr></thead>
 <tbody>{% for p in payments %}<tr>
 <td>{{ p.created_at[:16] }}</td>
@@ -78,8 +78,8 @@ th{background:#1a6b5a;color:#fff;padding:8px 12px;text-align:left}td{padding:8px
 </div>
 
 <div class="inv-footer">
-Merci pour votre confiance !<br>
-{{ hotel_name }} — Abidjan, Côte d'Ivoire<br>
-+225 07 47 68 20 27 · 05 66 75 06 69 · contact@wannyhotel.com
+<strong>Merci pour votre confiance !</strong><br>
+<span style="color:#B8860B">{{ hotel_name }}</span> — Abidjan, Côte d'Ivoire<br>
+📞 +225 07 47 68 20 27 · 05 66 75 06 69 · ✉️ contact@wannyhotel.com
 </div>
 </div></div></body></html>

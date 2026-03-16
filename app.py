@@ -1176,16 +1176,18 @@ def invoice_pdf(res_id):
     doc = SimpleDocTemplate(output, pagesize=A4, leftMargin=20*mm, rightMargin=20*mm, topMargin=15*mm, bottomMargin=15*mm)
     
     GOLD = HexColor('#B8860B')
-    TEAL = HexColor('#1a3a5c')
+    DARK = HexColor('#222222')  # Noir foncé lisible partout
+    GREEN = HexColor('#2e7d32')
+    RED = HexColor('#c53030')
     s_title = ParagraphStyle('t', fontSize=24, fontName='Helvetica-Bold', textColor=GOLD, alignment=TA_CENTER)
-    s_sub = ParagraphStyle('s', fontSize=10, alignment=TA_CENTER, textColor=HexColor('#888'))
-    s_n = ParagraphStyle('n', fontSize=10, leading=13)
-    s_b = ParagraphStyle('b', fontSize=10, fontName='Helvetica-Bold')
-    s_r = ParagraphStyle('r', fontSize=10, alignment=TA_RIGHT)
+    s_sub = ParagraphStyle('s', fontSize=10, alignment=TA_CENTER, textColor=HexColor('#666'))
+    s_n = ParagraphStyle('n', fontSize=10, leading=13, textColor=DARK)
+    s_b = ParagraphStyle('b', fontSize=10, fontName='Helvetica-Bold', textColor=DARK)
+    s_r = ParagraphStyle('r', fontSize=10, alignment=TA_RIGHT, textColor=DARK)
     s_h = ParagraphStyle('h', fontSize=9, fontName='Helvetica-Bold', textColor=HexColor('#fff'))
-    s_c = ParagraphStyle('c', fontSize=9)
-    s_cr = ParagraphStyle('cr', fontSize=9, alignment=TA_RIGHT)
-    s_f = ParagraphStyle('f', fontSize=7, alignment=TA_CENTER, textColor=TEAL)
+    s_c = ParagraphStyle('c', fontSize=9, textColor=DARK)
+    s_cr = ParagraphStyle('cr', fontSize=9, alignment=TA_RIGHT, textColor=DARK)
+    s_f = ParagraphStyle('f', fontSize=8, alignment=TA_CENTER, textColor=HexColor('#555'))
     white = HexColor('#ffffff')
     
     story = []
@@ -1195,21 +1197,28 @@ def invoice_pdf(res_id):
     if os.path.exists(logo_path):
         from reportlab.platypus import Image as RLImage
         try:
-            logo_img = RLImage(logo_path, width=50*mm, height=25*mm)
+            logo_img = RLImage(logo_path, width=40*mm, height=20*mm)
             logo_img.hAlign = 'CENTER'
             story.append(logo_img)
         except: pass
     else:
         story.append(Paragraph("WannyHotel", s_title))
     
-    story.append(Paragraph("PMS Hôtelier", s_sub))
+    hotel_name = get_hotel_setting('hotel_name', 'WannyHotel')
+    hotel_addr = get_hotel_setting('hotel_address', 'Abidjan, Côte d\'Ivoire')
+    hotel_phone = get_hotel_setting('hotel_phone', '+225 07 47 68 20 27')
+    hotel_rc = get_hotel_setting('hotel_rc', '')
+    
+    story.append(Paragraph(f"<b>{hotel_name}</b> — {hotel_addr}", ParagraphStyle('hinfo', fontSize=9, alignment=TA_CENTER, textColor=HexColor('#555'))))
+    if hotel_rc:
+        story.append(Paragraph(f"RC: {hotel_rc} · Tél: {hotel_phone}", ParagraphStyle('hrc', fontSize=8, alignment=TA_CENTER, textColor=HexColor('#777'))))
     story.append(Spacer(1, 4*mm))
     
     # Separator line
     from reportlab.platypus import HRFlowable
     story.append(HRFlowable(width="100%", thickness=1, color=GOLD))
     story.append(Spacer(1, 6*mm))
-    story.append(Paragraph(f"<b>FACTURE</b> — {res_data['reference']}", ParagraphStyle('ft', fontSize=16, fontName='Helvetica-Bold', textColor=TEAL)))
+    story.append(Paragraph(f"<b>FACTURE</b> — {res_data['reference']}", ParagraphStyle('ft', fontSize=16, fontName='Helvetica-Bold', textColor=DARK)))
     story.append(Paragraph(f"Date : {datetime.now().strftime('%d/%m/%Y')}", s_n))
     story.append(Spacer(1, 5*mm))
     
@@ -1231,7 +1240,7 @@ def invoice_pdf(res_id):
     
     cw = [80*mm, 20*mm, 30*mm, 30*mm]
     t = Table(ch_data, colWidths=cw)
-    t.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),TEAL), ('GRID',(0,0),(-1,-1),0.5,HexColor('#ccc')),
+    t.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),HexColor('#333333')), ('GRID',(0,0),(-1,-1),0.5,HexColor('#ccc')),
         ('VALIGN',(0,0),(-1,-1),'MIDDLE'), ('TOPPADDING',(0,0),(-1,-1),4), ('BOTTOMPADDING',(0,0),(-1,-1),4)]))
     story.append(t)
     story.append(Spacer(1, 4*mm))
@@ -1239,9 +1248,17 @@ def invoice_pdf(res_id):
     # Totals
     tot_data = [
         ['', '', Paragraph('<b>Total</b>', s_cr), Paragraph(f"<b>{total_charges:,.0f} FCFA</b>", s_cr)],
-        ['', '', Paragraph('Payé', s_cr), Paragraph(f"{total_paid:,.0f} FCFA", s_cr)],
-        ['', '', Paragraph('<b>Solde</b>', s_cr), Paragraph(f"<b>{total_charges-total_paid:,.0f} FCFA</b>", s_cr)],
+        ['', '', Paragraph('Payé', ParagraphStyle('pg', fontSize=9, alignment=TA_RIGHT, textColor=GREEN)), 
+         Paragraph(f"{total_paid:,.0f} FCFA", ParagraphStyle('pv', fontSize=9, alignment=TA_RIGHT, textColor=GREEN))],
     ]
+    balance = total_charges - total_paid
+    if balance <= 0:
+        tot_data.append(['', '', Paragraph('<b>Solde</b>', ParagraphStyle('sg', fontSize=9, alignment=TA_RIGHT, fontName='Helvetica-Bold', textColor=GREEN)),
+                        Paragraph('<b>PAYÉ</b>', ParagraphStyle('sv', fontSize=11, alignment=TA_RIGHT, fontName='Helvetica-Bold', textColor=GREEN))])
+    else:
+        tot_data.append(['', '', Paragraph('<b>Reste à payer</b>', ParagraphStyle('sg', fontSize=9, alignment=TA_RIGHT, fontName='Helvetica-Bold', textColor=RED)),
+                        Paragraph(f"<b>{balance:,.0f} FCFA</b>", ParagraphStyle('sv', fontSize=9, alignment=TA_RIGHT, fontName='Helvetica-Bold', textColor=RED))])
+    
     tt = Table(tot_data, colWidths=cw)
     tt.setStyle(TableStyle([('LINEABOVE',(2,0),(3,0),1,HexColor('#ccc'))]))
     story.append(tt)
@@ -1249,15 +1266,16 @@ def invoice_pdf(res_id):
     
     # Payments
     if payments:
-        story.append(Paragraph("<b>Paiements reçus</b>", s_b))
+        story.append(Paragraph("<b>Historique des paiements</b>", s_b))
+        story.append(Spacer(1, 2*mm))
         for pay in payments:
-            story.append(Paragraph(f"• {pay['created_at'][:16]} — {pay['amount']:,.0f} F via {pay['method']} (Réf: {pay.get('reference','-')})", s_n))
+            story.append(Paragraph(f"• {pay['created_at'][:16]} — <b>{pay['amount']:,.0f} F</b> via {pay['method']} (Réf: {pay.get('reference','-')})", s_n))
     
     story.append(Spacer(1, 15*mm))
-    story.append(Paragraph("Merci pour votre confiance — WannyHotel", ParagraphStyle('thx', fontSize=10, alignment=TA_CENTER, textColor=GOLD)))
+    story.append(Paragraph(f"Merci pour votre confiance — {hotel_name}", ParagraphStyle('thx', fontSize=10, alignment=TA_CENTER, textColor=GOLD)))
     story.append(Spacer(1, 5*mm))
-    story.append(Paragraph("WannyHotel — Abidjan, Côte d'Ivoire", s_f))
-    story.append(Paragraph("+225 07 47 68 20 27 · contact@wannyhotel.com", s_f))
+    story.append(Paragraph(f"{hotel_name} — {hotel_addr}", s_f))
+    story.append(Paragraph(f"{hotel_phone} · contact@wannyhotel.com", s_f))
     
     doc.build(story)
     return send_file(output, as_attachment=True, download_name=f"Facture_{res_data['reference']}.pdf")
